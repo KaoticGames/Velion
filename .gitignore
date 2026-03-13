@@ -38,8 +38,5 @@ desktop.ini
 .vscode/
 .idea/
 
-# ── Database migrations (generated) ──────────────────────────────────────
-backend/drizzle/
-
 # ── Uploads / local storage ───────────────────────────────────────────────
 uploads/

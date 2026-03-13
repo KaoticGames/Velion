@@ -1,0 +1,69 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1772771522866,
+      "tag": "0000_colossal_electro",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772826381606,
+      "tag": "0001_moaning_daimon_hellstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772866470483,
+      "tag": "0002_closed_earthquake",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1772883547537,
+      "tag": "0003_pink_the_liberteens",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1772933411036,
+      "tag": "0004_long_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772980892328,
+      "tag": "0005_past_blur",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1773001643658,
+      "tag": "0006_cooing_blackheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1773366705707,
+      "tag": "0007_free_photon",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1773414098693,
+      "tag": "0008_dapper_living_tribunal",
+      "breakpoints": true
+    }
+  ]
+}
