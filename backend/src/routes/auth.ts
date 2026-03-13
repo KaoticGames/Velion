@@ -1,0 +1,180 @@
+import { Router, Request, Response }  from 'express';
+import bcrypt                          from 'bcrypt';
+import { eq, and, isNull, gt }         from 'drizzle-orm';
+import { v4 as uuidv4 }               from 'uuid';
+import { db }                          from '../db';
+import { users, refreshTokens }        from '../db/schema';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../lib/jwt';
+import { requireAuth }                 from '../middleware/auth';
+
+const router = Router();
+const BCRYPT_ROUNDS = 12;
+const REFRESH_DAYS  = 30;
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+const setRefreshCookie = (res: Response, token: string) => {
+  res.cookie('refresh_token', token, {
+    httpOnly: true,
+    secure:   process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge:   REFRESH_DAYS * 24 * 60 * 60 * 1000,
+    path:     '/api/v1/auth',
+  });
+};
+
+const userPublic = (u: typeof users.$inferSelect) => ({
+  id:                u.id,
+  email:             u.email,
+  display_name:      u.display_name,
+  avatar_url:        u.avatar_url,
+  subscription_tier: u.subscription_tier,
+});
+
+// ── POST /auth/register ───────────────────────────────────────────────────
+router.post('/register', async (req: Request, res: Response): Promise<void> => {
+  const { email, password, display_name } = req.body as {
+    email: string; password: string; display_name: string;
+  };
+
+  if (!email || !password || !display_name) {
+    res.status(422).json({ error: { code: 'MISSING_FIELDS', message: 'email, password, and display_name are required.', status: 422 } });
+    return;
+  }
+  if (password.length < 8) {
+    res.status(422).json({ error: { code: 'PASSWORD_TOO_SHORT', message: 'Password must be at least 8 characters.', status: 422 } });
+    return;
+  }
+
+  const existing = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+  if (existing.length > 0) {
+    res.status(422).json({ error: { code: 'EMAIL_TAKEN', message: 'An account with this email already exists.', status: 422 } });
+    return;
+  }
+
+  const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  const [user] = await db.insert(users).values({
+    email:         email.toLowerCase(),
+    password_hash,
+    display_name,
+  }).returning();
+
+  const access_token    = signAccessToken({ user_id: user.id, email: user.email, subscription_tier: user.subscription_tier });
+  const token_id        = uuidv4();
+  const refresh_token   = signRefreshToken({ user_id: user.id, token_id });
+  const expires_at      = new Date(Date.now() + REFRESH_DAYS * 24 * 60 * 60 * 1000);
+
+  await db.insert(refreshTokens).values({ id: token_id, user_id: user.id, expires_at });
+  setRefreshCookie(res, refresh_token);
+
+  res.status(201).json({ access_token, user: userPublic(user) });
+});
+
+// ── POST /auth/login ──────────────────────────────────────────────────────
+router.post('/login', async (req: Request, res: Response): Promise<void> => {
+  const { email, password } = req.body as { email: string; password: string };
+
+  const [user] = await db.select().from(users)
+    .where(and(eq(users.email, email?.toLowerCase()), isNull(users.deleted_at)))
+    .limit(1);
+
+  // Constant-time comparison even on user not found
+  const hash = user?.password_hash ?? '$2b$12$invalidhashpadding000000000000000000';
+  const valid = await bcrypt.compare(password ?? '', hash);
+
+  if (!user || !valid) {
+    res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.', status: 401 } });
+    return;
+  }
+
+  const access_token  = signAccessToken({ user_id: user.id, email: user.email, subscription_tier: user.subscription_tier });
+  const token_id      = uuidv4();
+  const refresh_token = signRefreshToken({ user_id: user.id, token_id });
+  const expires_at    = new Date(Date.now() + REFRESH_DAYS * 24 * 60 * 60 * 1000);
+
+  await db.insert(refreshTokens).values({ id: token_id, user_id: user.id, expires_at });
+  setRefreshCookie(res, refresh_token);
+
+  res.json({ access_token, user: userPublic(user) });
+});
+
+// ── POST /auth/refresh ────────────────────────────────────────────────────
+router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
+  const cookie = req.cookies?.refresh_token;
+  if (!cookie) {
+    res.status(401).json({ error: { code: 'NO_REFRESH_TOKEN', message: 'No refresh token.', status: 401 } });
+    return;
+  }
+
+  let payload: ReturnType<typeof verifyRefreshToken>;
+  try {
+    payload = verifyRefreshToken(cookie);
+  } catch {
+    res.status(401).json({ error: { code: 'REFRESH_TOKEN_INVALID', message: 'Refresh token invalid.', status: 401 } });
+    return;
+  }
+
+  const [stored] = await db.select().from(refreshTokens)
+    .where(and(eq(refreshTokens.id, payload.token_id), isNull(refreshTokens.revoked_at), gt(refreshTokens.expires_at, new Date())))
+    .limit(1);
+
+  if (!stored) {
+    res.status(401).json({ error: { code: 'REFRESH_TOKEN_REVOKED', message: 'Refresh token revoked or expired.', status: 401 } });
+    return;
+  }
+
+  // Token rotation — revoke old, issue new
+  await db.update(refreshTokens).set({ revoked_at: new Date() }).where(eq(refreshTokens.id, stored.id));
+
+  const [user] = await db.select().from(users).where(eq(users.id, stored.user_id)).limit(1);
+  const new_token_id      = uuidv4();
+  const new_access_token  = signAccessToken({ user_id: user.id, email: user.email, subscription_tier: user.subscription_tier });
+  const new_refresh_token = signRefreshToken({ user_id: user.id, token_id: new_token_id });
+  const expires_at        = new Date(Date.now() + REFRESH_DAYS * 24 * 60 * 60 * 1000);
+
+  await db.insert(refreshTokens).values({ id: new_token_id, user_id: user.id, expires_at });
+  setRefreshCookie(res, new_refresh_token);
+
+  res.json({ access_token: new_access_token, user: userPublic(user) });
+});
+
+// ── POST /auth/logout ─────────────────────────────────────────────────────
+router.post('/logout', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const cookie = req.cookies?.refresh_token;
+  if (cookie) {
+    try {
+      const payload = verifyRefreshToken(cookie);
+      await db.update(refreshTokens).set({ revoked_at: new Date() }).where(eq(refreshTokens.id, payload.token_id));
+    } catch { /* ignore invalid token on logout */ }
+  }
+  res.clearCookie('refresh_token', { path: '/api/v1/auth' });
+  res.json({ success: true });
+});
+
+// ── PATCH /auth/password ──────────────────────────────────────────────────
+router.patch('/password', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const { current_password, new_password } = req.body as { current_password: string; new_password: string };
+  const userId = req.user!.user_id;
+
+  if (!new_password || new_password.length < 8) {
+    res.status(422).json({ error: { code: 'PASSWORD_TOO_SHORT', message: 'New password must be at least 8 characters.', status: 422 } });
+    return;
+  }
+
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  const valid = await bcrypt.compare(current_password ?? '', user.password_hash);
+  if (!valid) {
+    res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Current password is incorrect.', status: 401 } });
+    return;
+  }
+
+  const new_hash = await bcrypt.hash(new_password, BCRYPT_ROUNDS);
+  await db.update(users).set({ password_hash: new_hash }).where(eq(users.id, userId));
+  // Revoke all refresh tokens for security
+  await db.update(refreshTokens).set({ revoked_at: new Date() }).where(eq(refreshTokens.user_id, userId));
+
+  res.clearCookie('refresh_token', { path: '/api/v1/auth' });
+  res.json({ success: true });
+});
+
+export default router;

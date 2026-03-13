@@ -1,0 +1,110 @@
+/* ── Velion Mythera Global Styles ─────────────────────────────────────────── */
+/* Design tokens mirror VelionCharacterSheet.jsx style constants exactly.      */
+/* All component-level styling uses inline styles (matching the sheet) except  */
+/* for resets and global layout primitives defined here.                        */
+
+:root {
+  /* Core palette */
+  --bg:          #06070c;
+  --surface:     #0a0c14;
+  --card:        #0d1018;
+  --border:      #1c2030;
+  --gold:        #c4922a;
+  --gold-dim:    #5a3e10;
+  --gold-glow:   #c4922a33;
+
+  /* Text */
+  --text:        #e4d8c0;
+  --text-muted:  #706858;
+  --text-dim:    #282430;
+
+  /* Semantic */
+  --hp:          #e05050;
+  --rp:          #4a9de8;
+  --magic:       #9b6fe8;
+  --success:     #3dba6a;
+  --danger:      #c8503a;
+
+  /* Attribute colours */
+  --power:       #e87050;
+  --agility:     #50c878;
+  --focus:       #7090e8;
+  --presence:    #e8b050;
+
+  /* Typography */
+  --font-display: 'Cinzel', serif;
+  --font-body:    'EB Garamond', serif;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Radius */
+  --radius-sm: 3px;
+  --radius:    4px;
+  --radius-lg: 8px;
+}
+
+/* ── Reset ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Subtle noise texture for depth */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+}
+
+/* ── Scrollbars ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+/* ── Focus visible ──────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* ── Utility: full-height flex column ──────────────────────────────────── */
+.full-height { height: 100%; display: flex; flex-direction: column; }
+
+/* ── Page fade-in ───────────────────────────────────────────────────────── */
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: pageFadeIn 0.25s ease-out both;
+}
+
+/* ── Gold shimmer ───────────────────────────────────────────────────────── */
+@keyframes goldPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+/* ── Selection colour ───────────────────────────────────────────────────── */
+::selection {
+  background: var(--gold-dim);
+  color: var(--text);
+}

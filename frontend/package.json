@@ -1,0 +1,31 @@
+{
+  "name": "velion-mythera",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --mode development",
+    "build": "tsc && vite build --mode production",
+    "preview": "vite preview --mode production",
+    "lint": "eslint src --ext ts,tsx,jsx --report-unused-disable-directives"
+  },
+  "dependencies": {
+    "@3d-dice/dice-box": "^1.0.8",
+    "@tanstack/react-query": "^5.59.20",
+    "axios": "^1.7.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.27.0",
+    "socket.io-client": "^4.8.1",
+    "zustand": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}
