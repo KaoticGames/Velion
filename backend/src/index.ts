@@ -1,5 +1,6 @@
 import path from 'path';
 import { config } from 'dotenv';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import express                  from 'express';
 import cors                     from 'cors';
 import helmet                   from 'helmet';
@@ -23,6 +24,8 @@ import earlyAccessRouter      from './routes/earlyAccess';
 
 // Socket
 import { registerSessionNamespace } from './socket/session';
+
+import { db } from './db';
 
 // Load env after all imports — dotenv config calls must not sit between import statements
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
@@ -129,14 +132,29 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────
-server.listen(PORT, () => {
-  console.log(`
+const migrationsFolder = path.join(process.cwd(), 'drizzle');
+
+void (async () => {
+  if (isDev) {
+    try {
+      await migrate(db, { migrationsFolder });
+      console.log('[dev] Database migrations up to date.');
+    } catch (err) {
+      console.error('[dev] Database migration failed — fix errors then run: npm run db:migrate');
+      console.error(err);
+      process.exit(1);
+    }
+  }
+
+  server.listen(PORT, () => {
+    console.log(`
   ╔══════════════════════════════════════════╗
   ║   VELION MYTHERA API                     ║
   ║   http://localhost:${PORT}                   ║
   ║   ENV: ${(process.env.NODE_ENV ?? 'development').padEnd(34)}║
   ╚══════════════════════════════════════════╝
   `);
-});
+  });
+})();
 
 export { app, server, io };

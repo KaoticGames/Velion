@@ -1,9 +1,7 @@
 /**
  * DiceLog.tsx — Roll history panel
  *
- * Shows entries in reverse chronological order.
- * Visibility icons: 🌐 public, 🔒 private, 👁 dm
- * DM rolls show source_label if present.
+ * Primary line uses `formula` as a full breakdown when present (e.g. "14 + 2 = 16").
  */
 
 import type { DiceLogEntry } from './types';
@@ -60,6 +58,7 @@ export default function DiceLog({ entries, userId, isDM }: Props) {
           const color       = VISIBILITY_COLOR[entry.visibility] ?? T.text;
           const isHighTotal = entry.total >= 18;
           const isLowTotal  = entry.total <= 3 && entry.results.length > 0;
+          const hasBreakdown = typeof entry.formula === 'string' && entry.formula.includes('=');
 
           return (
             <div
@@ -72,7 +71,6 @@ export default function DiceLog({ entries, userId, isDM }: Props) {
                 opacity: entry.visibility === 'private' && !isOwn && !isDM ? 0 : 1,
               }}
             >
-              {/* Source label or roller */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
                 <span style={{ fontSize: '9px', color: T.textMuted, fontFamily: "'Cinzel',serif", letterSpacing: '0.08em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '75%' }}>
                   {entry.source_label ?? (isDM ? 'DM Roll' : isOwn ? 'You' : 'Player')}
@@ -82,40 +80,52 @@ export default function DiceLog({ entries, userId, isDM }: Props) {
                 </span>
               </div>
 
-              {/* Label */}
               {entry.label && (
-                <div style={{ fontSize: '10px', color: T.textMuted, marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: '10px', color: T.textMuted, marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {entry.label}
                 </div>
               )}
 
-              {/* Roll results */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
-                  {entry.results.map((r, ri) => (
-                    <span
-                      key={ri}
-                      style={{
-                        fontSize: '11px', fontWeight: 700, padding: '1px 4px',
-                        borderRadius: '2px',
-                        background: T.surface,
-                        color: T.textMuted,
-                        border: `1px solid ${T.border}`,
-                      }}
-                    >{r}</span>
-                  ))}
+              {hasBreakdown ? (
+                <div style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: T.text,
+                  fontFamily: "'Cinzel',serif",
+                  letterSpacing: '0.04em',
+                  lineHeight: 1.35,
+                  wordBreak: 'break-word',
+                }}>
+                  {entry.formula}
                 </div>
-                <span style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                  <span style={{ fontSize: '9px', color: T.textDim }}>{entry.formula} = </span>
-                  <span style={{
-                    fontSize: '16px', fontWeight: 700,
-                    color: isHighTotal ? T.green : isLowTotal ? T.hp : color,
-                    fontFamily: "'Cinzel',serif",
-                  }}>
-                    {entry.total}
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
+                    {entry.results.map((r, ri) => (
+                      <span
+                        key={ri}
+                        style={{
+                          fontSize: '11px', fontWeight: 700, padding: '1px 4px',
+                          borderRadius: '2px',
+                          background: T.surface,
+                          color: T.textMuted,
+                          border: `1px solid ${T.border}`,
+                        }}
+                      >{r}</span>
+                    ))}
+                  </div>
+                  <span style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                    <span style={{ fontSize: '9px', color: T.textDim }}>{entry.formula} = </span>
+                    <span style={{
+                      fontSize: '16px', fontWeight: 700,
+                      color: isHighTotal ? T.green : isLowTotal ? T.hp : color,
+                      fontFamily: "'Cinzel',serif",
+                    }}>
+                      {entry.total}
+                    </span>
                   </span>
-                </span>
-              </div>
+                </div>
+              )}
             </div>
           );
         })}

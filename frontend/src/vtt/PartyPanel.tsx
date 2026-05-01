@@ -7,6 +7,7 @@ import React from 'react';
 import { useState } from 'react';
 import type { MapToken, EnemyInstance } from './types';
 import { api } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
 
 const T = {
   surface:   '#0d1018',
@@ -26,14 +27,56 @@ interface Props {
   enemyInstances:  EnemyInstance[];
   isDM:            boolean;
   sessionId:       string;
+  campaignId:      string;
+  currentCharacterId: string | null;
   socket:          {
     updateEnemyHP: (id: string, hp: number, defeated?: boolean) => void;
+    broadcastTokenPlaced: (token: unknown) => void;
   };
 }
 
-export default function PartyPanel({ tokens, enemyInstances, isDM, sessionId, socket }: Props) {
+type CampaignMemberRow = {
+  membership: { character_id: string; user_id: string };
+  character: { id: string; name: string; portrait_url: string | null } | null;
+  user: { id: string; email: string } | null;
+};
+
+export default function PartyPanel({ tokens, enemyInstances, isDM, sessionId, campaignId, currentCharacterId, socket }: Props) {
   const playerTokens = tokens.filter(t => t.entity_type === 'character');
   const enemyTokens  = tokens.filter(t => t.entity_type === 'enemy');
+  const [placingCharacterId, setPlacingCharacterId] = useState<string | null>(null);
+
+  const { data: campaignMembers = [] } = useQuery({
+    queryKey: ['campaign-members', campaignId],
+    enabled: isDM && !!campaignId,
+    queryFn: async (): Promise<CampaignMemberRow[]> => {
+      const { data } = await api.get<{ members?: CampaignMemberRow[] }>(`/campaigns/${campaignId}`);
+      const members = data.members;
+      return Array.isArray(members) ? members : [];
+    },
+    staleTime: 30_000,
+  });
+
+  const placeCharacterToken = async (member: CampaignMemberRow) => {
+    const character = member.character;
+    if (!character) return;
+    setPlacingCharacterId(character.id);
+    try {
+      const created = await api.post(`/vtt/sessions/${sessionId}/tokens`, {
+        entity_type: 'character',
+        entity_id: character.id,
+        cell_x: 0,
+        cell_y: 0,
+        label: character.name,
+        token_url: character.portrait_url ?? null,
+      });
+      socket.broadcastTokenPlaced(created);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPlacingCharacterId(null);
+    }
+  };
 
   return (
     <div style={{ padding: '10px' }}>
@@ -41,14 +84,79 @@ export default function PartyPanel({ tokens, enemyInstances, isDM, sessionId, so
       <SectionLabel>PARTY</SectionLabel>
       {playerTokens.length === 0 ? (
         <div style={{ fontSize: '10px', color: T.textDim, padding: '4px 0 8px', fontFamily: "'Cinzel',serif", letterSpacing: '0.12em' }}>
-          NO PLAYERS ON MAP
+          NO PLAYER TOKENS ON MAP
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
           {playerTokens.map(token => (
-            <PlayerTokenRow key={token.id} token={token} />
+            <PlayerTokenRow
+              key={token.id}
+              token={token}
+              isOwnToken={token.entity_id === currentCharacterId}
+            />
           ))}
         </div>
+      )}
+
+      {isDM && campaignMembers.length > 0 && (
+        <>
+          <SectionLabel>CAMPAIGN PARTY</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
+            {campaignMembers
+              .filter(m => !!m.character)
+              .map(member => {
+                const character = member.character!;
+                const tokenOnMap = playerTokens.some(t => t.entity_id === character.id);
+                const isPlacing = placingCharacterId === character.id;
+                return (
+                  <div
+                    key={character.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      background: T.card,
+                      border: `1px solid ${T.border}`,
+                      borderRadius: '3px',
+                      padding: '6px 8px',
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '11px', color: T.text, fontFamily: "'Cinzel',serif", letterSpacing: '0.08em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {character.name}
+                      </div>
+                      <div style={{ fontSize: '9px', color: T.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {member.user?.email ?? 'Player'}
+                      </div>
+                    </div>
+                    {tokenOnMap ? (
+                      <span style={{ fontSize: '9px', color: T.green, letterSpacing: '0.08em' }}>ON MAP</span>
+                    ) : (
+                      <button
+                        disabled={isPlacing}
+                        onClick={() => void placeCharacterToken(member)}
+                        style={{
+                          background: isPlacing ? T.border : `${T.gold}22`,
+                          border: `1px solid ${T.gold}`,
+                          borderRadius: '2px',
+                          padding: '4px 8px',
+                          cursor: isPlacing ? 'default' : 'pointer',
+                          color: T.gold,
+                          fontSize: '9px',
+                          fontFamily: "'Cinzel',serif",
+                          letterSpacing: '0.08em',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {isPlacing ? 'ADDING...' : 'PLACE'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        </>
       )}
 
       {/* Enemy tokens (DM sees HP bars + damage input) */}
@@ -76,29 +184,58 @@ export default function PartyPanel({ tokens, enemyInstances, isDM, sessionId, so
   );
 }
 
-// ── Player row ─────────────────────────────────────────────────────────────
+// ── Player row (overview only — actions live in PlayerBattleHUD) ───────────
 
-function PlayerTokenRow({ token }: { token: MapToken; key?: string }) {
+function PlayerTokenRow({ token, isOwnToken }: { token: MapToken; isOwnToken: boolean }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: '8px',
-      background: T.card, border: `1px solid ${T.border}`,
-      borderRadius: '3px', padding: '6px 8px',
-    }}>
-      <div style={{
-        width: '28px', height: '28px', borderRadius: '50%',
-        background: '#0a1a2a', border: `1px solid ${T.rp}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '11px', color: T.rp, flexShrink: 0, fontWeight: 700,
-      }}>
+    <div
+      style={{
+        background: T.card,
+        border: `1px solid ${T.border}`,
+        borderRadius: '3px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '6px 8px',
+      }}
+    >
+      <div
+        style={{
+          width: '28px',
+          height: '28px',
+          borderRadius: '50%',
+          background: '#0a1a2a',
+          border: `1px solid ${T.rp}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '11px',
+          color: T.rp,
+          flexShrink: 0,
+          fontWeight: 700,
+        }}
+      >
         {(token.label ?? '?').slice(0, 2).toUpperCase()}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '11px', color: T.text, fontFamily: "'Cinzel',serif", letterSpacing: '0.08em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div
+          style={{
+            fontSize: '11px',
+            color: T.text,
+            fontFamily: "'Cinzel',serif",
+            letterSpacing: '0.08em',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
           {token.label ?? 'Unknown'}
         </div>
-        <div style={{ fontSize: '10px', color: T.textDim }}>
-          {token.cell_x},{token.cell_y}
+        <div style={{ fontSize: '10px', color: T.textDim, display: 'flex', gap: '8px' }}>
+          <span>
+            {token.cell_x},{token.cell_y}
+          </span>
+          {isOwnToken && <span style={{ color: T.green, letterSpacing: '0.08em' }}>YOU</span>}
         </div>
       </div>
     </div>

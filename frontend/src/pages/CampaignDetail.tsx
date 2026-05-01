@@ -1,4 +1,4 @@
-import { useState, useRef, type ReactNode, type ChangeEvent } from 'react';
+import { useState, useRef, useEffect, type ReactNode, type ChangeEvent } from 'react';
 import { api } from '@/lib/api';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuthStore, selectIsDM } from '@/store/authStore';
@@ -256,6 +256,15 @@ export default function CampaignDetail() {
     { id:'members' as TabId, label:'Members' },
     { id:'manage'  as TabId, label:'Manage', dmOnly:true },
   ].filter(t => !t.dmOnly || (isDM && isOwner));
+
+  useEffect(() => {
+    // Keep campaign header visible when navigating from a scrolled list view.
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    const mainEl = document.querySelector('main');
+    if (mainEl instanceof HTMLElement) {
+      mainEl.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  }, [id]);
 
   if (isLoading) return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'calc(100vh - 52px)', fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'0.2em', color:T.textDim }}>LOADING…</div>;
   if (isError || !campaign) return <div style={{ padding:'60px 32px', textAlign:'center' }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:'13px', letterSpacing:'0.2em', color:T.textDim, marginBottom:'16px' }}>CAMPAIGN NOT FOUND</div><Link to="/campaigns" style={{ color:T.gold, fontSize:'12px' }}>← Back to Campaigns</Link></div>;

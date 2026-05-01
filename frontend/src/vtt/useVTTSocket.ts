@@ -12,7 +12,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { io, type Socket }               from 'socket.io-client';
 import { useAuthStore }                  from '@/store/authStore';
 import { useVTTStore }                   from './useVTTState';
-import type { DiceVisibility, ShapeType } from './types';
+import type { DiceResult, DiceVisibility, ShapeType } from './types';
 
 const SOCKET_URL = (import.meta as any).env.VITE_SOCKET_URL as string;
 
@@ -65,8 +65,8 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
     });
 
     // DM switched the active map
-    socket.on('session:map_changed', ({ map, tokens, shapes, fogCells, fogSections }: any) => {
-      dispatch({ type: 'MAP_CHANGED', map, tokens, shapes, fogCells, fogSections: fogSections ?? [] });
+    socket.on('session:map_changed', ({ map, tokens, shapes, fogCells, fogSections, fogImage }: any) => {
+      dispatch({ type: 'MAP_CHANGED', map, tokens, shapes, fogCells, fogSections: fogSections ?? [], fogImage: fogImage ?? null });
     });
 
     // Session ended (inactivity or DM ended it)
@@ -92,6 +92,8 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
 
     // Fog cells
     socket.on('fog:updated', ({ cells }: any) => dispatch({ type: 'FOG_UPDATED', cells }));
+    socket.on('fog:image',   ({ image_data }: any) => dispatch({ type: 'FOG_IMAGE_UPDATED', image: image_data }));
+    socket.on('fog_section:image_updated', ({ section_id, image_data }: any) => dispatch({ type: 'FOG_SECTION_IMAGE_UPDATED', section_id, image_data }));
 
     // Fog sections
     socket.on('fog_section:created', ({ section }: any) => dispatch({ type: 'FOG_SECTION_ADDED',   section }));
@@ -107,21 +109,59 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
     socket.on('ruler:updated', (data: any) => dispatch({ type: 'RULER_UPDATED', ruler: data }));
     socket.on('ruler:cleared', ({ user_id }: any) => dispatch({ type: 'RULER_CLEARED', user_id }));
 
-    // Dice
-    socket.on('dice:result', (entry: any) => dispatch({ type: 'DICE_RESULT', entry }));
+    // Dice — `dice:result` → `velion:dice-result-pending` (overlay animates, then `velion:dice-log-commit`)
+    socket.on('dice:roll_start', (p: any) => {
+      if (typeof window === 'undefined') return;
+      if (!window.location.pathname.startsWith('/vtt/')) return;
+      window.dispatchEvent(new CustomEvent('velion:session-dice-roll-start', { detail: p }));
+    });
+
+    socket.on('dice:result', (entry: any) => {
+      if (typeof window === 'undefined') return;
+      window.dispatchEvent(new CustomEvent('velion:dice-result-pending', { detail: entry }));
+    });
 
     return () => {
       socket.disconnect();
       socketRef.current = null;
       dispatch({ type: 'SET_CONNECTED', connected: false });
     };
-  }, [sessionId, accessToken]);
+  }, [sessionId, accessToken, dispatch]);
+
+  /** If `character_id` resolves after connect (e.g. campaign fetch), join again so the server stores it. */
+  useEffect(() => {
+    if (!sessionId || !characterId) return;
+    const sock = socketRef.current;
+    if (!sock?.connected) return;
+    sock.emit('session:join', { session_id: sessionId, character_id: characterId });
+  }, [sessionId, characterId]);
 
   // ── Emit helpers ────────────────────────────────────────────────────
 
   const emit = useCallback((event: string, data?: unknown) => {
     socketRef.current?.emit(event, data);
   }, []);
+
+  const connected = useVTTStore(s => s.connected);
+  useEffect(() => {
+    if (!sessionId || !connected) return;
+    const h = (e: Event) => {
+      const d = (e as CustomEvent<Record<string, unknown>>).detail;
+      if (d) emit('dice:roll_start', d);
+    };
+    window.addEventListener('velion:dice-roll-network-start', h as EventListener);
+    return () => window.removeEventListener('velion:dice-roll-network-start', h as EventListener);
+  }, [emit, sessionId, connected]);
+
+  /** Dice log only updates after GlobalDiceOverlay finishes the immersive reveal (or immediately when no animation). */
+  useEffect(() => {
+    const onCommit = (e: Event) => {
+      const entry = (e as CustomEvent<DiceResult>).detail;
+      if (entry) dispatch({ type: 'DICE_RESULT', entry });
+    };
+    window.addEventListener('velion:dice-log-commit', onCommit as EventListener);
+    return () => window.removeEventListener('velion:dice-log-commit', onCommit as EventListener);
+  }, [dispatch]);
 
   const startSession = useCallback(() => {
     emit('session:start');
@@ -149,6 +189,14 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
 
   const updateFog = useCallback((cells: Array<{ x: number; y: number; revealed: boolean }>) => {
     emit('fog:update', { cells });
+  }, [emit]);
+
+  const syncFogImage = useCallback((image_data: string) => {
+    emit('fog:image', { image_data });
+  }, [emit]);
+
+  const syncSectionImage = useCallback((section_id: string, image_data: string) => {
+    emit('fog:section_image', { section_id, image_data });
   }, [emit]);
 
   const addShape = useCallback((shape: unknown) => {
@@ -186,6 +234,10 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
     results:      number[];
     total:        number;
     source_label?: string;
+    animation_spec?: Array<{ sides: number; value: number }>;
+    /** Same dice toss as the tray (e.g. `2d20 + 1d6`) for remote 3D replay. */
+    physics_notation?: string;
+    roll_id?:     string;
   }) => {
     emit('dice:roll', payload);
   }, [emit]);
@@ -209,6 +261,8 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
     broadcastTokenRemoved,
     updateEnemyHP,
     updateFog,
+    syncFogImage,
+    syncSectionImage,
     addShape,
     removeShape,
     updateShape,

@@ -13,7 +13,7 @@ import { create }      from 'zustand';
 import type {
   VTTSession, VTTMap, MapToken, EnemyInstance, FogCell, FogSection,
   CanvasShape, DiceLogEntry, DiceResult, ConnectedUser, RulerState,
-  VTTStateSnapshot, ToolMode, FogBrushShape,
+  VTTStateSnapshot, ToolMode, FogBrushShape, FogBrushMode,
 } from './types';
 
 // ── Action types ───────────────────────────────────────────────────────────
@@ -23,7 +23,8 @@ export type Action =
   | { type: 'SET_CONNECTED';     connected: boolean }
   | { type: 'SESSION_STARTED';   session: VTTSession }
   | { type: 'SESSION_ENDED' }
-  | { type: 'MAP_CHANGED';       map: VTTMap; tokens: MapToken[]; shapes: CanvasShape[]; fogCells: FogCell[]; fogSections: FogSection[] }
+  | { type: 'MAP_CHANGED';       map: VTTMap; tokens: MapToken[]; shapes: CanvasShape[]; fogCells: FogCell[]; fogSections: FogSection[]; fogImage?: string | null }
+  | { type: 'FOG_IMAGE_UPDATED';  image: string | null }
   | { type: 'USER_JOINED';       user: ConnectedUser }
   | { type: 'USER_LEFT';         user_id: string }
   | { type: 'TOKEN_PLACED';      token: MapToken }
@@ -46,6 +47,9 @@ export type Action =
   | { type: 'SET_TOOL_COLOR';    color: string }
   | { type: 'SET_FOG_BRUSH_SIZE';  size: number }
   | { type: 'SET_FOG_BRUSH_SHAPE'; shape: FogBrushShape }
+  | { type: 'SET_FOG_BRUSH_MODE';  mode: FogBrushMode }
+  | { type: 'SET_ACTIVE_FOG_LAYER'; id: string | null }
+  | { type: 'FOG_SECTION_IMAGE_UPDATED'; section_id: string; image_data: string | null }
   | { type: 'SET_DICE_VISIBILITY'; visibility: 'public' | 'private' | 'dm' }
   | { type: 'CLEAR_DICE_LOG' };
 
@@ -70,6 +74,9 @@ interface VTTState {
   fogCells:       Map<string, boolean>;   // key: "x,y" → is_revealed
   shapes:         CanvasShape[];
   fogSections:    FogSection[];
+  fogImage:       string | null;     // legacy — kept for session:state compat
+  activeFogLayerId: string | null;  // which fog layer is being edited
+  fogBrushMode:     FogBrushMode;   // paint = add fog, erase = remove fog
 
   // Rulers (keyed by user_id — each user has one active ruler)
   rulers:         Map<string, RulerState>;
@@ -116,6 +123,7 @@ function reducer(state: VTTState, action: Action): Partial<VTTState> {
         enemyInstances: payload.enemyInstances,
         fogCells:       buildFogMap(payload.fogCells),
         fogSections:    payload.fogSections ?? [],
+        fogImage:       payload.fogImage ?? null,
         shapes:         payload.shapes,
         campaignMaps:   payload.campaignMaps,
         diceLog:        payload.diceLog,
@@ -140,6 +148,7 @@ function reducer(state: VTTState, action: Action): Partial<VTTState> {
         shapes:      action.shapes,
         fogCells:    buildFogMap(action.fogCells),
         fogSections: action.fogSections ?? [],
+        fogImage:    action.fogImage ?? null,
         rulers:      new Map(),
       };
 
@@ -192,6 +201,20 @@ function reducer(state: VTTState, action: Action): Partial<VTTState> {
 
     case 'FOG_SECTION_REMOVED':
       return { fogSections: state.fogSections.filter(s => s.id !== action.section_id) };
+
+    case 'FOG_IMAGE_UPDATED':
+      return { fogImage: action.image };
+
+    case 'SET_FOG_BRUSH_MODE':
+      return { fogBrushMode: action.mode };
+
+    case 'SET_ACTIVE_FOG_LAYER':
+      return { activeFogLayerId: action.id };
+
+    case 'FOG_SECTION_IMAGE_UPDATED':
+      return { fogSections: state.fogSections.map(s =>
+        s.id === action.section_id ? { ...s, image_data: action.image_data } : s
+      ) };
 
     case 'SHAPE_ADDED':
       return { shapes: [...state.shapes, action.shape] };
@@ -259,6 +282,9 @@ export const useVTTStore = create<VTTState>((set, get) => ({
   enemyInstances: [],
   fogCells:       new Map(),
   fogSections:    [],
+  fogImage:       null,
+  activeFogLayerId: null,
+  fogBrushMode:     'paint',
   shapes:         [],
   rulers:         new Map(),
   diceLog:        [],

@@ -31,10 +31,12 @@ const recalcAndSave = async (characterId: string): Promise<void> => {
   const chosenVal  = attrMap[(c.chosen_attribute as AttrKey)] ?? 10;
   const base_rp    = calcBaseRP(c.level, chosenVal, c.growth_pool_total);
   const max_hp_num = calcMaxHP(base_rp, c.level);
+  const prevCur    = Number(c.current_rp ?? c.base_rp);
+  const clampedRp  = Math.min(Math.max(0, prevCur), base_rp);
 
   await db
     .update(characters)
-    .set({ base_rp, max_hp: BigInt(max_hp_num), updated_at: new Date() })
+    .set({ base_rp, max_hp: BigInt(max_hp_num), current_rp: clampedRp, updated_at: new Date() })
     .where(eq(characters.id, characterId));
 };
 
@@ -107,6 +109,9 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     chosen_attribute:  attrKey,
     growth_pool_total,
     base_rp,
+    current_rp:        base_rp,
+    rp_banked:         0,
+    rp_banking:        false,
     max_hp:            BigInt(max_hp_num),
     current_hp:        BigInt(max_hp_num),
     backstory,
@@ -166,6 +171,7 @@ router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
   const body = req.body as Partial<{
     name: string; backstory: string; notes: string; gold: number;
     current_hp: bigint; chosen_attribute: AttrKey; portrait_url: string;
+    current_rp: number; rp_banked: number; rp_banking: boolean;
   }>;
 
   const updates: Partial<NewCharacter> = { updated_at: new Date() };
@@ -176,6 +182,23 @@ router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
   if (body.current_hp       !== undefined) updates.current_hp       = BigInt(body.current_hp as unknown as number);
   if (body.chosen_attribute !== undefined) updates.chosen_attribute = body.chosen_attribute;
   if (body.portrait_url     !== undefined) updates.portrait_url     = body.portrait_url;
+  if (body.current_rp !== undefined) {
+    const v = Math.floor(Number(body.current_rp));
+    if (!Number.isFinite(v) || v < 0) {
+      res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'current_rp must be a non-negative integer.', status: 422 } });
+      return;
+    }
+    updates.current_rp = v;
+  }
+  if (body.rp_banked !== undefined) {
+    const v = Math.floor(Number(body.rp_banked));
+    if (!Number.isFinite(v) || v < 0) {
+      res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'rp_banked must be a non-negative integer.', status: 422 } });
+      return;
+    }
+    updates.rp_banked = v;
+  }
+  if (body.rp_banking !== undefined) updates.rp_banking = Boolean(body.rp_banking);
 
   await db.update(characters).set(updates).where(eq(characters.id, id));
 
@@ -240,6 +263,9 @@ router.post('/:id/level-up', async (req: Request, res: Response): Promise<void> 
     chosen_attribute:  new_chosen,
     growth_pool_total: new_growth_pool,
     base_rp:           new_base_rp,
+    current_rp:        new_base_rp,
+    rp_banked:         0,
+    rp_banking:        false,
     max_hp:            BigInt(new_max_hp),
     updated_at:        new Date(),
   }).where(eq(characters.id, id));

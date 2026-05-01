@@ -3,7 +3,7 @@ import bcrypt                          from 'bcrypt';
 import { eq, and, isNull, gt }         from 'drizzle-orm';
 import { v4 as uuidv4 }               from 'uuid';
 import { db }                          from '../db';
-import { users, refreshTokens }        from '../db/schema';
+import { users, refreshTokens, earlyAccessSignups } from '../db/schema';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../lib/jwt';
 import { requireAuth }                 from '../middleware/auth';
 
@@ -23,13 +23,30 @@ const setRefreshCookie = (res: Response, token: string) => {
   });
 };
 
+const betaGateEnabled = () => process.env.BETA_GATE_ENABLED !== 'false';
+
 const userPublic = (u: typeof users.$inferSelect) => ({
   id:                u.id,
   email:             u.email,
   display_name:      u.display_name,
   avatar_url:        u.avatar_url,
   subscription_tier: u.subscription_tier,
+  beta_access:       u.beta_access,
 });
+
+/** When the env beta gate is on, block session unless the user row allows access (set `users.beta_access = true` to bypass). */
+const rejectIfBetaRevoked = (res: Response, u: typeof users.$inferSelect): boolean => {
+  if (!betaGateEnabled()) return false;
+  if (u.beta_access) return false;
+  res.status(403).json({
+    error: {
+      code:    'BETA_REQUIRED',
+      message: 'Beta access is not enabled for this account. Contact support if you believe this is an error.',
+      status:  403,
+    },
+  });
+  return true;
+};
 
 // ── POST /auth/register ───────────────────────────────────────────────────
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
@@ -52,11 +69,27 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  // ── Beta gate: only granted early-access emails may register ─────────────
+  // Set BETA_GATE_ENABLED=false in env to open registration to everyone (full public launch).
+  if (betaGateEnabled()) {
+    const betaRow = await db
+      .select({ beta_granted: earlyAccessSignups.beta_granted })
+      .from(earlyAccessSignups)
+      .where(eq(earlyAccessSignups.email, email.toLowerCase()))
+      .limit(1);
+
+    if (!betaRow[0]?.beta_granted) {
+      res.status(403).json({ error: { code: 'BETA_REQUIRED', message: 'Early access has not yet been granted for this email. Sign up at playvelion.com to join the waitlist.', status: 403 } });
+      return;
+    }
+  }
+
   const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
   const [user] = await db.insert(users).values({
     email:         email.toLowerCase(),
     password_hash,
     display_name,
+    beta_access:   true,
   }).returning();
 
   const access_token    = signAccessToken({ user_id: user.id, email: user.email, subscription_tier: user.subscription_tier });
@@ -86,6 +119,8 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.', status: 401 } });
     return;
   }
+
+  if (rejectIfBetaRevoked(res, user)) return;
 
   const access_token  = signAccessToken({ user_id: user.id, email: user.email, subscription_tier: user.subscription_tier });
   const token_id      = uuidv4();
@@ -127,6 +162,12 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
   await db.update(refreshTokens).set({ revoked_at: new Date() }).where(eq(refreshTokens.id, stored.id));
 
   const [user] = await db.select().from(users).where(eq(users.id, stored.user_id)).limit(1);
+  if (!user) {
+    res.status(401).json({ error: { code: 'USER_NOT_FOUND', message: 'Account not found.', status: 401 } });
+    return;
+  }
+  if (rejectIfBetaRevoked(res, user)) return;
+
   const new_token_id      = uuidv4();
   const new_access_token  = signAccessToken({ user_id: user.id, email: user.email, subscription_tier: user.subscription_tier });
   const new_refresh_token = signRefreshToken({ user_id: user.id, token_id: new_token_id });

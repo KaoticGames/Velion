@@ -19,7 +19,7 @@ import React from 'react';
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type {
   VTTMap, MapToken, EnemyInstance, CanvasShape, FogSection,
-  RulerState, ToolMode, FogBrushShape, EnemyStatBlock,
+  RulerState, ToolMode, FogBrushShape, FogBrushMode, EnemyStatBlock,
 } from './types';
 import { Action } from './useVTTState';
 import { api } from '@/lib/api';
@@ -46,8 +46,9 @@ interface Props {
   map:             VTTMap;
   tokens:          MapToken[];
   enemyInstances:  EnemyInstance[];
-  fogCells:        Map<string, boolean>;
   fogSections:     FogSection[];
+  activeFogLayerId: string | null;
+  fogBrushMode:     FogBrushMode;
   shapes:          CanvasShape[];
   rulers:          Map<string, RulerState>;
   isDM:            boolean;
@@ -59,7 +60,7 @@ interface Props {
   sessionId:       string;
   socket: {
     moveToken:            (id: string, x: number, y: number) => void;
-    updateFog:            (cells: Array<{ x: number; y: number; revealed: boolean }>) => void;
+    syncSectionImage:     (section_id: string, image_data: string) => void;
     addShape:             (shape: unknown) => void;
     removeShape:          (id: string) => void;
     updateShape:          (shape: unknown) => void;
@@ -80,6 +81,12 @@ interface TransformRef {
   originalData: Record<string, number>;
 }
 interface HandleDef { x: number; y: number; type: HandleType; }
+interface TokenScaleTransformRef {
+  tokenId:       string;
+  startCanvas:   { x: number; y: number };
+  tokenCenter:   { x: number; y: number };
+  originalScale: number;
+}
 
 const HANDLE_R   = 7;
 const HANDLE_HIT = 12;
@@ -118,6 +125,22 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+function normalizeFogImageData(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  // Backward compatibility for rows that were JSON-stringified before schema fix.
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"'))) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      return typeof parsed === 'string' ? parsed : trimmed;
+    } catch {
+      return trimmed;
+    }
+  }
+  return trimmed;
+}
+
 // ── Button style helper ────────────────────────────────────────────────────
 const btnSt = (bg: string, col: string): React.CSSProperties => ({
   background: bg, color: col, border: `1px solid ${col}33`,
@@ -133,7 +156,7 @@ const miniInputSt: React.CSSProperties = {
 // ── Component ──────────────────────────────────────────────────────────────
 export default function MapCanvas(props: Props) {
   const {
-    map, tokens, enemyInstances, fogCells, fogSections, shapes, rulers,
+    map, tokens, enemyInstances, fogSections, activeFogLayerId, fogBrushMode, shapes, rulers,
     isDM, activeTool, toolColor, fogBrushSize, fogBrushShape,
     userId, sessionId, socket, dispatch,
   } = props;
@@ -146,10 +169,6 @@ export default function MapCanvas(props: Props) {
   const panStart   = useRef({ x: 0, y: 0 });
 
   // Section creation accumulator
-  const [sectionCells,  setSectionCells]  = useState<Array<{x:number;y:number}>>([]);
-  const [sectionName,   setSectionName]   = useState('');
-  const [sectionSaving, setSectionSaving] = useState(false);
-  const sectionRef = useRef<Array<{x:number;y:number}>>([]); // sync ref for event handlers
 
   const draggingToken    = useRef<MapToken | null>(null);
   const draggingGroup    = useRef<MapToken[]>([]);
@@ -162,19 +181,26 @@ export default function MapCanvas(props: Props) {
 
   const transforming = useRef<TransformRef | null>(null);
   const [transformPreview, setTransformPreview] = useState<{ shapeId: string; data: Record<string, number> } | null>(null);
+  const tokenScaling = useRef<TokenScaleTransformRef | null>(null);
+  const [tokenScalePreview, setTokenScalePreview] = useState<{ tokenId: string; scale: number } | null>(null);
 
   const [selectedShapeId,   setSelectedShapeId]  = useState<string | null>(null);
   const [selectedTokenIds,  setSelectedTokenIds] = useState<Set<string>>(new Set());
   const [tokenPanelId,      setTokenPanelId]     = useState<string | null>(null);
+  const [isTokenDragging,   setIsTokenDragging]  = useState(false);
   const tokenPanelRef = useRef<HTMLDivElement>(null);
   const [renaming,    setRenaming]    = useState<{ tokenId: string; label: string } | null>(null);
   const [showStatBlock,   setShowStatBlock]   = useState<string | null>(null);
   const [encounterToast,  setEncounterToast]  = useState<string | null>(null);
+  const [fogRasterVersion, setFogRasterVersion] = useState(0);
 
   const [localRuler, setLocalRuler] = useState<{ start: { x: number; y: number }; end: { x: number; y: number } } | null>(null);
 
   const mapImgRef  = useRef<HTMLImageElement | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+
+  // Per-section offscreen canvases keyed by section id
+  const layerCanvases = useRef<Map<string, HTMLCanvasElement>>(new Map());
 
   useEffect(() => {
     loadImage(map.image_url).then(img => {
@@ -187,8 +213,58 @@ export default function MapCanvas(props: Props) {
         panX.current = (c.clientWidth  - img.width  * s) / 2;
         panY.current = (c.clientHeight - img.height * s) / 2;
       }
+      // Clear per-section canvases on map change
+      layerCanvases.current.clear();
     }).catch(console.error);
   }, [map.image_url]);
+
+  // Tracks which image_data string is currently loaded into each layer canvas.
+  // We only reload the canvas when image_data actually changes — NOT on is_hidden toggling.
+  const loadedImageData = useRef<Map<string, string | null>>(new Map());
+
+  // Ensure each section has an offscreen canvas and load its image_data into it.
+  // Only reloads the canvas pixel data when image_data changes, not on visibility toggles.
+  useEffect(() => {
+    const cs = map.grid_cell_size;
+    const w  = map.width_cells  * cs;
+    const h  = map.height_cells * cs;
+    for (const sec of fogSections) {
+      const canvasExists = layerCanvases.current.has(sec.id);
+      if (!canvasExists) {
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        layerCanvases.current.set(sec.id, c);
+      }
+      // Only reload pixel data if image_data changed (or canvas was just created)
+      const prevImageData = loadedImageData.current.get(sec.id);
+      if (canvasExists && prevImageData === sec.image_data) continue;
+      const normalizedImageData = normalizeFogImageData(sec.image_data ?? null);
+      loadedImageData.current.set(sec.id, normalizedImageData);
+      const lc = layerCanvases.current.get(sec.id)!;
+      const lctx = lc.getContext('2d');
+      if (!lctx) continue;
+      if (normalizedImageData) {
+        const img = new Image();
+        img.onload = () => {
+          lctx.clearRect(0, 0, w, h);
+          lctx.drawImage(img, 0, 0);
+          // Force a redraw when offscreen fog raster finishes loading.
+          setFogRasterVersion(v => v + 1);
+        };
+        img.src = normalizedImageData;
+      } else {
+        lctx.clearRect(0, 0, w, h);
+        setFogRasterVersion(v => v + 1);
+      }
+    }
+    // Remove canvases for deleted sections
+    for (const [id] of layerCanvases.current) {
+      if (!fogSections.find(s => s.id === id)) {
+        layerCanvases.current.delete(id);
+        loadedImageData.current.delete(id);
+      }
+    }
+  }, [fogSections, map.id, map.grid_cell_size, map.width_cells, map.height_cells]);
 
   // Merge transform preview into shapes
   const activeShapes = shapes.map(s =>
@@ -239,29 +315,21 @@ export default function MapCanvas(props: Props) {
     ctx.restore();
 
     // ── Fog ───────────────────────────────────────────────────────────
-    // Default = revealed. No DB entry → cell is visible.
+    // Manual brush fog: rendered from pixel-precise offscreen canvas
+    // Section fog: rendered per-cell (sections are inherently grid-based)
     const fogAlpha = isDM ? 0.5 : 1.0;
-    const sectionHiddenCells = new Set<string>();
+    const fcW = map.width_cells  * map.grid_cell_size;
+    const fcH = map.height_cells * map.grid_cell_size;
+    ctx.save();
+    ctx.globalAlpha = fogAlpha;
+    // Render each section's fog layer; skip hidden sections (their fog is invisible)
     for (const sec of fogSections) {
-      if (sec.is_hidden) for (const c of sec.cells) sectionHiddenCells.add(fogKey(c.x, c.y));
+      if (sec.is_hidden) continue;
+      const lc = layerCanvases.current.get(sec.id);
+      if (lc) ctx.drawImage(lc, px, py, fcW * z, fcH * z);
     }
-    for (let col = sc; col < ec; col++) {
-      for (let row = sr; row < er; row++) {
-        const key = fogKey(col, row);
-        if ((fogCells.get(key) ?? true) === false || sectionHiddenCells.has(key)) {
-          ctx.fillStyle = `rgba(0,0,0,${fogAlpha})`;
-          ctx.fillRect(px + col * cz, py + row * cz, cz, cz);
-        }
-      }
-    }
-    if (activeTool === 'fog_section' && sectionRef.current.length > 0) {
-      ctx.fillStyle = 'rgba(100,180,255,0.35)';
-      ctx.strokeStyle = 'rgba(100,180,255,0.9)'; ctx.lineWidth = 1;
-      for (const c of sectionRef.current) {
-        ctx.fillRect(px + c.x * cz, py + c.y * cz, cz, cz);
-        ctx.strokeRect(px + c.x * cz, py + c.y * cz, cz, cz);
-      }
-    }
+    ctx.restore();
+
 
     // ── Shapes ────────────────────────────────────────────────────────
     for (const s of activeShapes) drawShape(ctx, s, px, py, z, cz, s.id === selectedShapeId);
@@ -278,7 +346,7 @@ export default function MapCanvas(props: Props) {
     // ── Tokens ────────────────────────────────────────────────────────
     for (const token of tokens) {
       if (token.is_hidden && !isDM) continue;
-      if (!isDM && !(fogCells.get(fogKey(token.cell_x, token.cell_y)) ?? true)) continue;
+      // Note: fog is now layer-based (no per-cell fogCells lookup)
 
       const isDrag  = draggingToken.current?.id === token.id;
       const isGDrag = draggingGroup.current.some(t => t.id === token.id);
@@ -296,7 +364,8 @@ export default function MapCanvas(props: Props) {
 
       const isEnemy  = token.entity_type === 'enemy';
       const inst     = isEnemy ? enemyInstances.find(e => e.id === token.entity_id) : null;
-      const sc2      = token.scale ?? 1;
+      const previewScale = tokenScalePreview?.tokenId === token.id ? tokenScalePreview.scale : null;
+      const sc2      = previewScale ?? token.scale ?? 1;
       const radius   = cz * 0.42 * sc2;
       const isSel    = selectedTokenIds.has(token.id);
 
@@ -356,15 +425,46 @@ export default function MapCanvas(props: Props) {
       ctx.restore();
     }
 
+    // Token resize handle (single selection)
+    if (activeTool === 'select' && isDM && selectedTokenIds.size === 1) {
+      const selectedTokenId = [...selectedTokenIds][0];
+      const selectedToken = tokens.find(t => t.id === selectedTokenId);
+      if (selectedToken && !(selectedToken.is_hidden && !isDM)) {
+        const sc2 = tokenScalePreview?.tokenId === selectedToken.id
+          ? tokenScalePreview.scale
+          : selectedToken.scale ?? 1;
+        const center = cellCentre(selectedToken.cell_x, selectedToken.cell_y, px, py, z, cs);
+        const radius = cz * 0.42 * sc2;
+        const handle = { x: center.x + radius + 12, y: center.y };
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(center.x + radius, center.y);
+        ctx.lineTo(handle.x, handle.y);
+        ctx.strokeStyle = T.gold + 'bb';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(handle.x, handle.y, HANDLE_R, 0, Math.PI * 2);
+        ctx.fillStyle = T.gold;
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1.5;
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     // ── Rulers ────────────────────────────────────────────────────────
     const fpc = map.feet_per_cell ?? 5;
     for (const [, r] of rulers) drawRuler(ctx, r.start, r.end, px, py, z, cs, T.rp + '99', fpc);
     if (localRuler) drawRuler(ctx, localRuler.start, localRuler.end, px, py, z, cs, T.gold, fpc);
 
     // ── Fog brush preview ─────────────────────────────────────────────
-    if (isDM && (activeTool === 'fog_reveal' || activeTool === 'fog_hide') && toolCurrent.current) {
+    if (isDM && activeTool === 'fog' && activeFogLayerId && toolCurrent.current) {
       const pos = toolCurrent.current;
-      const col = activeTool === 'fog_reveal' ? T.green + 'cc' : T.hp + 'cc';
+      const col = fogBrushMode === 'erase' ? T.green + 'cc' : T.hp + 'cc';
       ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
       if (fogBrushShape === 'fill') {
         const cell = toCell(pos.x, pos.y, px, py, z, cs);
@@ -392,10 +492,12 @@ export default function MapCanvas(props: Props) {
       }
     }
   }, [
-    map, tokens, enemyInstances, fogCells, fogSections, activeShapes, shapes, rulers,
-    isDM, activeTool, toolColor, fogBrushSize, fogBrushShape,
+    map, tokens, enemyInstances, fogSections, activeShapes, shapes, rulers,
+    isDM, activeTool, activeFogLayerId, fogBrushMode, toolColor, fogBrushSize, fogBrushShape,
     localRuler, mapLoaded, selectedShapeId, selectedTokenIds,
-    transformPreview, tokenPanelId, sectionCells,
+    transformPreview, tokenPanelId,
+    fogRasterVersion,
+    tokenScalePreview,
   ]);
 
   // ── Resize ────────────────────────────────────────────────────────────
@@ -435,6 +537,23 @@ export default function MapCanvas(props: Props) {
     return null;
   };
 
+  const hitTokenScaleHandle = (cx: number, cy: number): { tokenId: string; center: { x: number; y: number } } | null => {
+    if (activeTool !== 'select' || !isDM || selectedTokenIds.size !== 1) return null;
+    const tokenId = [...selectedTokenIds][0];
+    const token = tokens.find(t => t.id === tokenId);
+    if (!token) return null;
+    if (token.is_hidden && !isDM) return null;
+    const cs = map.grid_cell_size;
+    const center = cellCentre(token.cell_x, token.cell_y, panX.current, panY.current, zoom.current, cs);
+    const previewScale = tokenScalePreview?.tokenId === token.id ? tokenScalePreview.scale : null;
+    const radius = cs * zoom.current * 0.42 * (previewScale ?? token.scale ?? 1);
+    const handle = { x: center.x + radius + 12, y: center.y };
+    if ((cx - handle.x) ** 2 + (cy - handle.y) ** 2 <= HANDLE_HIT * HANDLE_HIT) {
+      return { tokenId, center };
+    }
+    return null;
+  };
+
   // ── Events ────────────────────────────────────────────────────────────
   const onMouseDown = (e: React.MouseEvent) => {
     const pos = getCanvasPos(e);
@@ -459,6 +578,17 @@ export default function MapCanvas(props: Props) {
       if (h) {
         const shape = activeShapes.find(s => s.id === h.shapeId)!;
         transforming.current = { shapeId: h.shapeId, handleType: h.handleType, startCanvas: pos, originalData: { ...(shape.data as Record<string, number>) } };
+        return;
+      }
+      const tokenHandle = hitTokenScaleHandle(pos.x, pos.y);
+      if (tokenHandle) {
+        const token = tokens.find(t => t.id === tokenHandle.tokenId);
+        tokenScaling.current = {
+          tokenId: tokenHandle.tokenId,
+          startCanvas: pos,
+          tokenCenter: tokenHandle.center,
+          originalScale: token?.scale ?? 1,
+        };
         return;
       }
       // Token
@@ -490,6 +620,7 @@ export default function MapCanvas(props: Props) {
       const hit = hitTestShape(pos.x, pos.y, activeShapes, panX.current, panY.current, zoom.current, cs);
       if (hit) {
         setSelectedShapeId(hit.id); setSelectedTokenIds(new Set()); setTokenPanelId(null);
+        // Allow immediate click-drag movement on first interaction (token-like behavior).
         transforming.current = { shapeId: hit.id, handleType: 'move', startCanvas: pos, originalData: { ...(hit.data as Record<string, number>) } };
         return;
       }
@@ -503,15 +634,9 @@ export default function MapCanvas(props: Props) {
       return;
     }
 
-    if (activeTool === 'fog_reveal' || activeTool === 'fog_hide') {
+    if (activeTool === 'fog' && activeFogLayerId) {
       isTooling.current = true; toolCurrent.current = pos;
       if (fogBrushShape === 'fill') applyFogFill(pos); else applyFogAt(pos);
-      return;
-    }
-
-    if (activeTool === 'fog_section') {
-      isTooling.current = true; toolCurrent.current = pos;
-      paintSectionCell(pos);
       return;
     }
 
@@ -530,6 +655,7 @@ export default function MapCanvas(props: Props) {
       draw(); return;
     }
     if (draggingToken.current) {
+      if (!isTokenDragging) setIsTokenDragging(true);
       dragCanvasPos.current = pos; draw(); return;
     }
     if (transforming.current) {
@@ -540,6 +666,14 @@ export default function MapCanvas(props: Props) {
       setTransformPreview({ shapeId: t.shapeId, data: applyTransform(t.handleType, t.originalData, dx, dy) });
       draw(); return;
     }
+    if (tokenScaling.current) {
+      const t = tokenScaling.current;
+      const baseRadius = map.grid_cell_size * zoom.current * 0.42;
+      const dist = Math.hypot(pos.x - t.tokenCenter.x, pos.y - t.tokenCenter.y);
+      const nextScale = Math.max(0.25, Math.min(4, dist / Math.max(1, baseRadius)));
+      setTokenScalePreview({ tokenId: t.tokenId, scale: nextScale });
+      draw(); return;
+    }
 
     toolCurrent.current = pos;
 
@@ -548,11 +682,8 @@ export default function MapCanvas(props: Props) {
       setLocalRuler({ start: toolStart.current, end: cell });
       socket.updateRuler(toolStart.current, cell);
     }
-    if ((activeTool === 'fog_reveal' || activeTool === 'fog_hide') && isTooling.current && fogBrushShape !== 'fill') {
+    if (activeTool === 'fog' && activeFogLayerId && isTooling.current && fogBrushShape !== 'fill') {
       applyFogAt(pos);
-    }
-    if (activeTool === 'fog_section' && isTooling.current) {
-      paintSectionCell(pos);
     }
     draw();
   };
@@ -576,26 +707,59 @@ export default function MapCanvas(props: Props) {
         dispatch({ type: 'TOKEN_MOVED', token_id: off.id, cell_x: gx, cell_y: gy });
       }
       draggingToken.current = null; draggingGroup.current = []; dragGroupOffsets.current = [];
+      setIsTokenDragging(false);
       draw(); return;
     }
 
     if (transforming.current && transformPreview) {
       const { shapeId, data } = transformPreview;
+      const currentShape = shapes.find(s => s.id === shapeId);
+      if (!currentShape) {
+        transforming.current = null;
+        setTransformPreview(null);
+        draw();
+        return;
+      }
+      const optimisticShape = { ...currentShape, data: { ...currentShape.data, ...data } };
+      // Optimistic apply so shape does not snap back while request is inflight.
+      dispatch({ type: 'SHAPE_UPDATED', shape: optimisticShape });
       api.patch(`/vtt/sessions/${sessionId}/shapes/${shapeId}`, { data })
         .then(r => { dispatch({ type: 'SHAPE_UPDATED', shape: r.data }); socket.updateShape(r.data); })
-        .catch(console.error);
+        .catch((err) => {
+          dispatch({ type: 'SHAPE_UPDATED', shape: currentShape });
+          console.error(err);
+        });
       transforming.current = null; setTransformPreview(null); draw(); return;
+    }
+    if (tokenScaling.current) {
+      const { tokenId } = tokenScaling.current;
+      const nextScale = tokenScalePreview?.tokenId === tokenId
+        ? tokenScalePreview.scale
+        : tokenScaling.current.originalScale;
+      updateToken(tokenId, { scale: nextScale });
+      tokenScaling.current = null;
+      setTokenScalePreview(null);
+      draw();
+      return;
     }
     transforming.current = null; setTransformPreview(null);
 
     if (activeTool === 'ruler' && isTooling.current) {
       isTooling.current = false; setLocalRuler(null); socket.clearRuler(); draw(); return;
     }
-    if ((activeTool === 'fog_reveal' || activeTool === 'fog_hide') && isTooling.current) {
-      isTooling.current = false; return;
-    }
-    if (activeTool === 'fog_section' && isTooling.current) {
-      isTooling.current = false; draw(); return;
+    if (activeTool === 'fog' && activeFogLayerId && isTooling.current) {
+      isTooling.current = false;
+      const lc = layerCanvases.current.get(activeFogLayerId);
+      if (lc && isDM) {
+        const dataURL = lc.toDataURL('image/png');
+        // Update local state immediately so the canvas isn't wiped on re-render
+        dispatch({ type: 'FOG_SECTION_IMAGE_UPDATED', section_id: activeFogLayerId, image_data: dataURL });
+        // Persist to DB via REST (reliable) and broadcast to players via socket
+        api.patch(`/vtt/sessions/${sessionId}/fog-sections/${activeFogLayerId}`, { image_data: dataURL })
+          .catch(console.error);
+        socket.syncSectionImage(activeFogLayerId, dataURL);
+      }
+      return;
     }
     if (['marker', 'circle', 'rect', 'line', 'cone'].includes(activeTool) && isTooling.current && toolStart.current) {
       isTooling.current = false;
@@ -623,106 +787,86 @@ export default function MapCanvas(props: Props) {
       isTooling.current = false; setLocalRuler(null); socket.clearRuler();
     }
     isPanning.current = false; draggingToken.current = null; draggingGroup.current = [];
-    toolCurrent.current = null; transforming.current = null; setTransformPreview(null);
+    setIsTokenDragging(false);
+    toolCurrent.current = null; transforming.current = null; tokenScaling.current = null;
+    setTransformPreview(null); setTokenScalePreview(null);
     draw();
-  };
-
-  // ── Fog section painting ─────────────────────────────────────────────────
-  const paintSectionCell = (pos: { x: number; y: number }) => {
-    const cell = toCell(pos.x, pos.y, panX.current, panY.current, zoom.current, map.grid_cell_size);
-    if (cell.x < 0 || cell.x >= map.width_cells || cell.y < 0 || cell.y >= map.height_cells) return;
-    const key = fogKey(cell.x, cell.y);
-    if (sectionRef.current.some(c => fogKey(c.x, c.y) === key)) return; // already added
-    const next = [...sectionRef.current, { x: cell.x, y: cell.y }];
-    sectionRef.current = next;
-    setSectionCells(next);
-    draw();
-  };
-
-  const saveFogSection = async () => {
-    if (!sectionRef.current.length || sectionSaving) return;
-    setSectionSaving(true);
-    try {
-      const { data: section } = await api.post(`/vtt/sessions/${sessionId}/fog-sections`, {
-        name:  sectionName.trim() || 'Section',
-        cells: sectionRef.current,
-      });
-      dispatch({ type: 'FOG_SECTION_ADDED', section });
-      sectionRef.current = [];
-      setSectionCells([]);
-      setSectionName('');
-    } catch (e) { console.error(e); }
-    setSectionSaving(false);
-  };
-
-  const cancelFogSection = () => {
-    sectionRef.current = [];
-    setSectionCells([]);
-    setSectionName('');
   };
 
     // ── Fog helpers ───────────────────────────────────────────────────────
   const applyFogAt = useCallback((pos: { x: number; y: number }) => {
+    if (!activeFogLayerId) return;
+    const lc = layerCanvases.current.get(activeFogLayerId);
+    if (!lc) return;
+    const lctx = lc.getContext('2d');
+    if (!lctx) return;
     const cs = map.grid_cell_size, z = zoom.current, px = panX.current, py = panY.current;
-    const revealed = activeTool === 'fog_reveal';
-    const r = fogBrushSize;
-    const cells: Array<{ x: number; y: number; revealed: boolean }> = [];
-
-    if (fogBrushShape === 'circle') {
-      const rPx = (r + 0.5) * cs * z;
-      const bR  = Math.ceil(r + 1);
-      const base = toCell(pos.x, pos.y, px, py, z, cs);
-      for (let dx = -bR; dx <= bR; dx++) {
-        for (let dy = -bR; dy <= bR; dy++) {
-          const cx = base.x + dx, cy = base.y + dy;
-          if (cx < 0 || cx >= map.width_cells || cy < 0 || cy >= map.height_cells) continue;
-          const ccx = px + (cx + 0.5) * cs * z;
-          const ccy = py + (cy + 0.5) * cs * z;
-          if ((ccx - pos.x) ** 2 + (ccy - pos.y) ** 2 <= rPx * rPx) cells.push({ x: cx, y: cy, revealed });
-        }
-      }
+    const r   = fogBrushSize;
+    // Convert screen position to layer-canvas space
+    const fcx = (pos.x - px) / z;
+    const fcy = (pos.y - py) / z;
+    lctx.save();
+    if (fogBrushMode === 'erase') {
+      lctx.globalCompositeOperation = 'destination-out';
     } else {
-      const cell = toCell(pos.x, pos.y, px, py, z, cs);
-      for (let dx = -r; dx <= r; dx++) {
-        for (let dy = -r; dy <= r; dy++) {
-          const cx = cell.x + dx, cy = cell.y + dy;
-          if (cx >= 0 && cx < map.width_cells && cy >= 0 && cy < map.height_cells) cells.push({ x: cx, y: cy, revealed });
-        }
-      }
+      lctx.globalCompositeOperation = 'source-over';
     }
-
-    if (!cells.length) return;
-    socket.updateFog(cells);
-    dispatch({ type: 'FOG_UPDATED', cells });
-  }, [activeTool, fogBrushSize, fogBrushShape, map]);
+    lctx.fillStyle = 'rgba(0,0,0,1)';
+    if (fogBrushShape === 'circle') {
+      const rPx = (r + 0.5) * cs;
+      lctx.beginPath();
+      lctx.arc(fcx, fcy, rPx, 0, Math.PI * 2);
+      lctx.fill();
+    } else {
+      const halfPx = (r + 0.5) * cs;
+      lctx.fillRect(fcx - halfPx, fcy - halfPx, halfPx * 2, halfPx * 2);
+    }
+    lctx.restore();
+  }, [activeFogLayerId, fogBrushMode, fogBrushSize, fogBrushShape, map]);
 
   const applyFogFill = useCallback((pos: { x: number; y: number }) => {
+    if (!activeFogLayerId) return;
+    const lc = layerCanvases.current.get(activeFogLayerId);
+    if (!lc) return;
+    const lctx = lc.getContext('2d');
+    if (!lctx) return;
     const cs = map.grid_cell_size;
-    const start = toCell(pos.x, pos.y, panX.current, panY.current, zoom.current, cs);
-    const targetState = fogCells.get(fogKey(start.x, start.y)) ?? true;
-    const newState    = activeTool === 'fog_reveal';
-    if (targetState === newState) return;
-    const visited = new Set<string>(), queue = [start];
-    const cells: Array<{ x: number; y: number; revealed: boolean }> = [];
-    while (queue.length && cells.length < 5000) {
-      const cell = queue.shift()!;
-      const key  = fogKey(cell.x, cell.y);
-      if (visited.has(key)) continue;
-      if (cell.x < 0 || cell.x >= map.width_cells || cell.y < 0 || cell.y >= map.height_cells) continue;
-      if ((fogCells.get(key) ?? true) !== targetState) continue;
-      visited.add(key);
-      cells.push({ x: cell.x, y: cell.y, revealed: newState });
-      queue.push({ x: cell.x+1, y: cell.y }, { x: cell.x-1, y: cell.y }, { x: cell.x, y: cell.y+1 }, { x: cell.x, y: cell.y-1 });
+    // Flood-fill the entire layer canvas in paint mode, or clear it in erase mode
+    lctx.save();
+    if (fogBrushMode === 'erase') {
+      lctx.globalCompositeOperation = 'destination-out';
+      lctx.fillStyle = 'rgba(0,0,0,1)';
+      lctx.fillRect(0, 0, lc.width, lc.height);
+    } else {
+      lctx.globalCompositeOperation = 'source-over';
+      lctx.fillStyle = 'rgba(0,0,0,1)';
+      lctx.fillRect(0, 0, lc.width, lc.height);
     }
-    socket.updateFog(cells);
-    dispatch({ type: 'FOG_UPDATED', cells });
-  }, [activeTool, fogCells, map]);
+    lctx.restore();
+  }, [activeFogLayerId, fogBrushMode, map]);
 
   // ── Token actions ─────────────────────────────────────────────────────
   const updateToken = (tokenId: string, changes: Record<string, unknown>) => {
+    const current = tokens.find(t => t.id === tokenId);
+    if (!current) return;
+
+    // Optimistic update: keep local interaction smooth while persistence happens.
+    const optimisticToken = {
+      ...current,
+      ...changes,
+    } as MapToken;
+    dispatch({ type: 'TOKEN_UPDATED', token: optimisticToken });
+
     api.patch(`/vtt/sessions/${sessionId}/tokens/${tokenId}`, changes)
-      .then(r => { dispatch({ type: 'TOKEN_UPDATED', token: r.data }); socket.updateToken(r.data); })
-      .catch(console.error);
+      .then(r => {
+        dispatch({ type: 'TOKEN_UPDATED', token: r.data });
+        socket.updateToken(r.data);
+      })
+      .catch(err => {
+        // Revert on failure so UI remains truthful.
+        dispatch({ type: 'TOKEN_UPDATED', token: current });
+        console.error(err);
+      });
   };
 
   const deleteToken = (tokenId: string) => {
@@ -804,7 +948,7 @@ export default function MapCanvas(props: Props) {
       )}
 
       {/* Token panel (DM only) */}
-      {panelToken && isDM && (
+      {panelToken && isDM && !isTokenDragging && (
         <div ref={tokenPanelRef} onMouseDown={e => e.stopPropagation()} style={{
           position:'absolute', transform:'translate(-50%,-100%)',
           background:T.card, border:`1px solid ${T.border}`, borderRadius:'6px',
@@ -832,16 +976,13 @@ export default function MapCanvas(props: Props) {
           {panelInst && <div style={{ fontSize:'10px', color:T.textMuted }}>HP <span style={{ color:T.hp, fontWeight:700 }}>{Number(panelInst.current_hp)}</span>/{Number(panelInst.max_hp)}</div>}
 
           {/* Scale */}
-          <div>
+          <div style={{ fontSize:'10px', color:T.textMuted, lineHeight:1.5 }}>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:'7px', letterSpacing:'0.16em', color:T.textDim, marginBottom:'4px' }}>SIZE</div>
-            <div style={{ display:'flex', gap:'3px' }}>
-              {([['S',0.7],['M',1.0],['L',1.5],['H',2.0]] as [string,number][]).map(([lbl,sc2]) => (
-                <button key={lbl} onClick={() => updateToken(panelToken.id, { scale: sc2 })}
-                  style={{ ...btnSt(panelSc === sc2 ? T.gold+'22' : 'transparent', panelSc === sc2 ? T.gold : T.textMuted), padding:'2px 6px', fontSize:'9px' }}>
-                  {lbl}
-                </button>
-              ))}
-            </div>
+            Drag the gold handle on the selected token to resize.
+            <button onClick={() => updateToken(panelToken.id, { scale: 1 })}
+              style={{ ...btnSt('transparent', T.textMuted), marginLeft:'8px', padding:'2px 8px', fontSize:'9px' }}>
+              RESET
+            </button>
           </div>
 
           {/* Actions */}
@@ -879,24 +1020,7 @@ export default function MapCanvas(props: Props) {
           boxShadow:'0 4px 16px rgba(0,0,0,0.6)' }}>
           {encounterToast}
         </div>
-      )}
-
-      {/* Fog section creation overlay */}
-      {isDM && activeTool === 'fog_section' && (
-        <div style={{ position:'absolute', bottom:'16px', left:'50%', transform:'translateX(-50%)',
-          background:T.card, border:`1px solid ${T.border}`, borderRadius:'6px', padding:'10px 16px',
-          display:'flex', alignItems:'center', gap:'10px', zIndex:30, pointerEvents:'auto',
-          boxShadow:'0 4px 16px rgba(0,0,0,0.6)' }}>
-          <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', color:'rgba(100,180,255,0.9)' }}>
-            PAINTING SECTION · {sectionCells.length} cells
-          </span>
-          <input value={sectionName} onChange={e => setSectionName(e.target.value)} placeholder="Section name…"
-            style={{ ...miniInputSt, width:'120px', fontSize:'10px' }} />
-          <button onClick={saveFogSection} disabled={sectionSaving || !sectionCells.length}
-            style={btnSt(T.gold+'22', T.gold)}>SAVE</button>
-          <button onClick={cancelFogSection} style={btnSt('transparent', T.textMuted)}>CANCEL</button>
-        </div>
-      )}
+      )}  
     </div>
   );
 }
@@ -1080,7 +1204,12 @@ function hitTestShape(cx:number,cy:number,shapes:CanvasShape[],px:number,py:numb
     const d=s.data as any;
     switch (s.shape_type) {
       case 'marker': { const sx=px+d.cell_x*cz+cz/2,sy=py+d.cell_y*cz+cz/2,r=Math.max(8,cz*0.28)*2.5; if(Math.hypot(cx-sx,cy-sy)<=r) return s; break; }
-      case 'circle': { const sx=px+d.cx*cz,sy=py+d.cy*cz,r=d.r*cz,dist=Math.hypot(cx-sx,cy-sy); if(dist<=r+6&&dist>=Math.max(0,r-6)) return s; break; }
+      case 'circle': {
+        const sx=px+d.cx*cz, sy=py+d.cy*cz, r=d.r*cz, dist=Math.hypot(cx-sx,cy-sy);
+        // Interactable across the full filled area (plus small tolerance), like cone.
+        if (dist <= r + 6) return s;
+        break;
+      }
       case 'rect': { const rx=px+d.x*cz,ry=py+d.y*cz,rw=d.w*cz,rh=d.h*cz; if(cx>=Math.min(rx,rx+rw)-6&&cx<=Math.max(rx,rx+rw)+6&&cy>=Math.min(ry,ry+rh)-6&&cy<=Math.max(ry,ry+rh)+6) return s; break; }
       case 'line': { const x1=px+d.x1*cz,y1=py+d.y1*cz,x2=px+d.x2*cz,y2=py+d.y2*cz,len=Math.hypot(x2-x1,y2-y1); if(len===0) break; const t=Math.max(0,Math.min(1,((cx-x1)*(x2-x1)+(cy-y1)*(y2-y1))/(len*len))); if(Math.hypot(cx-(x1+t*(x2-x1)),cy-(y1+t*(y2-y1)))<=8) return s; break; }
       case 'cone': { const ox=px+d.ox*cz,oy=py+d.oy*cz,ex=px+d.ex*cz,ey=py+d.ey*cz; if(Math.hypot(cx-ox,cy-oy)<=Math.hypot(ex-ox,ey-oy)+6) return s; break; }
@@ -1105,7 +1234,7 @@ function getCursor(tool:ToolMode, panning:boolean): string {
   switch (tool) {
     case 'pan':      return 'grab';
     case 'select':   return 'default';
-    case 'fog_reveal': case 'fog_hide': case 'fog_section': case 'ruler': return 'crosshair';
+    case 'fog': case 'ruler': return 'crosshair';
     case 'marker':   return 'cell';
     case 'circle': case 'rect': case 'line': case 'cone': return 'crosshair';
     case 'token_place': return 'copy';

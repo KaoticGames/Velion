@@ -1,6 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { characterKeys } from "@/hooks/useCharacter";
 import api from "@/lib/api";
+import { io } from "socket.io-client";
+import { useAuthStore } from "@/store/authStore";
+import DiceLog from "@/vtt/DiceLog";
+
+const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || "").replace(/\/$/, "");
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const RARITIES     = ['None','Common','Uncommon','Rare','Epic','Legendary','Mythic'];
@@ -160,7 +167,22 @@ function StableNumInput({ value, onChange, min=0, max=Infinity, style={}, placeh
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────
-export default function VelionSheet({ characterId = undefined, initialData = undefined }) {
+export default function VelionSheet({ characterId = undefined, initialData = undefined, sessionId = undefined }) {
+  const queryClient = useQueryClient();
+  const accessToken = useAuthStore(s => s.accessToken);
+  const rollUserId = useAuthStore(s => s.user?.id ?? '');
+  const rollSocketRef = useRef(null);
+  const [sessionDiceLog, setSessionDiceLog] = useState([]);
+  const [diceLogCollapsed, setDiceLogCollapsed] = useState(false);
+  const rollQueueRef = useRef([]);
+  const rollLockRef = useRef(false);
+  /** Set after `session:state` — do not emit `dice:roll` before join completes */
+  const sessionDiceReadyRef = useRef(false);
+  const pendingSessionDiceRollRef = useRef([]);
+  const weaponDmgCtxRef = useRef(null);
+  const weaponDmgAccRef = useRef([]);
+  const gemDmgCtxRef = useRef(null);
+  const gemDmgAccRef = useRef([]);
   const portRef = useRef();
   const [portrait, setPortrait] = useState(null);
   const onPort = e => {
@@ -185,18 +207,182 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const [saveModal, setSaveModal] = useState(null);
   // null | {attr,val,mod,roll,roll2,altRoll,total,nat20,nat1,mode,defSteps,defRpCommit}
 
+  const enqueueDiceRolls = (items) => {
+    const wasIdle = !rollLockRef.current;
+    items.forEach((i) => rollQueueRef.current.push(i));
+    if (wasIdle && rollQueueRef.current.length) {
+      rollLockRef.current = true;
+      window.dispatchEvent(new CustomEvent('velion:dice-roll-request', { detail: { ...rollQueueRef.current[0], autoOpen: false } }));
+    }
+  };
+  const requestSessionDiceRoll = (item) => enqueueDiceRolls([item]);
+
+  useEffect(() => {
+    const onDiceLogCommit = (e) => {
+      const entry = e?.detail;
+      if (!entry) return;
+      setSessionDiceLog((prev) => [entry, ...prev].slice(0, 120));
+    };
+    window.addEventListener('velion:dice-log-commit', onDiceLogCommit);
+    return () => window.removeEventListener('velion:dice-log-commit', onDiceLogCommit);
+  }, []);
+
+  useEffect(() => {
+    if (!sessionId || !accessToken || !SOCKET_URL) return;
+    sessionDiceReadyRef.current = false;
+    pendingSessionDiceRollRef.current = [];
+    const flushPendingDiceRolls = (sock) => {
+      if (!sock?.connected || !sessionDiceReadyRef.current) return;
+      const q = pendingSessionDiceRollRef.current;
+      if (!q.length) return;
+      const batch = q.splice(0, q.length);
+      batch.forEach((rest) => sock.emit('dice:roll', rest));
+    };
+    const socket = io(`${SOCKET_URL}/session`, {
+      auth: { token: accessToken },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 8,
+      reconnectionDelay: 1000,
+    });
+    rollSocketRef.current = socket;
+    socket.on('connect', () => {
+      sessionDiceReadyRef.current = false;
+      socket.emit('session:join', { session_id: sessionId, character_id: characterId });
+    });
+    socket.on('session:state', (data) => {
+      sessionDiceReadyRef.current = true;
+      const log = Array.isArray(data?.diceLog) ? data.diceLog : [];
+      setSessionDiceLog(log.slice(0, 120));
+      flushPendingDiceRolls(socket);
+    });
+    socket.on('dice:roll_start', (p) => {
+      window.dispatchEvent(new CustomEvent('velion:session-dice-roll-start', { detail: p }));
+    });
+    socket.on('dice:result', (entry) => {
+      window.dispatchEvent(new CustomEvent('velion:dice-result-pending', { detail: entry }));
+    });
+    const onNetworkRollStart = (e) => {
+      const d = e?.detail;
+      if (!d || !sessionId) return;
+      const sock = rollSocketRef.current;
+      if (sock?.connected) sock.emit('dice:roll_start', d);
+    };
+    window.addEventListener('velion:dice-roll-network-start', onNetworkRollStart);
+    const onGlobalRollSubmit = (event) => {
+      const payload = event?.detail;
+      if (!payload || !sessionId) return;
+      const { requestMeta: _rm, ...rest } = payload;
+      const sock = rollSocketRef.current;
+      const queueIfNeeded = () => {
+        if (pendingSessionDiceRollRef.current.length < 32) {
+          pendingSessionDiceRollRef.current.push(rest);
+        }
+      };
+      if (!sock) {
+        queueIfNeeded();
+        return;
+      }
+      if (sock.connected && sessionDiceReadyRef.current) {
+        sock.emit('dice:roll', rest);
+      } else {
+        queueIfNeeded();
+      }
+    };
+    const onDiceRollComplete = (event) => {
+      const detail = event?.detail;
+      const meta = detail?.requestMeta;
+      if (meta?.kind === 'atkCrit') {
+        const r = detail.results?.[0] ?? detail.total;
+        setAtkCritRoll(r);
+        setAtkIsCrit(r === 20);
+      } else if (meta?.kind === 'gemCrit') {
+        const r = detail.results?.[0] ?? detail.total;
+        setGemAtkCritRoll(r);
+        setGemAtkIsCrit(r === 20);
+      } else if (meta?.kind === 'oxCheck') {
+        const r = detail.results?.[0] ?? detail.total;
+        const amt = typeof meta.oxAmount === 'number' ? meta.oxAmount : 0;
+        setOxRoll(r);
+        if (r >= 10) { setOxResult('success'); setTempRP(amt); } else { setOxResult('fail'); setTempRP(0); }
+      } else if (meta?.kind === 'weaponDmg') {
+        const ctx = weaponDmgCtxRef.current;
+        if (ctx?.weapon) {
+          const idx = meta.idx;
+          const sum = (detail.results || []).reduce((s, n) => s + n, 0);
+          weaponDmgAccRef.current[idx] = {
+            element: ctx.channels[idx].element,
+            dice: ctx.channels[idx].dice,
+            rolls: detail.results || [],
+            sum,
+            dmg: detail.total,
+          };
+          if (weaponDmgAccRef.current.length === meta.count && weaponDmgAccRef.current.every(Boolean)) {
+            setAtkResult({
+              chs: weaponDmgAccRef.current,
+              critRoll: ctx.critRoll,
+              isCrit: ctx.isCrit,
+              rpUsed: ctx.staked,
+            });
+            if (ctx.tempRPFlag || ctx.oxFail) setActive((p) => new Set([...p, 'Overextended']));
+            weaponDmgCtxRef.current = null;
+          }
+        }
+      } else if (meta?.kind === 'gemDmg') {
+        const ctx = gemDmgCtxRef.current;
+        if (ctx?.gem) {
+          const idx = meta.idx;
+          gemDmgAccRef.current[idx] = {
+            rolls: detail.results || [],
+            sum: (detail.results || []).reduce((s, n) => s + n, 0),
+            dmg: detail.total,
+          };
+          if (gemDmgAccRef.current.length === meta.count && gemDmgAccRef.current.every(Boolean)) {
+            const staked = ctx.staked;
+            const nd = ctx.nd;
+            const dt = ctx.dt;
+            const isCrit = ctx.isCrit;
+            const rolls = gemDmgAccRef.current[0].rolls;
+            const sum = gemDmgAccRef.current[0].sum;
+            const dmg = gemDmgAccRef.current[0].dmg;
+            setGemAtkResult({ rolls, sum, dmg, rpUsed: staked, nd, dt, isCrit });
+            gemDmgCtxRef.current = null;
+          }
+        }
+      }
+      rollLockRef.current = false;
+      rollQueueRef.current.shift();
+      const nextPump = () => {
+        if (rollQueueRef.current.length === 0) return;
+        const next = rollQueueRef.current[0];
+        if (!next) return;
+        rollLockRef.current = true;
+        window.dispatchEvent(new CustomEvent('velion:dice-roll-request', { detail: { ...next, autoOpen: false } }));
+      };
+      nextPump();
+    };
+    window.addEventListener('velion:dice-roll-submit', onGlobalRollSubmit);
+    window.addEventListener('velion:dice-roll-complete', onDiceRollComplete);
+    return () => {
+      window.removeEventListener('velion:dice-roll-network-start', onNetworkRollStart);
+      window.removeEventListener('velion:dice-roll-submit', onGlobalRollSubmit);
+      window.removeEventListener('velion:dice-roll-complete', onDiceRollComplete);
+      sessionDiceReadyRef.current = false;
+      pendingSessionDiceRollRef.current = [];
+      socket.disconnect();
+      rollSocketRef.current = null;
+    };
+  }, [sessionId, accessToken, characterId, rollUserId]);
+
   const rollSave = (attr, mode = 'normal', defRpCommit = 0) => {
-    const val = attrs[attr], mod = calcMod(val);
-    let r1 = rollD(20), r2 = null, kept;
-    if (mode === 'advantage')         { r2 = rollD(20); kept = Math.max(r1, r2); }
-    else if (mode === 'disadvantage') { r2 = rollD(20); kept = Math.min(r1, r2); }
-    else kept = r1;
-    const defSteps = (mode === 'defensive') ? pSteps(defRpCommit, effBaseRP) : null;
-    setSaveModal({
-      attr, val, mod, roll: kept, roll2: r2,
-      altRoll: r2 !== null ? (mode === 'advantage' ? Math.min(r1,r2) : Math.max(r1,r2)) : null,
-      total: kept + mod, nat20: kept === 20, nat1: kept === 1,
-      mode, defSteps, defRpCommit,
+    const mod = calcMod(attrs[attr]);
+    const use2 = mode === 'advantage' || mode === 'disadvantage';
+    requestSessionDiceRoll({
+      formula: use2 ? '2d20' : '1d20',
+      label: mode === 'defensive' ? `${attr} Defensive Roll` : `${attr} Check`,
+      modifier: mod,
+      advantageKeep: mode === 'advantage' ? 'high' : mode === 'disadvantage' ? 'low' : undefined,
+      source_label: charName || 'Character',
     });
   };
 
@@ -281,7 +467,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         setAttrs({ Power: data.power, Agility: data.agility, Focus: data.focus, Presence: data.presence });
         setChosenAttr(cap(data.chosen_attribute));
         setGrowthPool(data.growth_pool_total);
-        setCurRP(data.base_rp);
+        setCurRP(data.current_rp ?? data.base_rp);
+        setBankRP(data.rp_banked ?? 0);
+        setBanking(!!data.rp_banking);
         setCurHP(Number(data.max_hp));
         setLuGRoll(data.growth_roll_this_level ?? null);
         setLuOpen(false);
@@ -362,9 +550,12 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   };
   // Stage 2a: roll d20 for crit first
   const doCritRoll = () => {
-    const r = rollD(20);
-    setAtkCritRoll(r);
-    setAtkIsCrit(r === 20);
+    requestSessionDiceRoll({
+      formula: '1d20',
+      label: `${atkWeapon?.name || 'Weapon'} Attack Roll`,
+      source_label: charName || 'Character',
+      requestMeta: { kind: 'atkCrit' },
+    });
   };
   // Stage 2b: roll damage dice — only available after crit roll
   const doDmgRoll = () => {
@@ -372,14 +563,29 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     const staked = atkStakedRef.current;
     const sides = parseInt(atkWeapon.dieType.replace(/\D/g,'')) || 6;
     const isCrit = atkIsCrit;
-    const chs = atkWeapon.channels.map(ch => {
-      const rolls = Array.from({length: Number(ch.dice)||1}, () => rollD(sides));
-      const sum   = rolls.reduce((s,r) => s+r, 0);
-      return {element:ch.element, dice:ch.dice, rolls, sum, dmg:sum*staked};
-    });
-    // Stay in 'roll' stage — result renders inline, no full-screen switch
-    setAtkResult({chs, critRoll:atkCritRoll, isCrit, rpUsed:staked});
-    if (tempRP>0||oxResult==='fail') setActive(p=>new Set([...p,'Overextended']));
+    const channels = atkWeapon.channels.map(ch => ({
+      element: ch.element,
+      dice: ch.dice,
+      nd: Number(ch.dice) || 1,
+    }));
+    weaponDmgCtxRef.current = {
+      weapon: atkWeapon,
+      channels,
+      critRoll: atkCritRoll,
+      isCrit,
+      staked,
+      tempRPFlag: tempRP > 0,
+      oxFail: oxResult === 'fail',
+    };
+    weaponDmgAccRef.current = new Array(channels.length).fill(null);
+    const items = channels.map((ch, idx) => ({
+      formula: `${ch.nd * (isCrit ? 2 : 1)}d${sides}`,
+      label: `${atkWeapon.name} ${ch.element} Damage`,
+      postMultiplier: staked,
+      source_label: charName || 'Character',
+      requestMeta: { kind: 'weaponDmg', idx, count: channels.length },
+    }));
+    enqueueDiceRolls(items);
   };
   const closeAtk = () => {
     setWepModal(null); setAtkWeapon(null);
@@ -401,7 +607,14 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setOxOpen(false); setOxAmount(0); setOxRoll(null); setOxResult(null); setTempRP(0);
     if (tempRP>0||oxResult==='fail') setActive(p=>new Set([...p,'Overextended']));
   };
-  const rollOX    = () => { const r=rollD(20); setOxRoll(r); if(r>=10){setOxResult('success');setTempRP(oxAmount);}else{setOxResult('fail');setTempRP(0);} };
+  const rollOX    = () => {
+    requestSessionDiceRoll({
+      formula: '1d20',
+      label: 'Overextend Check',
+      source_label: charName || 'Character',
+      requestMeta: { kind: 'oxCheck', oxAmount },
+    });
+  };
   const confirmOX = () => setOxOpen(false);
 
   // ── Spell Gems ──
@@ -442,19 +655,27 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setGemAtkStage('roll');
   };
   const doGemCritRoll = () => {
-    const r = rollD(20);
-    setGemAtkCritRoll(r);
-    setGemAtkIsCrit(r === 20);
+    requestSessionDiceRoll({
+      formula: '1d20',
+      label: `${gemAtkGem?.element || 'Spell'} Attack Roll`,
+      source_label: charName || 'Character',
+      requestMeta: { kind: 'gemCrit' },
+    });
   };
   const doGemRoll = () => {
     if (!gemAtkGem) return;
     const staked = gemAtkStakedRef.current;
     const nd  = Number(gemAtkGem.num_dice) || 1;
     const dt  = Number(gemAtkGem.die_type)  || 6;
-    const rolls = Array.from({length: nd}, () => rollD(dt));
-    const sum   = rolls.reduce((s,r) => s+r, 0);
-    const dmg   = sum * staked * (gemAtkIsCrit ? 2 : 1);
-    setGemAtkResult({rolls, sum, dmg, rpUsed: staked, nd, dt, isCrit: gemAtkIsCrit});
+    gemDmgCtxRef.current = { gem: gemAtkGem, staked, nd, dt, isCrit: gemAtkIsCrit };
+    gemDmgAccRef.current = [null];
+    requestSessionDiceRoll({
+      formula: `${nd}d${dt}`,
+      label: `${gemAtkGem.element} Spell Damage`,
+      postMultiplier: staked * (gemAtkIsCrit ? 2 : 1),
+      source_label: charName || 'Character',
+      requestMeta: { kind: 'gemDmg', idx: 0, count: 1 },
+    });
   };
   const closeGemAtk = () => {
     setWepModal(null); setGemAtkGem(null);
@@ -662,7 +883,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setGrowthPool(initialData.growth_pool_total || 0);
     const maxHp = Number(initialData.max_hp) || 0;
     setCurHP(Number(initialData.current_hp) || maxHp);
-    setCurRP(initialData.base_rp || 1);
+    setCurRP(initialData.current_rp ?? initialData.base_rp ?? 1);
+    setBankRP(initialData.rp_banked ?? 0);
+    setBanking(!!initialData.rp_banking);
     setGold(initialData.gold || 0);
     setNotes(initialData.notes || '');
     if (initialData.portrait_url) setPortrait(initialData.portrait_url);
@@ -756,6 +979,23 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData]);
 
+  // 2b. When the server row changes (VTT spent RP, refetch, etc.), sync session RP
+  const rpSyncRef = useRef({ characterId: null, rev: null });
+  useEffect(() => {
+    if (!initialData || !characterId || !initialized.current) return;
+    if (rpSyncRef.current.characterId !== characterId) {
+      rpSyncRef.current = { characterId, rev: null };
+    }
+    const rev =
+      initialData.updated_at ??
+      `${initialData.current_rp}:${initialData.rp_banked}:${initialData.rp_banking}:${initialData.base_rp}`;
+    if (rpSyncRef.current.rev === rev) return;
+    rpSyncRef.current.rev = rev;
+    setCurRP(initialData.current_rp ?? initialData.base_rp ?? 1);
+    setBankRP(initialData.rp_banked ?? 0);
+    setBanking(!!initialData.rp_banking);
+  }, [characterId, initialData?.updated_at, initialData?.current_rp, initialData?.rp_banked, initialData?.rp_banking, initialData?.base_rp]);
+
   // 3. Auto-save debounce — fires 3s after any saveable field changes
   const saveTimer = useRef(null);
   useEffect(() => {
@@ -769,7 +1009,11 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           current_hp: curHP,
           gold,
           notes,
+          current_rp: curRP,
+          rp_banked:  bankRP,
+          rp_banking: banking,
         });
+        queryClient.invalidateQueries({ queryKey: characterKeys.detail(characterId) });
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus(null), 2500);
       } catch {
@@ -777,7 +1021,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       }
     }, 3000);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characterId, charName, curHP, gold, notes]);
+  }, [characterId, charName, curHP, gold, notes, curRP, bankRP, banking]);
 
   // Stable callbacks to avoid focus loss in damage inputs
   const setDmgAmount = useCallback((idx,val) => {
@@ -1007,7 +1251,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               {banking?'● BANKED':'○ BANK'}
             </button>
           </div>
-          {bankBlocked&&<div style={{fontSize:'11px',color:'#803020',marginTop:'4px',fontFamily:"'Cinzel',serif",fontSize:'10px'}}>Banking blocked by active state</div>}
+          {bankBlocked&&<div style={{fontSize:'10px',color:'#803020',marginTop:'4px',fontFamily:"'Cinzel',serif"}}>Banking blocked by active state</div>}
         </div>
 
         {/* ── Hit Points ── */}
@@ -2008,6 +2252,131 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               style={{...Btn('#50a050'),padding:'10px',background:'#062006',fontSize:'12px',opacity:Number(healAmt)>0?1:0.28}}>✦ HEAL</button>
           </div>
         </ModalWrap>
+      )}
+
+      {sessionId && (
+        <div
+          style={{
+            position:'fixed',
+            right:'12px',
+            top:'72px',
+            width: diceLogCollapsed ? '42px' : '300px',
+            height: 'min(68vh, 520px)',
+            zIndex: 980,
+            background:'#0d1018ee',
+            border:`1px solid ${T.border}`,
+            borderRadius:'6px',
+            boxShadow:'0 8px 28px rgba(0,0,0,0.45)',
+            display:'flex',
+            flexDirection:'column',
+            overflow:'hidden',
+            transition:'width 0.15s ease',
+          }}
+        >
+          {diceLogCollapsed ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', padding: '6px 0', flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => setDiceLogCollapsed(false)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: T.textMuted,
+                  fontFamily: "'Cinzel',serif",
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  padding: '4px',
+                }}
+                title="Expand dice log"
+              >
+                ◀
+              </button>
+              <button
+                type="button"
+                title="Open 3D dice roller (full screen)"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('velion:dice-roll-request', {
+                      detail: {
+                        formula: '1d20',
+                        label: '',
+                        visibility: 'public',
+                        source_label: charName || 'Character',
+                        autoOpen: true,
+                      },
+                    }),
+                  );
+                }}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  fontSize: '20px',
+                  lineHeight: 1,
+                  padding: '2px',
+                }}
+              >
+                🎲
+              </button>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', flexShrink: 0, borderBottom: `1px solid ${T.border}` }}>
+                <button
+                  type="button"
+                  onClick={() => setDiceLogCollapsed(true)}
+                  style={{
+                    flex: 1,
+                    border: 'none',
+                    borderRight: `1px solid ${T.border}`,
+                    background: 'transparent',
+                    color: T.textMuted,
+                    fontFamily: "'Cinzel',serif",
+                    fontSize: '9px',
+                    letterSpacing: '0.16em',
+                    padding: '8px',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                  title="Collapse dice log"
+                >
+                  DICE LOG ▶
+                </button>
+                <button
+                  type="button"
+                  title="Open 3D dice roller (full screen)"
+                  onClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent('velion:dice-roll-request', {
+                        detail: {
+                          formula: '1d20',
+                          label: '',
+                          visibility: 'public',
+                          source_label: charName || 'Character',
+                          autoOpen: true,
+                        },
+                      }),
+                    );
+                  }}
+                  style={{
+                    width: '44px',
+                    flexShrink: 0,
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    fontSize: '18px',
+                    color: T.gold,
+                  }}
+                >
+                  🎲
+                </button>
+              </div>
+              <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                <DiceLog entries={sessionDiceLog} userId={rollUserId} isDM={false} />
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       {/* ── Context Menu ─────────────────────────────────────────────── */}

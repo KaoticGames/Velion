@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import { users } from './users';
 import { campaigns } from './campaigns';
 import { characters } from './characters';
+import { sessions }   from './sessions';
 
 // ── Maps ──────────────────────────────────────────────────────────────────
 export const maps = pgTable('maps', {
@@ -18,25 +19,14 @@ export const maps = pgTable('maps', {
   created_at:     timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const mapFogCells = pgTable('map_fog_cells', {
-  id:          uuid('id').primaryKey().defaultRandom(),
-  map_id:      uuid('map_id').notNull().references(() => maps.id, { onDelete: 'cascade' }),
-  cell_x:      integer('cell_x').notNull(),
-  cell_y:      integer('cell_y').notNull(),
-  is_revealed: boolean('is_revealed').notNull().default(false),
-}, (table) => ({
-  // Unique constraint required for ON CONFLICT upsert in fog-of-war updates
-  cellUnique: unique('map_fog_cells_map_cell_unique').on(table.map_id, table.cell_x, table.cell_y),
-}));
 
 // ── Fog Sections ─────────────────────────────────────────────────────────
 // Named regions of fog that can be toggled on/off as a unit by the DM.
-// cells stores [{x,y}] grid coordinates belonging to the section.
 export const fogSections = pgTable('fog_sections', {
   id:         uuid('id').primaryKey().defaultRandom(),
   map_id:     uuid('map_id').notNull().references(() => maps.id, { onDelete: 'cascade' }),
   name:       text('name').notNull().default('Section'),
-  cells:      jsonb('cells').notNull().default([]),  // Array<{x:number,y:number}>
+  image_data: text('image_data'),                    // base64 PNG — pixel-precise fog for this layer
   is_hidden:  boolean('is_hidden').notNull().default(false),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

@@ -7,6 +7,8 @@ export const users = pgTable('users', {
   display_name:      text('display_name').notNull(),
   avatar_url:        text('avatar_url'),
   subscription_tier: text('subscription_tier').notNull().default('free'),
+  /** When BETA_GATE_ENABLED, must be true to log in / refresh (set manually or true on successful gated register). */
+  beta_access:       boolean('beta_access').notNull().default(true),
   stripe_customer_id:text('stripe_customer_id').unique(),
   created_at:        timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   deleted_at:        timestamp('deleted_at', { withTimezone: true }),
@@ -38,12 +40,13 @@ export type Subscription = typeof subscriptions.$inferSelect;
 
 // ── Early Access Signups ───────────────────────────────────────────────────
 export const earlyAccessSignups = pgTable('early_access_signups', {
-  id:         uuid('id').primaryKey().defaultRandom(),
-  email:      text('email').notNull(),
-  name:       text('name'),
-  // optional source tag for tracking where signups came from
-  source:     text('source').notNull().default('landing'),
-  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  id:           uuid('id').primaryKey().defaultRandom(),
+  email:        text('email').notNull(),
+  name:         text('name'),
+  source:       text('source').notNull().default('landing'),
+  beta_granted: boolean('beta_granted').notNull().default(false),
+  granted_at:   timestamp('granted_at', { withTimezone: true }),
+  created_at:   timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   emailUnique: unique('early_access_email_unique').on(table.email),
 }));

@@ -1,0 +1,2 @@
+ALTER TABLE "early_access_signups" ADD COLUMN "beta_granted" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "early_access_signups" ADD COLUMN "granted_at" timestamp with time zone;

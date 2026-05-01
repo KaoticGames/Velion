@@ -21,6 +21,12 @@ export const characters = pgTable('characters', {
 
   // Computed + cached (recalculated on attribute/level change)
   base_rp:           integer('base_rp').notNull().default(0),
+  /** Spendable RP this turn — synced with VTT + character sheet (authoritative in DB). */
+  current_rp:        integer('current_rp').notNull().default(0),
+  /** RP banked for the next turn (sheet / VTT bank flow). */
+  rp_banked:         integer('rp_banked').notNull().default(0),
+  /** Whether the player has committed banking for end-of-turn. */
+  rp_banking:        boolean('rp_banking').notNull().default(false),
   // bigint: at level 50+ max_hp exceeds int4 ceiling
   max_hp:            bigint('max_hp', { mode: 'bigint' }).notNull().default(sql`0`),
   current_hp:        bigint('current_hp', { mode: 'bigint' }).notNull().default(sql`0`),

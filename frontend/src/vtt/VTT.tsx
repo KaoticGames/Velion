@@ -10,17 +10,18 @@
  * Players in state 2 see a holding screen.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore }    from '@/store/authStore';
+import { api } from '@/lib/api';
 import { useVTTSocket }    from './useVTTSocket';
 import { useVTTStore }     from './useVTTState';
 import MapCanvas           from './MapCanvas';
 import DMToolbar           from './DMToolbar';
 import PartyPanel          from './PartyPanel';
-import DiceRollerPortal, { DiceToolbarButton } from './DiceRoller';
+import PlayerBattleHUD     from './PlayerBattleHUD';
 import DiceLog             from './DiceLog';
-
 // ── Theme ──────────────────────────────────────────────────────────────────
 
 const T = {
@@ -52,13 +53,42 @@ export default function VTT() {
 
   const {
     connected, sessionEnded, session, isDM, activeMap,
-    diceLog, diceVisibility, activeTool, toolColor, fogBrushSize, fogBrushShape,
-    tokens, enemyInstances, fogCells, fogSections, shapes, rulers, campaignMaps,
+    diceLog, diceVisibility, activeTool, toolColor, fogBrushSize, fogBrushShape, fogBrushMode,
+    tokens, enemyInstances, fogSections, activeFogLayerId, shapes, rulers, campaignMaps,
     dispatch,
   } = useVTTStore();
 
-  const [showDiceTray, setShowDiceTray] = useState(false);
-  const socket = useVTTSocket(sessionId, undefined);
+  /**
+   * Party character for this account in the campaign (players and DMs who joined with a PC).
+   * Used for battle HUD + party “YOU”; enemy tokens are never matched (`entity_type === 'character'` only).
+   */
+  const { data: currentCharacterId = null } = useQuery({
+    queryKey: ['vtt-my-campaign-character', session?.campaign_id, user?.id],
+    enabled: !!connected && !!session?.campaign_id && !!user?.id,
+    queryFn: async (): Promise<string | null> => {
+      const { data } = await api.get<{
+        members?: Array<{ membership: { user_id: string; character_id: string }; character: { id: string } | null }>;
+      }>(`/campaigns/${session!.campaign_id}`);
+      const members = data.members;
+      if (!Array.isArray(members)) return null;
+      const row = members.find((m) => m.membership.user_id === user!.id);
+      if (!row) return null;
+      return row.character?.id ?? row.membership.character_id ?? null;
+    },
+    staleTime: 60_000,
+  });
+
+  const socket = useVTTSocket(sessionId, currentCharacterId ?? undefined);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    localStorage.setItem('activeVttSessionId', sessionId);
+    return () => {
+      if (localStorage.getItem('activeVttSessionId') === sessionId) {
+        localStorage.removeItem('activeVttSessionId');
+      }
+    };
+  }, [sessionId]);
 
   // ── Heartbeat to keep session alive ─────────────────────────────────
   useEffect(() => {
@@ -79,6 +109,26 @@ export default function VTT() {
       setTimeout(() => navigate('/campaigns'), 3000);
     }
   }, [sessionEnded]);
+
+  useEffect(() => {
+    const onGlobalRoll = (event: Event) => {
+      const custom = event as CustomEvent<{
+        formula: string;
+        label: string;
+        visibility: 'public' | 'private' | 'dm';
+        results: number[];
+        total: number;
+        source_label?: string;
+        requestMeta?: unknown;
+      }>;
+      const payload = custom.detail;
+      if (!payload) return;
+      const { requestMeta: _rm, ...rest } = payload;
+      socket.rollDice(rest);
+    };
+    window.addEventListener('velion:dice-roll-submit', onGlobalRoll as EventListener);
+    return () => window.removeEventListener('velion:dice-roll-submit', onGlobalRoll as EventListener);
+  }, [socket]);
 
   // ── Loading ──────────────────────────────────────────────────────────
   if (!connected || !session) {
@@ -103,15 +153,18 @@ export default function VTT() {
 
   // ── Player waiting screen ────────────────────────────────────────────
   if (!isDM && !session.is_started) {
-    return (
-      <WaitingScreen sessionName={session.name} />
-    );
+    return <WaitingScreen sessionName={session.name} />;
   }
 
   // ── Main VTT layout ──────────────────────────────────────────────────
   const isStarted = session.is_started;
+  const ownCharacterToken =
+    isStarted && currentCharacterId
+      ? tokens.find((t) => t.entity_type === 'character' && t.entity_id === currentCharacterId) ?? null
+      : null;
 
   return (
+    <>
     <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:T.bg, overflow:'hidden', fontFamily:"'Inter',sans-serif" }}>
 
       {/* ── Top bar ──────────────────────────────────────────────────── */}
@@ -176,41 +229,45 @@ export default function VTT() {
       {/* ── Body ─────────────────────────────────────────────────────── */}
       <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
 
-        {/* Left sidebar — DM tools (DM only) */}
-        {isDM && (
-          <DMToolbar
-            activeTool={activeTool}
-            toolColor={toolColor}
-            fogBrushSize={fogBrushSize}
-            fogBrushShape={fogBrushShape}
-            fogSections={fogSections}
-            campaignMaps={campaignMaps}
-            activeMapId={activeMap?.id ?? null}
-            sessionId={sessionId!}
-            campaignId={session.campaign_id}
-            showDiceTray={showDiceTray}
-            onToggleDiceTray={() => setShowDiceTray(v => !v)}
-            socket={socket}
-            dispatch={dispatch}
-          />
-        )}
-
-        {/* Player dice toolbar — shown when not DM */}
-        {!isDM && (
-          <div style={{ width:'56px', display:'flex', flexDirection:'column', alignItems:'center', background:T.surface, borderRight:`1px solid ${T.border}`, padding:'8px 0', flexShrink:0 }}>
-            <DiceToolbarButton open={showDiceTray} onClick={() => setShowDiceTray(v => !v)} />
-          </div>
-        )}
-
         {/* Map canvas — centre */}
         <div style={{ flex:1, position:'relative', overflow:'hidden' }}>
+          {/* Floating DM toolbar overlay */}
+          {isDM && (
+            <div style={{
+              position:'absolute',
+              left:14,
+              top:14,
+              zIndex:40,
+              pointerEvents:'none',
+            }}>
+              <div style={{ pointerEvents:'auto' }}>
+                <DMToolbar
+                  activeTool={activeTool}
+                  toolColor={toolColor}
+                  fogBrushSize={fogBrushSize}
+                  fogBrushShape={fogBrushShape}
+                  fogBrushMode={fogBrushMode}
+                  activeFogLayerId={activeFogLayerId}
+                  fogSections={fogSections}
+                  campaignMaps={campaignMaps}
+                  activeMapId={activeMap?.id ?? null}
+                  sessionId={sessionId!}
+                  campaignId={session.campaign_id}
+                  socket={socket}
+                  dispatch={dispatch}
+                />
+              </div>
+            </div>
+          )}
+
           {activeMap ? (
             <MapCanvas
               map={activeMap}
               tokens={tokens}
               enemyInstances={enemyInstances}
-              fogCells={fogCells}
               fogSections={fogSections}
+              activeFogLayerId={activeFogLayerId}
+              fogBrushMode={fogBrushMode}
               shapes={shapes}
               rulers={rulers}
               isDM={isDM}
@@ -226,6 +283,14 @@ export default function VTT() {
           ) : (
             <NoMapPlaceholder isDM={isDM} />
           )}
+
+          {ownCharacterToken && (
+            <PlayerBattleHUD
+              token={ownCharacterToken}
+              characterId={currentCharacterId!}
+              diceVisibility={diceVisibility}
+            />
+          )}
         </div>
 
         {/* Right sidebar */}
@@ -237,6 +302,8 @@ export default function VTT() {
               enemyInstances={enemyInstances}
               isDM={isDM}
               sessionId={sessionId!}
+              campaignId={session.campaign_id}
+              currentCharacterId={currentCharacterId}
               socket={socket}
             />
           </div>
@@ -251,18 +318,8 @@ export default function VTT() {
           </div>
         </div>
       </div>
-      {/* Dice tray — always mounted, shown/hidden via CSS so WebGL canvas stays alive */}
-      <DiceRollerPortal
-        open={showDiceTray}
-        toolbarWidth={56}
-        sessionId={sessionId!}
-        visibility={diceVisibility}
-        isDM={isDM}
-        socket={socket}
-        dispatch={dispatch}
-        onClose={() => setShowDiceTray(false)}
-      />
     </div>
+    </>
   );
 }
 

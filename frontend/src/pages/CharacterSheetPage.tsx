@@ -16,6 +16,7 @@
  * next integration task.
  */
 
+import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useCharacter, type CharacterDetail } from '@/hooks/useCharacter';
 import { useCombatSync }  from '@/hooks/useCombatSync';
@@ -27,12 +28,43 @@ import _VelionCharacterSheet from '@/character-sheet/VelionCharacterSheet';
 const VelionCharacterSheetImpl = _VelionCharacterSheet as unknown as React.ComponentType<{
   characterId?: string;
   initialData?: CharacterDetail;
+  sessionId?: string;
 }>;
 
 export default function CharacterSheetPage() {
   const { id }            = useParams<{ id: string }>();
   const [searchParams]    = useSearchParams();
-  const sessionId         = searchParams.get('session') ?? undefined;
+  const querySessionId    = searchParams.get('session') ?? undefined;
+  const [storedSessionId, setStoredSessionId] = useState<string | undefined>(() => localStorage.getItem('activeVttSessionId') ?? undefined);
+  const sessionId         = querySessionId ?? storedSessionId;
+
+  useEffect(() => {
+    if (querySessionId) return;
+
+    const syncFromStorage = () => {
+      const next = localStorage.getItem('activeVttSessionId') ?? undefined;
+      setStoredSessionId(next);
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === 'activeVttSessionId') {
+        syncFromStorage();
+      }
+    };
+
+    const onFocus = () => {
+      syncFromStorage();
+    };
+
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [querySessionId]);
 
   // ── Data hooks ─────────────────────────────────────────────────────────
   const { data: character, isLoading } = useCharacter(id);
@@ -64,6 +96,7 @@ export default function CharacterSheetPage() {
       <VelionCharacterSheetImpl
         characterId={id ?? undefined}
         initialData={character ?? undefined}
+        sessionId={sessionId}
       />
 
       {/* DEV: show integration status overlay */}

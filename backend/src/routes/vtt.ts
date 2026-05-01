@@ -16,7 +16,7 @@ import { db }                        from '../db';
 import {
   sessions, campaigns, campaignCharacters,
   mapTokens, sessionEnemyInstances, canvasShapes, diceLogEntries,
-  maps,
+  maps, fogSections,
 } from '../db/schema';
 import { requireAuth, requireDM }    from '../middleware/auth';
 
@@ -24,6 +24,45 @@ const router = Router();
 router.use(requireAuth);
 
 const param = (p: string | string[]): string => Array.isArray(p) ? p[0] : p;
+
+const isJsonColumnInputError = (err: unknown): boolean => {
+  const code = (err as { code?: string } | null)?.code;
+  return code === '22P02';
+};
+
+const isUndefinedColumnError = (err: unknown): boolean => {
+  const code = (err as { code?: string } | null)?.code;
+  return code === '42703';
+};
+
+let ensuredMapTokenCompatColumns = false;
+const ensureMapTokenCompatColumns = async (): Promise<void> => {
+  if (ensuredMapTokenCompatColumns) return;
+  await db.execute(sql`
+    ALTER TABLE "map_tokens"
+      ADD COLUMN IF NOT EXISTS "scale" real NOT NULL DEFAULT 1;
+  `);
+  await db.execute(sql`
+    ALTER TABLE "map_tokens"
+      ADD COLUMN IF NOT EXISTS "is_hidden" boolean NOT NULL DEFAULT false;
+  `);
+  await db.execute(sql`
+    ALTER TABLE "map_tokens"
+      ADD COLUMN IF NOT EXISTS "group_id" uuid;
+  `);
+  ensuredMapTokenCompatColumns = true;
+};
+
+const normalizeFogSectionUpdates = async (sectionId: string, updates: Record<string, unknown>) => {
+  try {
+    return await db.update(fogSections).set(updates).where(eq(fogSections.id, sectionId)).returning();
+  } catch (err) {
+    // Backward compatibility for environments where image_data is still json/jsonb.
+    if (!isJsonColumnInputError(err) || updates.image_data === undefined) throw err;
+    const retryUpdates = { ...updates, image_data: JSON.stringify(updates.image_data) };
+    return await db.update(fogSections).set(retryUpdates).where(eq(fogSections.id, sectionId)).returning();
+  }
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -310,13 +349,39 @@ router.patch('/sessions/:id/tokens/:tokenId', async (req: Request, res: Response
   if (cell_y     !== undefined) updates.cell_y     = cell_y;
   if (label      !== undefined) updates.label      = label;
   if (token_url  !== undefined) updates.token_url  = token_url;
-  if (scale      !== undefined) updates.scale      = Math.max(0.25, Math.min(4, scale));
+  if (scale      !== undefined) {
+    if (!Number.isFinite(scale)) {
+      res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'scale must be a finite number.', status: 422 } });
+      return;
+    }
+    updates.scale = Math.max(0.25, Math.min(4, scale));
+  }
   if (is_hidden  !== undefined) updates.is_hidden  = is_hidden;
   if (group_id   !== undefined) updates.group_id   = group_id; // null = ungroup
 
-  const [updated] = await db.update(mapTokens).set(updates)
-    .where(and(eq(mapTokens.id, tokenId), eq(mapTokens.session_id, sessionId)))
-    .returning();
+  if (Object.keys(updates).length === 0) {
+    res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'No fields to update.', status: 422 } });
+    return;
+  }
+
+  let updated;
+  try {
+    [updated] = await db.update(mapTokens).set(updates)
+      .where(and(eq(mapTokens.id, tokenId), eq(mapTokens.session_id, sessionId)))
+      .returning();
+  } catch (err) {
+    // Some dev DBs may be behind migrations and missing token columns.
+    if (!isUndefinedColumnError(err)) throw err;
+    await ensureMapTokenCompatColumns();
+    [updated] = await db.update(mapTokens).set(updates)
+      .where(and(eq(mapTokens.id, tokenId), eq(mapTokens.session_id, sessionId)))
+      .returning();
+  }
+
+  if (!updated) {
+    res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Token not found.', status: 404 } });
+    return;
+  }
 
   res.json(updated);
 });
@@ -551,50 +616,10 @@ router.post('/sessions/:id/dice-log', async (req: Request, res: Response): Promi
 // FOG OF WAR
 // ═══════════════════════════════════════════════════════════════════════════
 
-// ── POST /vtt/sessions/:id/fog ────────────────────────────────────────────
-// DM updates fog cells in bulk. cells: [{ x, y, revealed }]
-router.post('/sessions/:id/fog', requireDM, async (req: Request, res: Response): Promise<void> => {
-  const userId    = req.user!.user_id;
-  const sessionId = param(req.params.id);
+// FOG IMAGE (pixel-precise)
+// ═══════════════════════════════════════════════════════════════════════════
 
-  const ctx = await resolveSession(sessionId, userId);
-  if (!ctx || !ctx.isDM) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'DM only.', status: 403 } }); return; }
-  if (!ctx.session.active_map_id) { res.status(422).json({ error: { code: 'NO_ACTIVE_MAP', message: 'No active map.', status: 422 } }); return; }
 
-  const { cells } = req.body as { cells: Array<{ x: number; y: number; revealed: boolean }> };
-  if (!cells?.length) { res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'cells array required.', status: 422 } }); return; }
-
-  const { mapFogCells } = await import('../db/schema');
-  const mapId = ctx.session.active_map_id;
-
-  // Upsert each cell
-  for (const cell of cells) {
-    await db.insert(mapFogCells)
-      .values({ map_id: mapId, cell_x: cell.x, cell_y: cell.y, is_revealed: cell.revealed })
-      .onConflictDoUpdate({
-        target: [mapFogCells.map_id, mapFogCells.cell_x, mapFogCells.cell_y],
-        set:    { is_revealed: cell.revealed },
-      });
-  }
-
-  res.json({ updated: cells.length });
-});
-
-// ── GET /vtt/sessions/:id/fog ─────────────────────────────────────────────
-router.get('/sessions/:id/fog', async (req: Request, res: Response): Promise<void> => {
-  const userId    = req.user!.user_id;
-  const sessionId = param(req.params.id);
-
-  const ctx = await resolveSession(sessionId, userId);
-  if (!ctx) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Access denied.', status: 403 } }); return; }
-  if (!ctx.session.active_map_id) { res.json({ data: [] }); return; }
-
-  const { mapFogCells } = await import('../db/schema');
-  const cells = await db.select().from(mapFogCells)
-    .where(eq(mapFogCells.map_id, ctx.session.active_map_id));
-
-  res.json({ data: cells });
-});
 
 // FOG SECTIONS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -606,7 +631,6 @@ router.get('/sessions/:id/fog-sections', async (req: Request, res: Response): Pr
   const ctx = await resolveSession(sessionId, userId);
   if (!ctx) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Access denied.', status: 403 } }); return; }
   if (!ctx.session.active_map_id) { res.json({ data: [] }); return; }
-  const { fogSections } = await import('../db/schema');
   const sections = await db.select().from(fogSections).where(eq(fogSections.map_id, ctx.session.active_map_id));
   res.json({ data: sections });
 });
@@ -619,18 +643,20 @@ router.post('/sessions/:id/fog-sections', requireDM, async (req: Request, res: R
   if (!ctx || !ctx.isDM) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'DM only.', status: 403 } }); return; }
   if (!ctx.session.active_map_id) { res.status(422).json({ error: { code: 'NO_ACTIVE_MAP', message: 'No active map.', status: 422 } }); return; }
 
-  const { name, cells } = req.body as { name: string; cells: Array<{ x: number; y: number }> };
-  const { fogSections } = await import('../db/schema');
-  const [section] = await db.insert(fogSections).values({
-    map_id: ctx.session.active_map_id,
-    name:   name ?? 'Section',
-    cells:  cells ?? [],
-    is_hidden: false,
-  }).returning();
-
-  const ns = req.app.get('io') as import('socket.io').Server;
-  ns.to(`session:${sessionId}`).emit('fog_section:created', { section });
-  res.json(section);
+  const { name } = req.body as { name?: string };
+  try {
+    const [section] = await db.insert(fogSections).values({
+      map_id:    ctx.session.active_map_id,
+      name:      name ?? 'Layer',
+      is_hidden: false,
+    }).returning();
+    const ns = req.app.get('io') as import('socket.io').Server | undefined;
+    ns?.to(`session:${sessionId}`).emit('fog_section:created', { section });
+    res.json(section);
+  } catch (err) {
+    console.error('[fog-sections] insert error:', err);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to save fog section.', status: 500 } });
+  }
 });
 
 // ── PATCH /vtt/sessions/:id/fog-sections/:sectionId ──────────────────────
@@ -641,19 +667,17 @@ router.patch('/sessions/:id/fog-sections/:sectionId', requireDM, async (req: Req
   const ctx = await resolveSession(sessionId, userId);
   if (!ctx || !ctx.isDM) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'DM only.', status: 403 } }); return; }
 
-  const { name, is_hidden, cells } = req.body as { name?: string; is_hidden?: boolean; cells?: Array<{x:number;y:number}> };
-  const { fogSections } = await import('../db/schema');
+  const { name, is_hidden, image_data } = req.body as { name?: string; is_hidden?: boolean; image_data?: string };
   const updates: Record<string, unknown> = {};
-  if (name      !== undefined) updates.name      = name;
-  if (is_hidden !== undefined) updates.is_hidden = is_hidden;
-  if (cells     !== undefined) updates.cells     = cells;
+  if (name       !== undefined) updates.name       = name;
+  if (is_hidden  !== undefined) updates.is_hidden  = is_hidden;
+  if (image_data !== undefined) updates.image_data = image_data;
 
-  const [updated] = await db.update(fogSections).set(updates)
-    .where(eq(fogSections.id, sectionId)).returning();
+  const [updated] = await normalizeFogSectionUpdates(sectionId, updates);
   if (!updated) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Section not found.', status: 404 } }); return; }
 
-  const ns = req.app.get('io') as import('socket.io').Server;
-  ns.to(`session:${sessionId}`).emit('fog_section:updated', { section: updated });
+  const ns = req.app.get('io') as import('socket.io').Server | undefined;
+  ns?.to(`session:${sessionId}`).emit('fog_section:updated', { section: updated });
   res.json(updated);
 });
 
@@ -665,12 +689,15 @@ router.delete('/sessions/:id/fog-sections/:sectionId', requireDM, async (req: Re
   const ctx = await resolveSession(sessionId, userId);
   if (!ctx || !ctx.isDM) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'DM only.', status: 403 } }); return; }
 
-  const { fogSections } = await import('../db/schema');
-  await db.delete(fogSections).where(eq(fogSections.id, sectionId));
-
-  const ns = req.app.get('io') as import('socket.io').Server;
-  ns.to(`session:${sessionId}`).emit('fog_section:deleted', { section_id: sectionId });
-  res.json({ deleted: true });
+  try {
+    await db.delete(fogSections).where(eq(fogSections.id, sectionId));
+    const ns = req.app.get('io') as import('socket.io').Server | undefined;
+    ns?.to(`session:${sessionId}`).emit('fog_section:deleted', { section_id: sectionId });
+    res.json({ deleted: true });
+  } catch (err) {
+    console.error('[fog-sections] delete error:', err);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to delete fog section.', status: 500 } });
+  }
 });
 
 // ENCOUNTERS — add enemy to encounter from map

@@ -34,7 +34,18 @@ pool.on('error', (err) => {
 
 export const db = drizzle(pool, {
   schema,
-  logger: process.env.NODE_ENV !== 'production',
+  logger: process.env.NODE_ENV !== 'production'
+    ? {
+        logQuery: (query: string, params: unknown[]) => {
+          const safeParams = params.map((p) => {
+            if (typeof p !== 'string') return p;
+            if (p.length <= 160) return p;
+            return `${p.slice(0, 160)}...[truncated ${p.length - 160} chars]`;
+          });
+          console.log('Query:', query, '-- params:', safeParams);
+        },
+      }
+    : false,
 });
 
 export { pool };

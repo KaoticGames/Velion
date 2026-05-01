@@ -78,7 +78,7 @@ export interface FogSection {
   id:         string;
   map_id:     string;
   name:       string;
-  cells:      Array<{ x: number; y: number }>;
+  image_data: string | null;   // base64 PNG — pixel-precise fog for this layer
   is_hidden:  boolean;
   created_at: string;
 }
@@ -124,6 +124,31 @@ export interface DiceResult {
   total:        number;
   label:        string;
   visibility:   DiceVisibility;
+  /** Ephemeral: per-die faces for VTT / OBS sync visuals (not stored in DB). */
+  animation_spec?: Array<{ sides: number; value: number }>;
+  /** Ephemeral: dice-box style toss string for 3D replay (not stored in DB). */
+  physics_notation?: string;
+  /** Ephemeral: client-generated id to correlate `dice:roll_start` with `dice:result` (not in DB). */
+  roll_id?: string;
+}
+
+export interface VTTRollRequestMeta {
+  kind: 'vttQuickRoll' | 'vttPanelCrit' | 'vttPanelDmg';
+  action: 'check' | 'attack' | 'damage' | 'custom' | 'crit' | 'damageChannel';
+  character_id?: string;
+  flow_id?: string;
+  channel_idx?: number;
+  channel_count?: number;
+}
+
+export interface VTTCharacterRollRequest {
+  formula: string;
+  label: string;
+  visibility: DiceVisibility;
+  source_label?: string;
+  /** Applied after summing dice (weapon: stake; gem: stake × crit factor). */
+  postMultiplier?: number;
+  requestMeta?: VTTRollRequestMeta;
 }
 
 // ── Ruler ──────────────────────────────────────────────────────────────────
@@ -152,6 +177,7 @@ export interface VTTStateSnapshot {
   shapes:          CanvasShape[];
   fogCells:        FogCell[];
   fogSections:     FogSection[];
+  fogImage?:       string | null;
   diceLog:         DiceLogEntry[];
   campaignMaps:    VTTMap[];   // DM only
   isDM:            boolean;
@@ -162,9 +188,7 @@ export interface VTTStateSnapshot {
 export type ToolMode =
   | 'select'
   | 'pan'
-  | 'fog_reveal'
-  | 'fog_hide'
-  | 'fog_section'   // paint cells to define a named fog section
+  | 'fog'           // active when a fog layer is selected; paint/erase on that layer
   | 'ruler'
   | 'marker'
   | 'circle'
@@ -174,6 +198,7 @@ export type ToolMode =
   | 'token_place';
 
 export type FogBrushShape = 'circle' | 'square' | 'fill';
+export type FogBrushMode  = 'paint' | 'erase';
 
 // ── Enemy library type (from /library) ────────────────────────────────────
 

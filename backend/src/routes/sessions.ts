@@ -12,9 +12,12 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { eq, and, isNull }           from 'drizzle-orm';
+import { eq, and, isNull, desc }     from 'drizzle-orm';
 import { db }                        from '../db';
-import { sessions, campaigns, campaignCharacters } from '../db/schema';
+import {
+  sessions, campaigns, campaignCharacters,
+  mapTokens, sessionEnemyInstances, canvasShapes,
+} from '../db/schema';
 import { requireAuth, requireDM }    from '../middleware/auth';
 
 const router = Router();
@@ -33,6 +36,81 @@ const sessionLabel = (): string => {
 /** Check if a session has been inactive long enough to be considered ended */
 const isStale = (lastActivity: Date): boolean =>
   Date.now() - lastActivity.getTime() > INACTIVITY_MS;
+
+/**
+ * Clone map board state from a previous session to a new one.
+ * This makes new launches continue where the last session left off.
+ */
+const cloneBoardStateFromSession = async (sourceSessionId: string, targetSessionId: string): Promise<void> => {
+  await db.transaction(async (tx) => {
+    const sourceEnemies = await tx
+      .select()
+      .from(sessionEnemyInstances)
+      .where(eq(sessionEnemyInstances.session_id, sourceSessionId));
+
+    const enemyIdMap = new Map<string, string>();
+    for (const enemy of sourceEnemies) {
+      const [inserted] = await tx
+        .insert(sessionEnemyInstances)
+        .values({
+          session_id:  targetSessionId,
+          enemy_id:    enemy.enemy_id,
+          label:       enemy.label,
+          current_hp:  enemy.current_hp,
+          max_hp:      enemy.max_hp,
+          is_defeated: enemy.is_defeated,
+        })
+        .returning({ id: sessionEnemyInstances.id });
+      enemyIdMap.set(enemy.id, inserted.id);
+    }
+
+    const sourceTokens = await tx
+      .select()
+      .from(mapTokens)
+      .where(eq(mapTokens.session_id, sourceSessionId));
+
+    for (const token of sourceTokens) {
+      const clonedEntityId = token.entity_type === 'enemy'
+        ? enemyIdMap.get(token.entity_id)
+        : token.entity_id;
+      if (!clonedEntityId) continue;
+
+      await tx
+        .insert(mapTokens)
+        .values({
+          session_id: targetSessionId,
+          map_id:     token.map_id,
+          entity_type: token.entity_type,
+          entity_id:   clonedEntityId,
+          cell_x:      token.cell_x,
+          cell_y:      token.cell_y,
+          label:       token.label,
+          token_url:   token.token_url,
+          scale:       token.scale,
+          is_hidden:   token.is_hidden,
+          group_id:    token.group_id,
+        });
+    }
+
+    const sourceShapes = await tx
+      .select()
+      .from(canvasShapes)
+      .where(eq(canvasShapes.session_id, sourceSessionId));
+
+    for (const shape of sourceShapes) {
+      await tx
+        .insert(canvasShapes)
+        .values({
+          session_id: targetSessionId,
+          map_id:     shape.map_id,
+          shape_type: shape.shape_type,
+          color:      shape.color,
+          data:       shape.data,
+          created_by: shape.created_by,
+        });
+    }
+  });
+};
 
 /** Lazily expire stale active sessions for a campaign, return their IDs */
 const expireStale = async (campaignId: string): Promise<void> => {
@@ -95,17 +173,33 @@ router.post('/campaigns/:campaignId/launch', requireDM, async (req: Request, res
     return;
   }
 
-  // Create a fresh session
+  // Create a fresh session, seeded from the latest prior board state.
+  const [previousSession] = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.campaign_id, campaignId))
+    .orderBy(desc(sessions.last_activity_at))
+    .limit(1);
+
   const [session] = await db
     .insert(sessions)
     .values({
       campaign_id:      campaignId,
       name:             sessionLabel(),
       status:           'active',
+      active_map_id:    previousSession?.active_map_id ?? null,
       started_at:       new Date(),
       last_activity_at: new Date(),
     })
     .returning();
+
+  if (previousSession) {
+    try {
+      await cloneBoardStateFromSession(previousSession.id, session.id);
+    } catch (err) {
+      console.error('[sessions] Failed to clone previous board state:', err);
+    }
+  }
 
   res.status(201).json({ session, resumed: false });
 });

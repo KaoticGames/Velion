@@ -1,4 +1,4 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 
 const T = {
@@ -20,7 +20,10 @@ const navLinkStyle = ({ isActive }: { isActive: boolean }) => ({
 export default function NavBar() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const mockAuth = import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true';
+  const location = useLocation();
+  const mockAuth  = import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true';
+  const betaGate  = import.meta.env.VITE_BETA_GATE_ENABLED !== 'false';
+  const isLanding = location.pathname === '/';
 
   const handleLogout = async () => {
     await logout();
@@ -77,6 +80,21 @@ export default function NavBar() {
 
       {/* Right side */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {!user && (!isLanding || !betaGate) && (
+          <Link to="/login" style={{
+            fontFamily:     "'Cinzel', serif",
+            fontSize:       '11px',
+            letterSpacing:  '0.16em',
+            textDecoration: 'none',
+            color:          T.gold,
+            border:         `1px solid ${T.gold}55`,
+            padding:        '5px 14px',
+            borderRadius:   '3px',
+            transition:     'background 0.15s',
+          }}>
+            ENTER
+          </Link>
+        )}
         {mockAuth && !user && (
           <span style={{
             fontFamily:    "'Cinzel', serif",
@@ -130,20 +148,7 @@ export default function NavBar() {
             </button>
           </>
         )}
-        {!user && !mockAuth && (
-          <Link to="/login" style={{
-            fontFamily:    "'Cinzel', serif",
-            fontSize:      '11px',
-            letterSpacing: '0.12em',
-            color:         T.gold,
-            textDecoration:'none',
-            border:        `1px solid ${T.gold}55`,
-            padding:       '4px 14px',
-            borderRadius:  '3px',
-          }}>
-            ENTER
-          </Link>
-        )}
+
       </div>
     </nav>
   );

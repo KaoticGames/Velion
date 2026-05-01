@@ -13,9 +13,28 @@ import { verifyAccessToken }     from '../lib/jwt';
 import { db }                    from '../db';
 import {
   sessions, campaigns, campaignCharacters,
-  mapTokens, sessionEnemyInstances, canvasShapes, diceLogEntries, maps, mapFogCells, fogSections,
+  mapTokens, sessionEnemyInstances, canvasShapes, diceLogEntries, maps, fogSections,
 } from '../db/schema';
 import { eq, and, isNull }       from 'drizzle-orm';
+
+const isJsonColumnInputError = (err: unknown): boolean => {
+  const code = (err as { code?: string } | null)?.code;
+  return code === '22P02';
+};
+
+const persistFogSectionImage = async (sectionId: string, imageData: string): Promise<void> => {
+  try {
+    await db.update(fogSections).set({ image_data: imageData }).where(eq(fogSections.id, sectionId));
+  } catch (err) {
+    // Some local DBs still have fog_sections.image_data as json/jsonb from older migrations.
+    // Retry with JSON-encoded text to stay compatible until schema is normalized.
+    if (!isJsonColumnInputError(err)) throw err;
+    await db
+      .update(fogSections)
+      .set({ image_data: JSON.stringify(imageData) as unknown as string })
+      .where(eq(fogSections.id, sectionId));
+  }
+};
 
 export const registerSessionNamespace = (io: Server): void => {
   const ns = io.of('/session');
@@ -78,10 +97,6 @@ export const registerSessionNamespace = (io: Server): void => {
           ? await db.select().from(canvasShapes).where(and(eq(canvasShapes.session_id, session_id), eq(canvasShapes.map_id, sess.active_map_id)))
           : [];
 
-        const fogCells = activeMap
-          ? await db.select().from(mapFogCells).where(eq(mapFogCells.map_id, activeMap.id))
-          : [];
-
         const fogSectionsList = activeMap
           ? await db.select().from(fogSections).where(eq(fogSections.map_id, activeMap.id))
           : [];
@@ -91,7 +106,7 @@ export const registerSessionNamespace = (io: Server): void => {
 
         const campaignMaps = isDM ? await db.select().from(maps).where(eq(maps.campaign_id, sess.campaign_id)) : [];
 
-        socket.emit('session:state', { session: sess, activeMap, tokens, enemyInstances: enemyInst, shapes, fogCells, fogSections: fogSectionsList, diceLog, campaignMaps, isDM });
+        socket.emit('session:state', { session: sess, activeMap, tokens, enemyInstances: enemyInst, shapes, fogCells: [], fogSections: fogSectionsList, diceLog, campaignMaps, isDM });
         socket.to(room).emit('session:user_joined', { user_id: userId, character_id, is_dm: isDM });
         console.log(`[socket] ${isDM ? 'DM' : 'Player'} joined session ${session_id}: ${userId}`);
       } catch (err) {
@@ -121,9 +136,8 @@ export const registerSessionNamespace = (io: Server): void => {
         await db.update(sessions).set({ active_map_id: map_id }).where(eq(sessions.id, session_id));
         const tokens          = await db.select().from(mapTokens).where(and(eq(mapTokens.session_id, session_id), eq(mapTokens.map_id, map_id)));
         const shapes          = await db.select().from(canvasShapes).where(and(eq(canvasShapes.session_id, session_id), eq(canvasShapes.map_id, map_id)));
-        const fogCells        = await db.select().from(mapFogCells).where(eq(mapFogCells.map_id, map_id));
         const fogSectionsList = await db.select().from(fogSections).where(eq(fogSections.map_id, map_id));
-        ns.to(`session:${session_id}`).emit('session:map_changed', { map, tokens, shapes, fogCells, fogSections: fogSectionsList });
+        ns.to(`session:${session_id}`).emit('session:map_changed', { map, tokens, shapes, fogCells: [], fogSections: fogSectionsList });
       } catch (err) { console.error('[socket] session:map_change error:', err); }
     });
 
@@ -156,23 +170,16 @@ export const registerSessionNamespace = (io: Server): void => {
       } catch (err) { console.error('[socket] enemy:hp_update error:', err); }
     });
 
-    // ── fog:update ────────────────────────────────────────────────────
-    socket.on('fog:update', async ({ cells }: { cells: Array<{ x: number; y: number; revealed: boolean }> }) => {
+    // ── fog:section_image ─────────────────────────────────────────────
+    // DM saves the pixel-precise fog PNG for a specific layer on pointer-up.
+    socket.on('fog:section_image', async ({ section_id, image_data }: { section_id: string; image_data: string }) => {
       if (!socket.data.is_dm) return;
-      const session_id = socket.data.session_id as string;
+      const sid = socket.data.session_id as string;
+      if (!sid) return;
       try {
-        const [sess] = await db.select().from(sessions).where(eq(sessions.id, session_id)).limit(1);
-        if (!sess?.active_map_id) return;
-        for (const cell of cells) {
-          await db.insert(mapFogCells)
-            .values({ map_id: sess.active_map_id, cell_x: cell.x, cell_y: cell.y, is_revealed: cell.revealed })
-            .onConflictDoUpdate({
-              target: [mapFogCells.map_id, mapFogCells.cell_x, mapFogCells.cell_y],
-              set: { is_revealed: cell.revealed },
-            });
-        }
-        socket.to(`session:${session_id}`).emit('fog:updated', { cells });
-      } catch (err) { console.error('[socket] fog:update error:', err); }
+        await persistFogSectionImage(section_id, image_data);
+        socket.to(`session:${sid}`).emit('fog_section:image_updated', { section_id, image_data });
+      } catch (err) { console.error('[socket] fog:section_image error:', err); }
     });
 
     // ── shapes ────────────────────────────────────────────────────────
@@ -196,28 +203,79 @@ export const registerSessionNamespace = (io: Server): void => {
       socket.to(`session:${socket.data.session_id}`).emit('ruler:cleared', { user_id: userId });
     });
 
+    // ── dice:roll_start (no DB) — all clients can show a synchronized “rolling” state
+    // before dice:roll arrives with the authoritative faces.
+    socket.on('dice:roll_start', (payload: {
+      roll_id: string; physics_notation: string; label: string; visibility: 'public' | 'private' | 'dm';
+      source_label?: string;
+    }) => {
+      const session_id  = socket.data.session_id as string;
+      const campaign_id = socket.data.campaign_id as string;
+      const room        = `session:${session_id}`;
+      if (!payload?.roll_id || !payload?.physics_notation) return;
+      const broadcast = {
+        roller_id:    userId,
+        roll_id:      payload.roll_id,
+        physics_notation: payload.physics_notation.trim(),
+        label:        payload.label,
+        visibility:   payload.visibility,
+        source_label: payload.source_label ?? null,
+      };
+      if (payload.visibility === 'public') {
+        ns.to(room).emit('dice:roll_start', broadcast);
+        ns.to(`obs:${campaign_id}:dice_log`).emit('dice:roll_start', broadcast);
+      } else if (payload.visibility === 'dm') {
+        socket.emit('dice:roll_start', broadcast);
+        if (!socket.data.is_dm) socket.to(`${room}:dm`).emit('dice:roll_start', broadcast);
+      } else {
+        socket.emit('dice:roll_start', broadcast);
+      }
+    });
+
     // ── dice:roll ──────────────────────────────────────────────────────
     // Client rolls 3D dice, sends results here for persist + broadcast
     socket.on('dice:roll', async (payload: {
       formula: string; label: string; visibility: 'public' | 'private' | 'dm';
       results: number[]; total: number; source_label?: string;
+      animation_spec?: Array<{ sides: number; value: number }>;
+      physics_notation?: string;
+      roll_id?: string;
     }) => {
       const session_id  = socket.data.session_id as string;
       const campaign_id = socket.data.campaign_id as string;
       const room        = `session:${session_id}`;
-      const entry       = { roller_id: userId, ...payload, source_label: payload.source_label ?? null };
+      const animation_spec = Array.isArray(payload.animation_spec) ? payload.animation_spec : undefined;
+      const physics_notation = typeof payload.physics_notation === 'string' && payload.physics_notation.trim()
+        ? payload.physics_notation.trim()
+        : undefined;
+      const row = {
+        roller_id:    userId,
+        formula:      payload.formula,
+        results:      payload.results,
+        total:        payload.total,
+        label:        payload.label,
+        visibility:   payload.visibility,
+        source_label: payload.source_label ?? null,
+      };
 
-      try { await db.insert(diceLogEntries).values({ session_id, ...entry }); }
+      try { await db.insert(diceLogEntries).values({ session_id, ...row }); }
       catch (err) { console.error('[socket] dice:roll persist error:', err); }
 
+      const extras: Record<string, unknown> = {};
+      if (animation_spec?.length) extras.animation_spec = animation_spec;
+      if (physics_notation) extras.physics_notation = physics_notation;
+      const roll_id = typeof payload.roll_id === 'string' && payload.roll_id.trim() ? payload.roll_id.trim() : undefined;
+      if (roll_id) extras.roll_id = roll_id;
+      const broadcastEntry = Object.keys(extras).length ? { ...row, ...extras } : row;
+
       if (payload.visibility === 'public') {
-        ns.to(room).emit('dice:result', entry);
-        ns.to(`obs:${campaign_id}:dice_log`).emit('dice:result', entry);
+        ns.to(room).emit('dice:result', broadcastEntry);
+        ns.to(`obs:${campaign_id}:dice_log`).emit('dice:result', broadcastEntry);
       } else if (payload.visibility === 'dm') {
-        socket.emit('dice:result', entry);
-        if (!socket.data.is_dm) socket.to(`${room}:dm`).emit('dice:result', entry);
+        socket.emit('dice:result', broadcastEntry);
+        if (!socket.data.is_dm) socket.to(`${room}:dm`).emit('dice:result', broadcastEntry);
       } else {
-        socket.emit('dice:result', entry);
+        socket.emit('dice:result', broadcastEntry);
       }
     });
 

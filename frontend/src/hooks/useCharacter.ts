@@ -21,8 +21,13 @@ export interface CharacterSummary {
   portrait_url:  string | null;
   chosen_attribute: string;
   base_rp:       number;
+  /** Spendable RP this turn (persisted; VTT + sheet). */
+  current_rp?:   number;
+  rp_banked?:    number;
+  rp_banking?:   boolean;
   max_hp:        number;
   current_hp:    number;
+  updated_at?:   string;
 }
 
 export interface CharacterDetail extends CharacterSummary {
@@ -80,6 +85,7 @@ export function useCharacter(characterId: string | undefined) {
     },
     enabled:   !!characterId,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 

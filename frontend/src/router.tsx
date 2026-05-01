@@ -2,6 +2,10 @@ import { createBrowserRouter } from 'react-router-dom';
 import Layout          from '@/components/Layout';
 import ProtectedRoute  from '@/components/ProtectedRoute';
 import Landing         from '@/pages/Landing';
+import LandingLive     from '@/pages/Landing-live';
+
+const betaGate = import.meta.env.VITE_BETA_GATE_ENABLED !== 'false';
+const LandingPage = betaGate ? Landing : LandingLive;
 import Login           from '@/pages/Login';
 import Register        from '@/pages/Register';
 import Characters      from '@/pages/Characters';
@@ -28,7 +32,7 @@ export const router = createBrowserRouter([
     children: [
 
       // ── Public ────────────────────────────────────────────────────────
-      { index:   true,            element: <Landing /> },
+      { index:   true,            element: <LandingPage /> },
       { path:    'login',         element: <Login /> },
       { path:    'register',      element: <Register /> },
 

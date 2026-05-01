@@ -109,6 +109,12 @@ export const mapTokens = pgTable('map_tokens', {
   label:           text('label'),
   // URL to token artwork — falls back to portrait/default
   token_url:       text('token_url'),
+  // Visual token scale multiplier (1.0 = default medium)
+  scale:           real('scale').notNull().default(1),
+  // DM-only visibility toggle (hidden from players when true)
+  is_hidden:       boolean('is_hidden').notNull().default(false),
+  // Tokens sharing group_id move together
+  group_id:        uuid('group_id'),
   created_at:      timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

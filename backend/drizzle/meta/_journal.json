@@ -64,6 +64,55 @@
       "when": 1773414098693,
       "tag": "0008_dapper_living_tribunal",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1773494884423,
+      "tag": "0009_curved_havok",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1773877933771,
+      "tag": "0010_kind_hedge_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1773976777857,
+      "tag": "0011_graceful_miss_america",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1777121960889,
+      "tag": "0012_stable_fog_image_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1777204800000,
+      "tag": "0013_token_scale_and_visibility",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1777300000000,
+      "tag": "0014_character_session_rp",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1777400000000,
+      "tag": "0015_users_beta_access",
+      "breakpoints": true
     }
   ]
 }
