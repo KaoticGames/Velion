@@ -267,6 +267,10 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     }
   };
   const requestSessionDiceRoll = (item) => enqueueDiceRolls([item]);
+  const resetDiceQueue = () => {
+    rollLockRef.current = false;
+    rollQueueRef.current = [];
+  };
 
   useEffect(() => {
     const onDiceLogCommit = (e) => {
@@ -340,84 +344,10 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         queueIfNeeded();
       }
     };
-    const onDiceRollComplete = (event) => {
-      const detail = event?.detail;
-      const meta = detail?.requestMeta;
-      if (meta?.kind === 'atkCrit') {
-        const r = detail.results?.[0] ?? detail.total;
-        setAtkCritRoll(r);
-        setAtkIsCrit(r === 20);
-      } else if (meta?.kind === 'gemCrit') {
-        const r = detail.results?.[0] ?? detail.total;
-        setGemAtkCritRoll(r);
-        setGemAtkIsCrit(r === 20);
-      } else if (meta?.kind === 'oxCheck') {
-        const r = detail.results?.[0] ?? detail.total;
-        const amt = typeof meta.oxAmount === 'number' ? meta.oxAmount : 0;
-        setOxRoll(r);
-        if (r >= 10) { setOxResult('success'); setTempRP(amt); } else { setOxResult('fail'); setTempRP(0); }
-      } else if (meta?.kind === 'weaponDmg') {
-        const ctx = weaponDmgCtxRef.current;
-        if (ctx?.weapon) {
-          const idx = meta.idx;
-          const sum = (detail.results || []).reduce((s, n) => s + n, 0);
-          weaponDmgAccRef.current[idx] = {
-            element: ctx.channels[idx].element,
-            dice: ctx.channels[idx].dice,
-            rolls: detail.results || [],
-            sum,
-            dmg: detail.total,
-          };
-          if (weaponDmgAccRef.current.length === meta.count && weaponDmgAccRef.current.every(Boolean)) {
-            setAtkResult({
-              chs: weaponDmgAccRef.current,
-              critRoll: ctx.critRoll,
-              isCrit: ctx.isCrit,
-              rpUsed: ctx.staked,
-            });
-            if (ctx.tempRPFlag || ctx.oxFail) setActive((p) => new Set([...p, 'Overextended']));
-            weaponDmgCtxRef.current = null;
-          }
-        }
-      } else if (meta?.kind === 'gemDmg') {
-        const ctx = gemDmgCtxRef.current;
-        if (ctx?.gem) {
-          const idx = meta.idx;
-          gemDmgAccRef.current[idx] = {
-            rolls: detail.results || [],
-            sum: (detail.results || []).reduce((s, n) => s + n, 0),
-            dmg: detail.total,
-          };
-          if (gemDmgAccRef.current.length === meta.count && gemDmgAccRef.current.every(Boolean)) {
-            const staked = ctx.staked;
-            const nd = ctx.nd;
-            const dt = ctx.dt;
-            const isCrit = ctx.isCrit;
-            const rolls = gemDmgAccRef.current[0].rolls;
-            const sum = gemDmgAccRef.current[0].sum;
-            const dmg = gemDmgAccRef.current[0].dmg;
-            setGemAtkResult({ rolls, sum, dmg, rpUsed: staked, nd, dt, isCrit });
-            gemDmgCtxRef.current = null;
-          }
-        }
-      }
-      rollLockRef.current = false;
-      rollQueueRef.current.shift();
-      const nextPump = () => {
-        if (rollQueueRef.current.length === 0) return;
-        const next = rollQueueRef.current[0];
-        if (!next) return;
-        rollLockRef.current = true;
-        window.dispatchEvent(new CustomEvent('velion:dice-roll-request', { detail: { ...next, autoOpen: false } }));
-      };
-      nextPump();
-    };
     window.addEventListener('velion:dice-roll-submit', onGlobalRollSubmit);
-    window.addEventListener('velion:dice-roll-complete', onDiceRollComplete);
     return () => {
       window.removeEventListener('velion:dice-roll-network-start', onNetworkRollStart);
       window.removeEventListener('velion:dice-roll-submit', onGlobalRollSubmit);
-      window.removeEventListener('velion:dice-roll-complete', onDiceRollComplete);
       sessionDiceReadyRef.current = false;
       pendingSessionDiceRollRef.current = [];
       socket.disconnect();
@@ -587,6 +517,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const [tempRP,   setTempRP]   = useState(0);
 
   const openAttack = w => {
+    resetDiceQueue();
     setAtkWeapon(w); setAtkRP(0); setAtkStaked(0); setAtkStage('stake');
     setAtkCritRoll(null); setAtkIsCrit(false);
     setAtkResult(null); setOxOpen(false); setOxAmount(0); setOxRoll(null); setOxResult(null); setTempRP(0);
@@ -640,12 +571,14 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     enqueueDiceRolls(items);
   };
   const closeAtk = () => {
+    resetDiceQueue();
     setWepModal(null); setAtkWeapon(null);
     setAtkStage('stake'); setAtkRP(0); setAtkStaked(0);
     setAtkCritRoll(null); setAtkIsCrit(false); setAtkResult(null);
     setOxOpen(false); setOxAmount(0); setOxRoll(null); setOxResult(null); setTempRP(0);
   };
   const cancelPreStake = () => {
+    resetDiceQueue();
     setWepModal(null); setAtkWeapon(null);
     setAtkStage('stake'); setAtkRP(0); setAtkStaked(0);
     setAtkCritRoll(null); setAtkIsCrit(false);
@@ -653,6 +586,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   };
   // Post-stake cancel — RP already spent, just dismiss
   const cancelPostStake = () => {
+    resetDiceQueue();
     setWepModal(null); setAtkWeapon(null);
     setAtkStage('stake'); setAtkRP(0); setAtkStaked(0);
     setAtkCritRoll(null); setAtkIsCrit(false);
@@ -694,6 +628,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const gemThumbRef      = useRef(null);
 
   const openGemAttack = (gem) => {
+    resetDiceQueue();
     setGemAtkGem(gem); setGemAtkRP(0); setGemAtkStaked(0); setGemAtkStage('stake');
     setGemAtkCritRoll(null); setGemAtkIsCrit(false); setGemAtkResult(null);
     gemAtkStakedRef.current = 0;
@@ -730,10 +665,94 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     });
   };
   const closeGemAtk = () => {
+    resetDiceQueue();
     setWepModal(null); setGemAtkGem(null);
     setGemAtkStage('stake'); setGemAtkRP(0); setGemAtkStaked(0);
     setGemAtkCritRoll(null); setGemAtkIsCrit(false); setGemAtkResult(null);
   };
+
+  /** Local 3D dice always emit this — must not depend on VTT socket (`sessionId` / `SOCKET_URL`). */
+  const handleDiceRollComplete = useCallback((event) => {
+    const detail = event?.detail;
+    const meta = detail?.requestMeta;
+    const num = (v) => {
+      const n = typeof v === 'number' ? v : Number(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+    if (meta?.kind === 'atkCrit') {
+      const r = num(detail.results?.[0] ?? detail.total);
+      setAtkCritRoll(r);
+      setAtkIsCrit(r === 20);
+    } else if (meta?.kind === 'gemCrit') {
+      const r = num(detail.results?.[0] ?? detail.total);
+      setGemAtkCritRoll(r);
+      setGemAtkIsCrit(r === 20);
+    } else if (meta?.kind === 'oxCheck') {
+      const r = num(detail.results?.[0] ?? detail.total);
+      const amt = typeof meta.oxAmount === 'number' ? meta.oxAmount : 0;
+      setOxRoll(r);
+      if (r >= 10) { setOxResult('success'); setTempRP(amt); } else { setOxResult('fail'); setTempRP(0); }
+    } else if (meta?.kind === 'weaponDmg') {
+      const ctx = weaponDmgCtxRef.current;
+      if (ctx?.weapon) {
+        const idx = Number(meta.idx);
+        const sum = (detail.results || []).reduce((s, n) => s + n, 0);
+        weaponDmgAccRef.current[idx] = {
+          element: ctx.channels[idx].element,
+          dice: ctx.channels[idx].dice,
+          rolls: detail.results || [],
+          sum,
+          dmg: detail.total,
+        };
+        if (weaponDmgAccRef.current.length === meta.count && weaponDmgAccRef.current.every(Boolean)) {
+          setAtkResult({
+            chs: weaponDmgAccRef.current,
+            critRoll: ctx.critRoll,
+            isCrit: ctx.isCrit,
+            rpUsed: ctx.staked,
+          });
+          if (ctx.tempRPFlag || ctx.oxFail) setActive((p) => new Set([...p, 'Overextended']));
+          weaponDmgCtxRef.current = null;
+        }
+      }
+    } else if (meta?.kind === 'gemDmg') {
+      const ctx = gemDmgCtxRef.current;
+      if (ctx?.gem) {
+        const idx = Number(meta.idx);
+        gemDmgAccRef.current[idx] = {
+          rolls: detail.results || [],
+          sum: (detail.results || []).reduce((s, n) => s + n, 0),
+          dmg: detail.total,
+        };
+        if (gemDmgAccRef.current.length === meta.count && gemDmgAccRef.current.every(Boolean)) {
+          const staked = ctx.staked;
+          const nd = ctx.nd;
+          const dt = ctx.dt;
+          const isCrit = ctx.isCrit;
+          const rolls = gemDmgAccRef.current[0].rolls;
+          const sum = gemDmgAccRef.current[0].sum;
+          const dmg = gemDmgAccRef.current[0].dmg;
+          setGemAtkResult({ rolls, sum, dmg, rpUsed: staked, nd, dt, isCrit });
+          gemDmgCtxRef.current = null;
+        }
+      }
+    }
+    rollLockRef.current = false;
+    rollQueueRef.current.shift();
+    const nextPump = () => {
+      if (rollQueueRef.current.length === 0) return;
+      const next = rollQueueRef.current[0];
+      if (!next) return;
+      rollLockRef.current = true;
+      window.dispatchEvent(new CustomEvent('velion:dice-roll-request', { detail: { ...next, autoOpen: false } }));
+    };
+    nextPump();
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('velion:dice-roll-complete', handleDiceRollComplete);
+    return () => window.removeEventListener('velion:dice-roll-complete', handleDiceRollComplete);
+  }, [handleDiceRollComplete]);
 
   // ── Factions ──
   const [factions, setFactions] = useState([mkFaction()]);
