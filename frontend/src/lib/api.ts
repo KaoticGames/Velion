@@ -6,10 +6,11 @@
  *   vite.config.ts forwards calls to localhost:3001
  * • Access token is kept in memory (Zustand authStore) — never localStorage
  * • Refresh token lives in an HttpOnly cookie (set by the backend)
- * • On 401, this client attempts one silent token refresh before failing
+ * • On 401, attempts one silent `/auth/refresh` before clearing the session
  */
 
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { kickToLogin } from '@/lib/authSession';
 
 const BASE_URL = import.meta.env.VITE_API_URL as string;
 
@@ -39,7 +40,14 @@ let refreshQueue: Array<(token: string) => void> = [];
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+    if (!original) return Promise.reject(error);
+
+    // Access token rejected after a refresh attempt — end session immediately
+    if (error.response?.status === 401 && original._retry) {
+      kickToLogin();
+      return Promise.reject(error);
+    }
 
     // Only attempt refresh on 401 and not on the refresh endpoint itself
     if (
@@ -77,9 +85,8 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${newToken}`;
         return api(original);
       } catch {
-        // Refresh failed — clear auth state and redirect to login
-        clearAuth();
-        window.location.href = '/login';
+        refreshQueue = [];
+        kickToLogin();
         return Promise.reject(error);
       } finally {
         isRefreshing = false;

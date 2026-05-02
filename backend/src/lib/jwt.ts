@@ -14,11 +14,12 @@ export interface RefreshTokenPayload {
 const ACCESS_SECRET  = process.env.JWT_ACCESS_SECRET!;
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
 
+/** Keep in sync with `REFRESH_DAYS` in routes/auth.ts (cookie + DB row lifetime). */
 export const signAccessToken = (payload: AccessTokenPayload): string =>
-  jwt.sign(payload, ACCESS_SECRET, { expiresIn: '15m' });
+  jwt.sign(payload, ACCESS_SECRET, { expiresIn: '7d' });
 
 export const signRefreshToken = (payload: RefreshTokenPayload): string =>
-  jwt.sign(payload, REFRESH_SECRET, { expiresIn: '30d' });
+  jwt.sign(payload, REFRESH_SECRET, { expiresIn: '7d' });
 
 export const verifyAccessToken = (token: string): AccessTokenPayload =>
   jwt.verify(token, ACCESS_SECRET) as AccessTokenPayload;

@@ -48,6 +48,53 @@ async function assertCharacterOwner(
   return true;
 }
 
+type StatBlock = { power: number; agility: number; focus: number; presence: number };
+
+async function loadCharacterCombatStats(characterId: string): Promise<StatBlock | null> {
+  const [c] = await db
+    .select({
+      power:    characters.power,
+      agility:  characters.agility,
+      focus:    characters.focus,
+      presence: characters.presence,
+    })
+    .from(characters)
+    .where(eq(characters.id, characterId))
+    .limit(1);
+  if (!c) return null;
+  return {
+    power:    Number(c.power) || 0,
+    agility:  Number(c.agility) || 0,
+    focus:    Number(c.focus) || 0,
+    presence: Number(c.presence) || 0,
+  };
+}
+
+/** Returns a user-facing message if requirements are not met; otherwise null. */
+function statRequirementMessage(stats: StatBlock, itemType: string, lib: Record<string, unknown>): string | null {
+  if (itemType === 'weapon') {
+    const rp = Number(lib.req_power) || 0;
+    const ra = Number(lib.req_agility) || 0;
+    const rf = Number(lib.req_focus) || 0;
+    if (stats.power < rp || stats.agility < ra || stats.focus < rf) {
+      return `This weapon requires Power ${rp}, Agility ${ra}, and Focus ${rf}. Your stats are Power ${stats.power}, Agility ${stats.agility}, Focus ${stats.focus}.`;
+    }
+  }
+  if (itemType === 'armor') {
+    const rp = Number(lib.req_power) || 0;
+    if (stats.power < rp) {
+      return `This armor requires Power ${rp}. Your Power is ${stats.power}.`;
+    }
+  }
+  if (itemType === 'focus_bracer') {
+    const rf = Number(lib.req_focus) || 0;
+    if (stats.focus < rf) {
+      return `This focus bracer requires Focus ${rf}. Your Focus is ${stats.focus}.`;
+    }
+  }
+  return null;
+}
+
 /** Resolve item details from the relevant library table */
 async function resolveItem(item_type: string, library_item_id: string | null) {
   if (!library_item_id) return null;
@@ -171,6 +218,24 @@ router.post('/:characterId', async (req: Request, res: Response): Promise<void> 
     }
   }
 
+  if (item_type === 'weapon' || item_type === 'armor' || item_type === 'focus_bracer') {
+    const details = await resolveItem(item_type, library_item_id);
+    if (!details) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Library item not found.', status: 404 } });
+      return;
+    }
+    const stats = await loadCharacterCombatStats(characterId);
+    if (!stats) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Character not found.', status: 404 } });
+      return;
+    }
+    const msg = statRequirementMessage(stats, item_type, details as Record<string, unknown>);
+    if (msg) {
+      res.status(422).json({ error: { code: 'REQUIREMENTS_NOT_MET', message: msg, status: 422 } });
+      return;
+    }
+  }
+
   const [row] = await db
     .insert(characterInventory)
     .values({ character_id: characterId, item_type, library_item_id, quantity, notes } as NewInventoryItem)
@@ -200,6 +265,24 @@ router.patch('/:characterId/:itemId', async (req: Request, res: Response): Promi
 
   const { equipped, equipped_slot, quantity, notes } =
     req.body as { equipped?: boolean; equipped_slot?: string | null; quantity?: number; notes?: string };
+
+  if (equipped === true && equipped_slot) {
+    const libDetails = await resolveItem(existing.item_type, existing.library_item_id);
+    if (!libDetails) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Library item not found for this inventory row.', status: 404 } });
+      return;
+    }
+    const stats = await loadCharacterCombatStats(characterId);
+    if (!stats) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Character not found.', status: 404 } });
+      return;
+    }
+    const reqMsg = statRequirementMessage(stats, existing.item_type, libDetails as Record<string, unknown>);
+    if (reqMsg) {
+      res.status(422).json({ error: { code: 'REQUIREMENTS_NOT_MET', message: reqMsg, status: 422 } });
+      return;
+    }
+  }
 
   // If equipping, unequip any other item currently in the same slot
   if (equipped === true && equipped_slot) {

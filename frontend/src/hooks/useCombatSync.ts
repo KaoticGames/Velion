@@ -14,6 +14,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/authStore';
+import { isSocketSessionAuthFailure, kickToLogin } from '@/lib/authSession';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL as string;
 
@@ -58,6 +59,12 @@ export function useCombatSync(
       reconnectionDelay: 1000,
     });
     socketRef.current = socket;
+
+    socket.on('connect_error', (err: Error) => {
+      if (isSocketSessionAuthFailure(err)) {
+        kickToLogin();
+      }
+    });
 
     // Join the session room
     socket.emit('session:join', { session_id: sessionId, character_id: characterId });

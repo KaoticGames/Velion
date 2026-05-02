@@ -10,6 +10,7 @@
 
 import { create } from 'zustand';
 import api, { setTokenAccessors, extractApiError } from '@/lib/api';
+import { setSessionKickHandler, scheduleAccessTokenExpiry } from '@/lib/authSession';
 
 export type SubscriptionTier = 'free' | 'player' | 'dm';
 
@@ -104,6 +105,18 @@ setTokenAccessors(
 );
 // Suppress unused var warning — store access intentional
 void store;
+
+setSessionKickHandler(() => {
+  useAuthStore.getState()._clearAuth();
+});
+
+let lastScheduledAccessToken: string | null | undefined = undefined;
+useAuthStore.subscribe((state) => {
+  if (state.accessToken === lastScheduledAccessToken) return;
+  lastScheduledAccessToken = state.accessToken ?? null;
+  scheduleAccessTokenExpiry(() => useAuthStore.getState().accessToken);
+});
+scheduleAccessTokenExpiry(() => useAuthStore.getState().accessToken);
 
 // ── Convenience selectors ─────────────────────────────────────────────────
 export const selectUser    = (s: AuthState) => s.user;

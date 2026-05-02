@@ -2,9 +2,10 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { characterKeys } from "@/hooks/useCharacter";
-import api from "@/lib/api";
+import api, { extractApiError } from "@/lib/api";
 import { io } from "socket.io-client";
 import { useAuthStore } from "@/store/authStore";
+import { isSocketSessionAuthFailure, kickToLogin } from "@/lib/authSession";
 import DiceLog from "@/vtt/DiceLog";
 
 const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || "").replace(/\/$/, "");
@@ -103,6 +104,88 @@ const Btn = (c=T.gold, xtra={}) => ({
   borderRadius:'3px', padding:'5px 14px', fontSize:'11px',
   fontFamily:"'Cinzel',serif", letterSpacing:'0.1em', cursor:'pointer', ...xtra
 });
+
+/** Module-scoped so React does not remount children on every parent render (fixes input focus loss). */
+function SecTitle({ children, color = T.gold, right }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ width: '14px', height: '1px', background: color, display: 'inline-block' }} />
+        <span style={{ fontFamily: "'Cinzel',serif", fontSize: '11px', letterSpacing: '0.2em', color, textTransform: 'uppercase', fontWeight: '600' }}>{children}</span>
+        <span style={{ width: '14px', height: '1px', background: color, display: 'inline-block' }} />
+      </div>
+      {right}
+    </div>
+  );
+}
+
+function Fld({ label, children, style = {} }) {
+  return (
+    <div style={style}>
+      <label style={LBL}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function Badge({ rarity }) {
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '1px 8px',
+        borderRadius: '10px',
+        fontSize: '11px',
+        fontFamily: "'Cinzel',serif",
+        background: `${RARITY_COLOR[rarity]}22`,
+        border: `1px solid ${RARITY_COLOR[rarity]}55`,
+        color: RARITY_COLOR[rarity],
+      }}
+    >
+      {rarity}
+    </span>
+  );
+}
+
+function ModalWrap({ children, accentColor = T.gold, minW = '400px' }) {
+  return createPortal(
+    <>
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 999 }} />
+      <div
+        style={{
+          position: 'fixed',
+          top: '72px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: '700px',
+          padding: '0 16px',
+          zIndex: 1000,
+          maxHeight: 'calc(100vh - 96px)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div
+          style={{
+            background: T.card,
+            border: `1px solid ${accentColor}44`,
+            borderTop: `2px solid ${accentColor}`,
+            borderRadius: '6px',
+            padding: '26px',
+            minWidth: minW,
+            boxSizing: 'border-box',
+            overflowY: 'auto',
+            flex: 1,
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </>,
+    document.body,
+  );
+}
 
 // ── Library ↔ Sheet data-mapping helpers ──────────────────────────────────
 // Maps library damage_type → sheet element name
@@ -301,6 +384,11 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       reconnectionDelay: 1000,
     });
     rollSocketRef.current = socket;
+    socket.on('connect_error', (err) => {
+      if (isSocketSessionAuthFailure(err)) {
+        kickToLogin();
+      }
+    });
     socket.on('connect', () => {
       sessionDiceReadyRef.current = false;
       socket.emit('session:join', { session_id: sessionId, character_id: characterId });
@@ -549,7 +637,13 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const [armor,      setArmor]     = useState(Object.fromEntries(ARMOR_SLOTS.map(s=>[s,mkArmor()])));
   const [armorModal, setArmorModal]= useState(null);
   const [armorDraft, setArmorDraft]= useState(null);
-  const openArmorEdit = slot => { setArmorDraft({...armor[slot],resistances:{...armor[slot].resistances}}); setArmorModal(slot); };
+  /** `{ slot, items }` — multiple inventory armor pieces for one sheet slot */
+  const [armorEquipPicker, setArmorEquipPicker] = useState(null);
+  const openArmorEdit = (slot) => {
+    setArmorEquipPicker(null);
+    setArmorDraft({ ...armor[slot], resistances: { ...armor[slot].resistances } });
+    setArmorModal(slot);
+  };
   const applyArmor    = () => { setArmor(p=>({...p,[armorModal]:armorDraft})); setArmorModal(null); };
   const updDraftRes   = (el,v) => setArmorDraft(p=>({...p,resistances:{...p.resistances,[el]:Number(v)}}));
   const totalMit = ARMOR_SLOTS.reduce((s,sl)=>s+Number(armor[sl].mitigation),0);
@@ -913,15 +1007,66 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       .catch(() => setInvLoading(false));
   };
 
+  useEffect(() => {
+    if (!characterId) return;
+    fetchInventory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load inventory when switching character; fetchInventory is stable enough
+  }, [characterId]);
+
   const addToInventory = (item_type, library_item_id) => {
     if (!characterId) return;
     api.post(`/inventory/${characterId}`, { item_type, library_item_id })
       .then(() => fetchInventory())
-      .catch(console.error);
+      .catch((err) => {
+        const e = extractApiError(err);
+        if (e.status === 422) window.alert(e.message);
+        else console.error(err);
+      });
+  };
+
+  const meetsWeaponLibStats = (w) =>
+    w &&
+    attrs.Power >= (Number(w.req_power) || 0) &&
+    attrs.Agility >= (Number(w.req_agility) || 0) &&
+    attrs.Focus >= (Number(w.req_focus) || 0);
+
+  const meetsArmorLibStats = (a) => a && attrs.Power >= (Number(a.req_power) || 0);
+
+  const meetsBracerLibStats = (b) => b && attrs.Focus >= (Number(b.req_focus) || 0);
+
+  const meetsEquipStatRequirements = (itemType, det) => {
+    if (!det) return true;
+    if (itemType === 'weapon') return meetsWeaponLibStats(det);
+    if (itemType === 'armor') return meetsArmorLibStats(det);
+    if (itemType === 'focus_bracer') return meetsBracerLibStats(det);
+    return true;
+  };
+
+  const equipStatRequirementMessage = (itemType, det) => {
+    if (!det || meetsEquipStatRequirements(itemType, det)) return '';
+    if (itemType === 'weapon') {
+      const rp = Number(det.req_power) || 0;
+      const ra = Number(det.req_agility) || 0;
+      const rf = Number(det.req_focus) || 0;
+      return `Requires Power ${rp}, Agility ${ra}, Focus ${rf}. You have Power ${attrs.Power}, Agility ${attrs.Agility}, Focus ${attrs.Focus}.`;
+    }
+    if (itemType === 'armor') {
+      const rp = Number(det.req_power) || 0;
+      return `Requires Power ${rp}. Your Power is ${attrs.Power}.`;
+    }
+    if (itemType === 'focus_bracer') {
+      const rf = Number(det.req_focus) || 0;
+      return `Requires Focus ${rf}. Your Focus is ${attrs.Focus}.`;
+    }
+    return '';
   };
 
   const equipInventoryItem = (invItem, slot) => {
     if (!characterId) return;
+    if (!meetsEquipStatRequirements(invItem.item_type, invItem.item_details)) {
+      window.alert(equipStatRequirementMessage(invItem.item_type, invItem.item_details) || 'You do not meet this item’s attribute requirements.');
+      return;
+    }
     api.patch(`/inventory/${characterId}/${invItem.id}`, { equipped: true, equipped_slot: slot })
       .then(r => {
         setInventory(p => p.map(x => x.id === invItem.id ? { ...r.data } : x));
@@ -960,10 +1105,46 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           }
         }
       })
-      .catch(console.error);
+      .catch((err) => {
+        const e = extractApiError(err);
+        if (e.status === 422) window.alert(e.message);
+        else console.error(err);
+      });
+  };
+
+  const getArmorInventoryCandidates = (sheetSlot) =>
+    inventory.filter(
+      (inv) =>
+        inv.item_type === 'armor' &&
+        !inv.equipped &&
+        inv.item_details &&
+        cap(inv.item_details.slot) === sheetSlot &&
+        meetsEquipStatRequirements('armor', inv.item_details),
+    );
+
+  const findEquippedArmorInventoryForSlot = (sheetSlot) =>
+    inventory.find(
+      (inv) =>
+        inv.item_type === 'armor' &&
+        inv.equipped &&
+        inv.item_details &&
+        cap(inv.item_details.slot) === sheetSlot,
+    ) ?? null;
+
+  const handleArmorSlotEquipPress = (sheetSlot) => {
+    if (!characterId) return;
+    const candidates = getArmorInventoryCandidates(sheetSlot);
+    if (candidates.length === 0) return;
+    if (candidates.length === 1) {
+      const inv = candidates[0];
+      equipInventoryItem(inv, inv.item_details.slot);
+      return;
+    }
+    setArmorEquipPicker({ slot: sheetSlot, items: candidates });
   };
 
   const unequipInventoryItem = (invItem) => {
+    setArmorEquipPicker(null);
     if (!characterId) return;
     api.patch(`/inventory/${characterId}/${invItem.id}`, { equipped: false, equipped_slot: null })
       .then(r => {
@@ -1218,48 +1399,6 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const hpPct    = maxHP>0     ? Math.min(100,Math.max(0,curHP/maxHP*100))     : 0;
   const rpPct    = effBaseRP>0 ? Math.min(100,Math.max(0,curRP/effBaseRP*100)) : 0;
 
-  // ── UI atoms ──────────────────────────────────────────────────────────────
-  const SecTitle = ({children,color=T.gold,right}) => (
-    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
-      <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-        <span style={{width:'14px',height:'1px',background:color,display:'inline-block'}}/>
-        <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'0.2em',color,textTransform:'uppercase',fontWeight:'600'}}>{children}</span>
-        <span style={{width:'14px',height:'1px',background:color,display:'inline-block'}}/>
-      </div>
-      {right}
-    </div>
-  );
-  const Fld = ({label,children,style={}}) => (
-    <div style={style}><label style={LBL}>{label}</label>{children}</div>
-  );
-  const Badge = ({rarity}) => (
-    <span style={{display:'inline-block',padding:'1px 8px',borderRadius:'10px',fontSize:'11px',fontFamily:"'Cinzel',serif",background:`${RARITY_COLOR[rarity]}22`,border:`1px solid ${RARITY_COLOR[rarity]}55`,color:RARITY_COLOR[rarity]}}>{rarity}</span>
-  );
-  const ModalWrap = ({children,accentColor=T.gold,minW='400px'}) => createPortal(
-    <>
-      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.88)',zIndex:999}} />
-      <div style={{position:'fixed',top:'72px',left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:'700px',padding:'0 16px',zIndex:1000,maxHeight:'calc(100vh - 96px)',display:'flex',flexDirection:'column'}}>
-        <div style={{background:T.card,border:`1px solid ${accentColor}44`,borderTop:`2px solid ${accentColor}`,borderRadius:'6px',padding:'26px',minWidth:minW,boxSizing:'border-box',overflowY:'auto',flex:1}}>
-          {children}
-        </div>
-      </div>
-    </>,
-    document.body
-  );
-  const DBPlaceholder = ({title,icon,msg,onClose,onManual}) => (
-    <ModalWrap>
-      <div style={{textAlign:'center',padding:'8px 0'}}>
-        <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:T.gold,marginBottom:'8px'}}>{title}</div>
-        <div style={{fontSize:'34px',marginBottom:'12px'}}>{icon}</div>
-        <div style={{color:T.textMuted,fontSize:'14px',lineHeight:'1.8',marginBottom:'20px'}}>{msg}</div>
-        <div style={{display:'grid',gridTemplateColumns:onManual?'1fr 1fr':'1fr',gap:'8px'}}>
-          <button onClick={onClose} style={{...Btn(T.textMuted),padding:'9px'}}>CLOSE</button>
-          {onManual&&<button onClick={onManual} style={{...Btn('#c8503a'),padding:'9px',background:'#1a0804'}}>ADD MANUALLY</button>}
-        </div>
-      </div>
-    </ModalWrap>
-  );
-
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div style={{fontFamily:"'EB Garamond',serif",fontSize:'15px',color:T.text,background:T.bg,minHeight:'100vh',padding:'20px',maxWidth:'1160px',margin:'0 auto'}}>
@@ -1472,6 +1611,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           <tbody>
             {ARMOR_SLOTS.map(slot=>{
               const p=armor[slot],has=p.rarity!=='None'||p.name,pRes=ELEMENTS.filter(el=>p.resistances[el]>0);
+              const equippedInv = characterId ? findEquippedArmorInventoryForSlot(slot) : null;
+              const armorCandidates = characterId ? getArmorInventoryCandidates(slot) : [];
+              const canEquipFromInv = armorCandidates.length > 0;
               return(
                 <tr key={slot} className="tr-hover" style={{borderBottom:`1px solid ${T.border}`}}>
                   <td style={{padding:'7px 8px',fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,whiteSpace:'nowrap'}}>{slot}</td>
@@ -1480,7 +1622,18 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   <td style={{padding:'7px 8px'}}>{has?<Badge rarity={p.rarity}/>:<span style={{color:T.textDim}}>—</span>}</td>
                   <td style={{padding:'7px 8px',fontWeight:'500',color:has?T.text:T.textDim}}>{has?`${p.mitigation}%`:'—'}</td>
                   <td style={{padding:'7px 8px'}}>{pRes.length>0?<div style={{display:'flex',flexWrap:'wrap',gap:'4px'}}>{pRes.map(el=><span key={el} style={{fontSize:'11px',padding:'1px 6px',borderRadius:'8px',background:`${ELEM_COLOR[el]}18`,color:ELEM_COLOR[el],border:`1px solid ${ELEM_COLOR[el]}44`}}>{el.slice(0,3)} {p.resistances[el]}%</span>)}</div>:<span style={{color:T.textDim,fontSize:'12px'}}>—</span>}</td>
-                  <td style={{padding:'7px 8px',textAlign:'right'}}><button onClick={()=>openArmorEdit(slot)} style={{...Btn(T.goldDim),padding:'3px 10px',fontSize:'10px'}}>✎ EDIT</button></td>
+                  <td style={{padding:'7px 8px',textAlign:'right'}}>
+                    <div style={{display:'inline-flex',flexWrap:'wrap',gap:'6px',justifyContent:'flex-end',alignItems:'center'}}>
+                      {characterId && (
+                        equippedInv ? (
+                          <button type="button" onClick={()=>unequipInventoryItem(equippedInv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize:'10px'}}>UNEQUIP</button>
+                        ) : (
+                          <button type="button" onClick={()=>handleArmorSlotEquipPress(slot)} disabled={!canEquipFromInv} title={!canEquipFromInv ? 'No matching armor in inventory for this slot' : ''} style={{...Btn('#8a7040'),padding:'3px 10px',fontSize:'10px',opacity:canEquipFromInv?1:0.35}}>EQUIP</button>
+                        )
+                      )}
+                      <button type="button" onClick={()=>openArmorEdit(slot)} style={{...Btn(T.goldDim),padding:'3px 10px',fontSize:'10px'}}>✎ EDIT</button>
+                    </div>
+                  </td>
                 </tr>
               );
             })}
@@ -1711,20 +1864,44 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                               <option value="main_hand">Main Hand</option>
                               <option value="off_hand">Off Hand</option>
                             </select>
-                            <button onClick={()=>equipInventoryItem(inv, slotPick)} style={{...Btn('#c8503a'),padding:'3px 10px',fontSize:'10px'}}>EQUIP</button>
+                            <button
+                              type="button"
+                              onClick={()=>equipInventoryItem(inv, slotPick)}
+                              disabled={!meetsEquipStatRequirements('weapon', det)}
+                              title={equipStatRequirementMessage('weapon', det) || undefined}
+                              style={{...Btn('#c8503a'),padding:'3px 10px',fontSize:'10px',opacity:!meetsEquipStatRequirements('weapon', det)?0.35:1}}
+                            >
+                              EQUIP
+                            </button>
                           </div>
                         )}
                         {grp.key==='weapon'&&isEq&&(
                           <button onClick={()=>unequipInventoryItem(inv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize:'10px'}}>UNEQUIP</button>
                         )}
                         {grp.key==='armor'&&!isEq&&det&&(
-                          <button onClick={()=>equipInventoryItem(inv, det.slot)} style={{...Btn('#8a7040'),padding:'3px 10px',fontSize:'10px'}}>EQUIP</button>
+                          <button
+                            type="button"
+                            onClick={()=>equipInventoryItem(inv, det.slot)}
+                            disabled={!meetsEquipStatRequirements('armor', det)}
+                            title={equipStatRequirementMessage('armor', det) || undefined}
+                            style={{...Btn('#8a7040'),padding:'3px 10px',fontSize:'10px',opacity:!meetsEquipStatRequirements('armor', det)?0.35:1}}
+                          >
+                            EQUIP
+                          </button>
                         )}
                         {grp.key==='armor'&&isEq&&(
                           <button onClick={()=>unequipInventoryItem(inv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize:'10px'}}>UNEQUIP</button>
                         )}
                         {grp.key==='focus_bracer'&&!isEq&&(
-                          <button onClick={()=>equipInventoryItem(inv,'bracer')} style={{...Btn(T.magic),padding:'3px 10px',fontSize:'10px'}}>EQUIP</button>
+                          <button
+                            type="button"
+                            onClick={()=>equipInventoryItem(inv,'bracer')}
+                            disabled={!meetsEquipStatRequirements('focus_bracer', det)}
+                            title={equipStatRequirementMessage('focus_bracer', det) || undefined}
+                            style={{...Btn(T.magic),padding:'3px 10px',fontSize:'10px',opacity:!meetsEquipStatRequirements('focus_bracer', det)?0.35:1}}
+                          >
+                            EQUIP
+                          </button>
                         )}
                         {grp.key==='focus_bracer'&&isEq&&(
                           <button onClick={()=>unequipInventoryItem(inv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize:'10px'}}>UNEQUIP</button>
@@ -1944,6 +2121,56 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             <button onClick={()=>setLuOpen(false)} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
             <button onClick={confirmLU} disabled={!luReady} style={{...Btn(T.gold),padding:'10px',background:luReady?`${T.gold}15`:'transparent',fontSize:'12px',letterSpacing:'0.12em'}}>✦ CONFIRM LEVEL UP</button>
           </div>
+        </ModalWrap>
+      )}
+
+      {/* Armor equip — pick inventory row when multiple match slot */}
+      {armorEquipPicker && (
+        <ModalWrap accentColor="#8a7040" minW="440px">
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.22em', color: '#8a7040', marginBottom: '2px' }}>EQUIP ARMOR</div>
+          <div style={{ fontSize: '17px', fontWeight: '500', marginBottom: '4px' }}>{armorEquipPicker.slot}</div>
+          <div style={{ height: '1px', background: '#3a2f10', marginBottom: '14px' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', maxHeight: 'min(60vh, 360px)', overflowY: 'auto' }}>
+            {armorEquipPicker.items.map((inv) => {
+              const det = inv.item_details;
+              const nm = det?.name || 'Armor';
+              return (
+                <div
+                  key={inv.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '10px 12px',
+                    background: T.surface,
+                    border: `1px solid ${T.border}`,
+                    borderRadius: '4px',
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>{nm}</div>
+                    <div style={{ fontSize: '11px', color: T.textMuted }}>
+                      {det ? <><Badge rarity={cap(det.rarity || 'None')} /> · {parseFloat(det.mitigation_percent || '0')}% mit · {cap(det.category || '')}</> : null}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!det?.slot) return;
+                      equipInventoryItem(inv, det.slot);
+                      setArmorEquipPicker(null);
+                    }}
+                    style={{ ...Btn('#8a7040'), padding: '8px 14px', fontSize: '11px', flexShrink: 0 }}
+                  >
+                    EQUIP
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <button type="button" onClick={() => setArmorEquipPicker(null)} style={{ ...Btn(T.textMuted), padding: '10px', width: '100%' }}>
+            CANCEL
+          </button>
         </ModalWrap>
       )}
 
@@ -2797,7 +3024,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                 const sheetW=libWeaponToSheet(w);
                 const rarCol=RARITY_COLOR[cap(w.rarity)]||T.textMuted;
                 const isExp=libExpanded===w.id;
+                const canAddWeapon = meetsWeaponLibStats(w);
                 const doAdd=()=>{
+                  if (!canAddWeapon) return;
                   addToInventory('weapon', w.id);
                   setWepModal(null);
                 };
@@ -2814,8 +3043,10 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                           <span style={{color:T.textDim}}> × RP</span>
                         </span>
                       </div>
-                      <button onClick={e=>{e.stopPropagation();doAdd();}}
-                        style={{...Btn('#c8503a'),padding:'3px 14px',fontSize:'11px',background:'#1a0604',flexShrink:0}}>
+                      <button type="button" onClick={e=>{e.stopPropagation();doAdd();}}
+                        disabled={!canAddWeapon}
+                        title={!canAddWeapon ? (equipStatRequirementMessage('weapon', w) || 'Requirements not met') : 'Add to inventory'}
+                        style={{...Btn('#c8503a'),padding:'3px 14px',fontSize:'11px',background:'#1a0604',flexShrink:0,opacity:canAddWeapon?1:0.35}}>
                         + ADD
                       </button>
                     </div>
@@ -2899,7 +3130,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                 const rarCol=RARITY_COLOR[cap(a.rarity)]||T.textMuted;
                 const slot=cap(a.slot);
                 const isExp=libExpanded===a.id;
+                const canAddArmor = meetsArmorLibStats(a);
                 const doAdd=()=>{
+                  if (!canAddArmor) return;
                   addToInventory('armor', a.id);
                   setWepModal(null);
                 };
@@ -2916,8 +3149,10 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                           {a.req_power>0&&<span style={{color:T.textDim,marginLeft:'8px'}}>· PWR {a.req_power}+</span>}
                         </span>
                       </div>
-                      <button onClick={e=>{e.stopPropagation();doAdd();}}
-                        style={{...Btn('#8a7040'),padding:'3px 14px',fontSize:'11px',background:'#100c02',flexShrink:0}}>
+                      <button type="button" onClick={e=>{e.stopPropagation();doAdd();}}
+                        disabled={!canAddArmor}
+                        title={!canAddArmor ? (equipStatRequirementMessage('armor', a) || 'Requirements not met') : 'Add to inventory'}
+                        style={{...Btn('#8a7040'),padding:'3px 14px',fontSize:'11px',background:'#100c02',flexShrink:0,opacity:canAddArmor?1:0.35}}>
                         + ADD
                       </button>
                     </div>
@@ -3071,6 +3306,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                 const isExp=libExpanded===b.id;
                 const gradeColor={initiate:'#7060b0',adept:'#9b6fe8',exemplar:'#c060e8',ascendant:'#e080ff'};
                 const gCol=gradeColor[b.grade?.toLowerCase()]||T.magic;
+                const canAddBracer = meetsBracerLibStats(b);
                 return(
                   <div key={b.id} style={{borderBottom:`1px solid ${T.border}`,background:isExp?'#0a0818':'transparent'}}>
                     <div onClick={()=>setLibExpanded(isExp?null:b.id)}
@@ -3082,8 +3318,10 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                         <span style={{fontSize:'12px',color:T.textMuted,marginLeft:'10px'}}>⬡ {b.gem_slots} slots</span>
                         {b.req_focus>0&&<span style={{fontSize:'11px',color:T.textDim,marginLeft:'8px'}}>FOC {b.req_focus}+</span>}
                       </div>
-                      <button onClick={e=>{e.stopPropagation();addToInventory('focus_bracer',b.id);setWepModal(null);}}
-                        style={{...Btn(T.magic),padding:'3px 14px',fontSize:'11px',background:'#0a0618',flexShrink:0}}>
+                      <button type="button" onClick={e=>{e.stopPropagation();if(!canAddBracer)return;addToInventory('focus_bracer',b.id);setWepModal(null);}}
+                        disabled={!canAddBracer}
+                        title={!canAddBracer ? (equipStatRequirementMessage('focus_bracer', b) || 'Requirements not met') : 'Add to inventory'}
+                        style={{...Btn(T.magic),padding:'3px 14px',fontSize:'11px',background:'#0a0618',flexShrink:0,opacity:canAddBracer?1:0.35}}>
                         + ADD
                       </button>
                     </div>

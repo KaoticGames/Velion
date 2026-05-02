@@ -9,7 +9,8 @@ import { requireAuth }                 from '../middleware/auth';
 
 const router = Router();
 const BCRYPT_ROUNDS = 12;
-const REFRESH_DAYS  = 30;
+/** HttpOnly refresh cookie, DB `expires_at`, and JWT refresh `exp` — align with `signRefreshToken` in lib/jwt.ts */
+const REFRESH_DAYS  = 7;
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 

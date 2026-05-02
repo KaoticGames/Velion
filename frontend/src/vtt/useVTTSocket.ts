@@ -11,6 +11,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { io, type Socket }               from 'socket.io-client';
 import { useAuthStore }                  from '@/store/authStore';
+import { isSocketSessionAuthFailure, kickToLogin } from '@/lib/authSession';
 import { useVTTStore }                   from './useVTTState';
 import type { DiceResult, DiceVisibility, ShapeType } from './types';
 
@@ -50,6 +51,9 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
     socket.on('connect_error', (err: Error) => {
       console.warn('[vtt] connection error:', err.message);
       dispatch({ type: 'SET_CONNECTED', connected: false });
+      if (isSocketSessionAuthFailure(err)) {
+        kickToLogin();
+      }
     });
 
     // ── Inbound events ───────────────────────────────────────────────
