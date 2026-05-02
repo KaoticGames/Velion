@@ -94,6 +94,7 @@ export default function CharacterSheetPage() {
   return (
     <div className="page-enter">
       <VelionCharacterSheetImpl
+        key={id ?? 'local'}
         characterId={id ?? undefined}
         initialData={character ?? undefined}
         sessionId={sessionId}

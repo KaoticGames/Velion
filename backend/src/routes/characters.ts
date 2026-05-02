@@ -172,6 +172,7 @@ router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
     name: string; backstory: string; notes: string; gold: number;
     current_hp: bigint; chosen_attribute: AttrKey; portrait_url: string;
     current_rp: number; rp_banked: number; rp_banking: boolean;
+    sheet_armor_overrides: unknown;
   }>;
 
   const updates: Partial<NewCharacter> = { updated_at: new Date() };
@@ -199,6 +200,52 @@ router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
     updates.rp_banked = v;
   }
   if (body.rp_banking !== undefined) updates.rp_banking = Boolean(body.rp_banking);
+
+  if (body.sheet_armor_overrides !== undefined) {
+    const raw = body.sheet_armor_overrides;
+    if (raw !== null && (typeof raw !== 'object' || Array.isArray(raw))) {
+      res.status(422).json({
+        error: { code: 'VALIDATION_ERROR', message: 'sheet_armor_overrides must be a JSON object.', status: 422 },
+      });
+      return;
+    }
+    const sheetSlots = new Set([
+      'Helmet', 'Chestplate', 'Leggings', 'Gauntlets', 'Boots', 'Shirt', 'Pants',
+    ]);
+    const out: Record<string, Record<string, unknown>> = {};
+    if (raw !== null) {
+      for (const slot of sheetSlots) {
+        const v = (raw as Record<string, unknown>)[slot];
+        if (!v || typeof v !== 'object' || Array.isArray(v)) continue;
+        const vo = v as Record<string, unknown>;
+        const entry: Record<string, unknown> = {};
+        if ('library_item_id' in vo && (vo.library_item_id === null || typeof vo.library_item_id === 'string')) {
+          entry.library_item_id = vo.library_item_id;
+        }
+        if (typeof vo.mitigation === 'number' && Number.isFinite(vo.mitigation)) {
+          entry.mitigation = Math.max(0, Math.min(100, vo.mitigation));
+        }
+        if (vo.resistances && typeof vo.resistances === 'object' && !Array.isArray(vo.resistances)) {
+          const r: Record<string, number> = {};
+          for (const [k, val] of Object.entries(vo.resistances as Record<string, unknown>)) {
+            if (typeof val === 'number' && Number.isFinite(val)) {
+              r[k] = Math.max(0, Math.min(200, val));
+            }
+          }
+          entry.resistances = r;
+        }
+        if (Object.keys(entry).length > 0) out[slot] = entry;
+      }
+    }
+    const json = JSON.stringify(out);
+    if (json.length > 80_000) {
+      res.status(422).json({
+        error: { code: 'VALIDATION_ERROR', message: 'sheet_armor_overrides payload is too large.', status: 422 },
+      });
+      return;
+    }
+    updates.sheet_armor_overrides = out as never;
+  }
 
   await db.update(characters).set(updates).where(eq(characters.id, id));
 

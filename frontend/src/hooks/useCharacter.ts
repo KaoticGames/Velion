@@ -39,6 +39,11 @@ export interface CharacterDetail extends CharacterSummary {
   backstory:         string;
   notes?:            string;
   gold?:             number;
+  /** Saved armor resistance / mitigation tweaks from the character sheet (per slot). */
+  sheet_armor_overrides?: Record<
+    string,
+    { library_item_id?: string | null; mitigation?: number; resistances?: Record<string, number> }
+  >;
   equipment:         EquipmentSlot[];
   bracer_gems:       BracerGem[];
   growth_pool_history: GrowthPoolEntry[];

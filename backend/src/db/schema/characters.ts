@@ -36,6 +36,9 @@ export const characters = pgTable('characters', {
   gold:              integer('gold').notNull().default(0),
   portrait_url:      text('portrait_url'),
 
+  /** Per-slot armor tweaks from the sheet (resistances, mitigation) keyed by sheet slot e.g. Helmet. */
+  sheet_armor_overrides: jsonb('sheet_armor_overrides').notNull().default(sql`'{}'::jsonb`),
+
   created_at:        timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at:        timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   deleted_at:        timestamp('deleted_at', { withTimezone: true }),

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { characterKeys } from "@/hooks/useCharacter";
@@ -131,6 +131,44 @@ const libArmorToSheet = a => ({
   resistances: Object.fromEntries(ELEMENTS.map(e => [e, 0])),
   libraryId: a.id,
 });
+
+/** Merge persisted sheet tweaks when the equipped library piece still matches. */
+function mergeArmorSheetOverrides(base, slotName, overridesRoot) {
+  const entry = overridesRoot?.[slotName];
+  if (!entry || typeof entry !== 'object') return base;
+  const libId = entry.library_item_id !== undefined ? entry.library_item_id : undefined;
+  if (libId !== undefined && libId !== null && libId !== base.libraryId) return base;
+  if (libId === null && base.libraryId) return base;
+  const out = { ...base, resistances: { ...base.resistances } };
+  if (typeof entry.mitigation === 'number' && Number.isFinite(entry.mitigation)) {
+    out.mitigation = Math.max(0, Math.min(100, entry.mitigation));
+  }
+  if (entry.resistances && typeof entry.resistances === 'object') {
+    for (const el of ELEMENTS) {
+      const v = entry.resistances[el];
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        out.resistances[el] = Math.max(0, Math.min(200, v));
+      }
+    }
+  }
+  return out;
+}
+
+function buildSheetArmorOverrides(armorState) {
+  const out = {};
+  for (const slot of ARMOR_SLOTS) {
+    const p = armorState[slot];
+    if (!p || (!p.name && p.rarity === 'None')) continue;
+    out[slot] = {
+      library_item_id: p.libraryId ?? null,
+      mitigation: Number(p.mitigation) || 0,
+      resistances: Object.fromEntries(
+        ELEMENTS.map(e => [e, Math.max(0, Math.min(200, Number(p.resistances[e]) || 0))]),
+      ),
+    };
+  }
+  return out;
+}
 const libGemElement = t => {
   if (t === 'light') return 'Radiant';
   return t.charAt(0).toUpperCase() + t.slice(1);
@@ -168,6 +206,19 @@ function StableNumInput({ value, onChange, min=0, max=Infinity, style={}, placeh
 
 // ── Main ──────────────────────────────────────────────────────────────────
 export default function VelionSheet({ characterId = undefined, initialData = undefined, sessionId = undefined }) {
+  const armorOverrides =
+    initialData?.sheet_armor_overrides &&
+    typeof initialData.sheet_armor_overrides === 'object' &&
+    !Array.isArray(initialData.sheet_armor_overrides)
+      ? initialData.sheet_armor_overrides
+      : {};
+
+  const equipmentSig = useMemo(() => {
+    const eq = initialData?.equipment;
+    if (!eq?.length) return '';
+    return [...eq].map(e => `${e.slot}:${e.item_type}:${e.item_id}`).sort().join('|');
+  }, [initialData?.equipment]);
+
   const queryClient = useQueryClient();
   const accessToken = useAuthStore(s => s.accessToken);
   const rollUserId = useAuthStore(s => s.user?.id ?? '');
@@ -499,6 +550,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   if(S.vulnerable) effMit=Math.max(0,Math.floor(totalMit*0.5));
   if(S.fortified)  effMit=Math.min(100,effMit+10);
   const effRes = Object.fromEntries(ELEMENTS.map(el=>{let v=totalRes[el];if(S.vulnerable)v=Math.max(0,Math.floor(v*0.5));return [el,v];}));
+  const armorSaveSnap = useMemo(() => JSON.stringify(buildSheetArmorOverrides(armor)), [armor]);
 
   // ── Weapons ──
   const [weapons,   setWeapons]  = useState([]);
@@ -783,7 +835,10 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           setWeapons(p => [...p.filter(x => x.id !== sheetW.id), sheetW]);
         }
         if (invItem.item_type === 'armor') {
-          setArmor(p => ({ ...p, [cap(det.slot)]: libArmorToSheet(det) }));
+          setArmor(p => ({
+            ...p,
+            [cap(det.slot)]: mergeArmorSheetOverrides(libArmorToSheet(det), cap(det.slot), armorOverrides),
+          }));
         }
         if (invItem.item_type === 'focus_bracer') {
           changeBracer(cap(det.grade));
@@ -919,7 +974,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           const newArmor = Object.fromEntries(ARMOR_SLOTS.map(s => [s, mkArmor()]));
           items.forEach(a => {
             const slot = cap(a.slot);
-            if (newArmor[slot]) newArmor[slot] = libArmorToSheet(a);
+            if (newArmor[slot]) {
+              newArmor[slot] = mergeArmorSheetOverrides(libArmorToSheet(a), slot, armorOverrides);
+            }
           });
           setArmor(newArmor);
         }
@@ -976,8 +1033,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       }
     };
     hydrate();
+  // Re-hydrate library gear only when equipped items change — not on every HP/RP refetch
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialData]);
+  }, [characterId, equipmentSig]);
 
   // 2b. When the server row changes (VTT spent RP, refetch, etc.), sync session RP
   const rpSyncRef = useRef({ characterId: null, rev: null });
@@ -1012,6 +1070,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           current_rp: curRP,
           rp_banked:  bankRP,
           rp_banking: banking,
+          sheet_armor_overrides: buildSheetArmorOverrides(armor),
         });
         queryClient.invalidateQueries({ queryKey: characterKeys.detail(characterId) });
         setSaveStatus('saved');
@@ -1021,7 +1080,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       }
     }, 3000);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characterId, charName, curHP, gold, notes, curRP, bankRP, banking]);
+  }, [characterId, charName, curHP, gold, notes, curRP, bankRP, banking, armorSaveSnap]);
 
   // Stable callbacks to avoid focus loss in damage inputs
   const setDmgAmount = useCallback((idx,val) => {

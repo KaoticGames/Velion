@@ -113,6 +113,13 @@
       "when": 1777400000000,
       "tag": "0015_users_beta_access",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1777500000000,
+      "tag": "0016_sheet_armor_overrides",
+      "breakpoints": true
     }
   ]
 }

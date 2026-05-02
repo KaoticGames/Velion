@@ -240,19 +240,27 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
     };
   }, [rpReady, characterId, curRP, bankRP, banking, queryClient]);
 
+  // Stable subscription — do not depend on `activeFlow` (stale closure + listener churn drops events after the first crit).
   useEffect(() => {
     const onRollComplete = (event: Event) => {
       const detail = (event as CustomEvent<Record<string, unknown>>).detail;
       const meta = detail?.requestMeta as Record<string, unknown> | undefined;
-      if (!meta || !activeFlow || meta.flow_id !== activeFlow.id || meta.character_id !== activeFlow.characterId) return;
+      if (!meta) return;
+
+      const flowId = meta.flow_id;
+      const charId = meta.character_id;
+
       if (meta.kind === 'vttPanelCrit') {
         const r = (detail.results as number[] | undefined)?.[0] ?? detail.total;
-        setActiveFlow((prev) => (prev ? { ...prev, critRoll: Number(r), isCrit: Number(r) === 20 } : prev));
+        setActiveFlow((prev) => {
+          if (!prev || flowId !== prev.id || String(charId ?? '') !== String(prev.characterId)) return prev;
+          return { ...prev, critRoll: Number(r), isCrit: Number(r) === 20 };
+        });
         return;
       }
       if (meta.kind === 'vttPanelDmg') {
         setActiveFlow((prev) => {
-          if (!prev) return prev;
+          if (!prev || flowId !== prev.id || String(charId ?? '') !== String(prev.characterId)) return prev;
           const idx = Number(meta.channel_idx ?? 0);
           const label = String(detail?.label ?? `Damage ${idx + 1}`);
           const row = { idx, label, total: Number(detail?.total ?? 0) };
@@ -263,7 +271,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
     };
     window.addEventListener('velion:dice-roll-complete', onRollComplete as EventListener);
     return () => window.removeEventListener('velion:dice-roll-complete', onRollComplete as EventListener);
-  }, [activeFlow]);
+  }, []);
 
   const effBaseRP = character?.base_rp ?? 0;
 
