@@ -143,6 +143,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
   const [bankRP, setBankRP] = useState(0);
   const [banking, setBanking] = useState(false);
   const [rpReady, setRpReady] = useState(false);
+  const [inActiveTurn, setInActiveTurn] = useState(false);
   const lastHydratedKey = useRef<string | null>(null);
   const [stakeRP, setStakeRP] = useState(0);
   const [activeFlow, setActiveFlow] = useState<ActiveFlow | null>(null);
@@ -186,6 +187,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
 
   useEffect(() => {
     lastHydratedKey.current = null;
+    setInActiveTurn(false);
   }, [characterId]);
 
   const generalInventory = inventory.filter(
@@ -286,11 +288,16 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
   };
 
   const handleTurnStart = () => {
-    if (!character || !rpReady) return;
+    if (!character || !rpReady || inActiveTurn) return;
     setCurRP(effBaseRP + bankRP);
     setBankRP(0);
     setBanking(false);
+    setInActiveTurn(true);
     setMode('main');
+  };
+
+  const handleEndTurn = () => {
+    setInActiveTurn(false);
   };
 
   const emitQuickRoll = (action: 'check' | 'attack' | 'damage' | 'custom', formula: string, label: string) => {
@@ -695,26 +702,43 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                 >
                   ← BACK
                 </button>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch', marginBottom: '10px', flexWrap: 'wrap' }}>
                   <button type="button" onClick={handleBank} style={{ ...subBtn, flex: 1, borderColor: banking ? `${T.rp}88` : `${T.gold}55` }}>
                     {banking ? '● BANKED' : '○ BANK RP'}
                   </button>
                   <button
                     type="button"
                     onClick={handleTurnStart}
+                    disabled={inActiveTurn}
                     style={{
                       ...subBtn,
                       flex: 1,
                       borderColor: `${T.rp}88`,
                       background: '#060e1a',
                       color: T.rp,
+                      opacity: inActiveTurn ? 0.35 : 1,
                     }}
                   >
                     START TURN
                   </button>
+                  <button
+                    type="button"
+                    onClick={handleEndTurn}
+                    disabled={!inActiveTurn}
+                    style={{
+                      ...subBtn,
+                      flex: 1,
+                      borderColor: '#8a4040',
+                      background: '#1a0806',
+                      color: '#d08070',
+                      opacity: !inActiveTurn ? 0.35 : 1,
+                    }}
+                  >
+                    END TURN
+                  </button>
                 </div>
                 <p style={{ margin: 0, fontSize: '10px', color: T.textDim, lineHeight: 1.45 }}>
-                  Bank saves your remaining RP for your next turn. When a new turn begins, use <strong style={{ color: T.text }}>Start Turn</strong> to refresh your pool (base + banked).
+                  Bank RP for next round. <strong style={{ color: T.text }}>Start Turn</strong> merges bank into your pool once per round; <strong style={{ color: T.text }}>End Turn</strong> when your turn is over so you can start again next round.
                 </p>
               </div>
             )}

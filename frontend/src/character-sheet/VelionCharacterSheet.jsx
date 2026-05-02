@@ -403,18 +403,33 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const [bankRP,  setBankRP]  = useState(0);
   const [banking, setBanking] = useState(false);
   const [curHP,   setCurHP]   = useState(INIT_MAX_HP);
+  /** After Start Turn merges bank into pool; End Turn clears so Start Turn can be used again next round. */
+  const [inActiveTurn, setInActiveTurn] = useState(false);
 
   const handleBank = () => {
     if(bankBlocked) return;
     if(!banking){ setBankRP(curRP); setBanking(true); } else setBanking(false);
   };
-  const handleTurnStart = () => { setCurRP(effBaseRP + bankRP); setBankRP(0); setBanking(false); };
+  const handleTurnStart = () => {
+    if (inActiveTurn) return;
+    setCurRP(effBaseRP + bankRP);
+    setBankRP(0);
+    setBanking(false);
+    setInActiveTurn(true);
+  };
+  const handleEndTurn = () => {
+    setInActiveTurn(false);
+  };
   const handleShortRest = () => {
     setCurHP(p=>Math.min(maxHP,p+Math.floor(maxHP*0.25)));
     setCurRP(effBaseRP);
     setActive(p=>{const n=new Set(p);['Burned','Poisoned','Bleeding'].forEach(s=>n.delete(s));return n;});
   };
-  const handleLongRest = () => { setCurHP(maxHP); setCurRP(baseRP); setActive(new Set()); setBankRP(0); setBanking(false); };
+  const handleLongRest = () => { setCurHP(maxHP); setCurRP(baseRP); setActive(new Set()); setBankRP(0); setBanking(false); setInActiveTurn(false); };
+
+  useEffect(() => {
+    setInActiveTurn(false);
+  }, [characterId]);
 
   // ── Level Up Modal ──
   const [luOpen,  setLuOpen]  = useState(false);
@@ -1204,8 +1219,20 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       </div>
 
       {/* ══ ACTION BAR ═══════════════════════════════════════════════════ */}
-      <div style={{display:'flex',gap:'8px',marginBottom:'14px',alignItems:'center',background:T.surface,border:`1px solid ${T.border}`,borderRadius:'4px',padding:'10px 14px'}}>
-        <button onClick={handleTurnStart} style={{...Btn('#50a0e8'),padding:'8px 20px',fontSize:'12px',background:'#060e1a',letterSpacing:'0.14em',fontWeight:'600'}}>▶ START TURN</button>
+      <div style={{display:'flex',gap:'8px',marginBottom:'14px',alignItems:'center',flexWrap:'wrap',background:T.surface,border:`1px solid ${T.border}`,borderRadius:'4px',padding:'10px 14px'}}>
+        <button
+          onClick={handleTurnStart}
+          disabled={inActiveTurn}
+          style={{...Btn('#50a0e8'),padding:'8px 20px',fontSize:'12px',background:'#060e1a',letterSpacing:'0.14em',fontWeight:'600'}}
+        >▶ START TURN</button>
+        <button
+          onClick={handleEndTurn}
+          disabled={!inActiveTurn}
+          style={{...Btn('#c8503a'),padding:'8px 20px',fontSize:'12px',background:'#1a0806',letterSpacing:'0.12em',fontWeight:'600'}}
+        >■ END TURN</button>
+        {inActiveTurn && (
+          <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,letterSpacing:'0.08em'}}>End turn when your round is over — then you can start the next.</span>
+        )}
         {banking&&bankRP>0&&<span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:'#4a8dcc'}}>+{bankRP} banked RP ready</span>}
         <div style={{flex:1}}/>
         <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,letterSpacing:'0.1em'}}>REST:</span>
