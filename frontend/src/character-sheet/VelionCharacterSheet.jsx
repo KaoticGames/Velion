@@ -257,6 +257,14 @@ const libGemElement = t => {
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 
+/** OE = extra RP borrowed; A = available RP before borrow. DC in [10, 20]. Matches rules compendium. */
+function calcOverextensionDC(oeAmount, availableRP) {
+  const A = Number(availableRP) || 0;
+  const OE = Math.max(0, Number(oeAmount) || 0);
+  if (!A) return 20;
+  return Math.max(10, Math.min(20, Math.round(10 + (10 * OE) / A)));
+}
+
 // ── StableNumInput: prevents focus loss in modals ─────────────────────────
 // Keeps a local string, only notifies parent on blur/Enter
 function StableNumInput({ value, onChange, min=0, max=Infinity, style={}, placeholder='', autoFocus=false }) {
@@ -687,12 +695,15 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const [oxRoll,   setOxRoll]   = useState(null);
   const [oxResult, setOxResult] = useState(null);
   const [tempRP,   setTempRP]   = useState(0);
+  /** One overextend roll per attack open; blocks cancel-then-reroll and repeat attempts after success. */
+  const [oxRolledThisAttack, setOxRolledThisAttack] = useState(false);
 
   const openAttack = w => {
     resetDiceQueue();
     setAtkWeapon(w); setAtkRP(0); setAtkStaked(0); setAtkStage('stake');
     setAtkCritRoll(null); setAtkIsCrit(false);
     setAtkResult(null); setOxOpen(false); setOxAmount(0); setOxRoll(null); setOxResult(null); setTempRP(0);
+    setOxRolledThisAttack(false);
     atkStakedRef.current = 0;
     setWepModal('attack');
   };
@@ -748,6 +759,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setAtkStage('stake'); setAtkRP(0); setAtkStaked(0);
     setAtkCritRoll(null); setAtkIsCrit(false); setAtkResult(null);
     setOxOpen(false); setOxAmount(0); setOxRoll(null); setOxResult(null); setTempRP(0);
+    setOxRolledThisAttack(false);
   };
   const cancelPreStake = () => {
     resetDiceQueue();
@@ -755,6 +767,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setAtkStage('stake'); setAtkRP(0); setAtkStaked(0);
     setAtkCritRoll(null); setAtkIsCrit(false);
     setOxOpen(false); setOxAmount(0); setOxRoll(null); setOxResult(null); setTempRP(0);
+    setOxRolledThisAttack(false);
   };
   // Post-stake cancel — RP already spent, just dismiss
   const cancelPostStake = () => {
@@ -763,14 +776,19 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setAtkStage('stake'); setAtkRP(0); setAtkStaked(0);
     setAtkCritRoll(null); setAtkIsCrit(false);
     setOxOpen(false); setOxAmount(0); setOxRoll(null); setOxResult(null); setTempRP(0);
+    setOxRolledThisAttack(false);
     if (tempRP>0||oxResult==='fail') setActive(p=>new Set([...p,'Overextended']));
   };
-  const rollOX    = () => {
+  const rollOX = () => {
+    const A = Math.max(0, Number(curRP) || 0);
+    const oe = Math.min(Math.max(0, Number(oxAmount) || 0), A);
+    if (oe <= 0 || A <= 0) return;
+    const oxDC = calcOverextensionDC(oe, A);
     requestSessionDiceRoll({
       formula: '1d20',
       label: 'Overextend Check',
       source_label: charName || 'Character',
-      requestMeta: { kind: 'oxCheck', oxAmount },
+      requestMeta: { kind: 'oxCheck', oxAmount: oe, availableRP: A, oxDC },
     });
   };
   const confirmOX = () => setOxOpen(false);
@@ -862,8 +880,20 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     } else if (meta?.kind === 'oxCheck') {
       const r = num(detail.results?.[0] ?? detail.total);
       const amt = typeof meta.oxAmount === 'number' ? meta.oxAmount : 0;
+      const A = typeof meta.availableRP === 'number' ? meta.availableRP : 0;
+      const dc =
+        typeof meta.oxDC === 'number'
+          ? meta.oxDC
+          : calcOverextensionDC(amt, A);
       setOxRoll(r);
-      if (r >= 10) { setOxResult('success'); setTempRP(amt); } else { setOxResult('fail'); setTempRP(0); }
+      setOxRolledThisAttack(true);
+      if (r >= dc) {
+        setOxResult('success');
+        setTempRP(amt);
+      } else {
+        setOxResult('fail');
+        setTempRP(0);
+      }
     } else if (meta?.kind === 'weaponDmg') {
       const ctx = weaponDmgCtxRef.current;
       if (ctx?.weapon) {
@@ -2308,10 +2338,15 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                     {[1,2,3,4,5].map(i=><div key={i} style={{flex:1,height:'7px',borderRadius:'2px',background:i<=pSteps(atkRP,curRP)?'#c8503a':'#1c2030',transition:'background 0.12s'}}/>)}
                   </div>
                 </div>
-                {tempRP===0
-                  ? <button onClick={()=>setOxOpen(true)} style={{...Btn('#ff4020'),padding:'7px',width:'100%',fontSize:'11px',background:'#1a0800',letterSpacing:'0.08em'}}>⚠ OVEREXTEND</button>
-                  : <div style={{background:'#1a0800',border:`1px solid #ff402055`,borderRadius:'3px',padding:'8px 12px',fontSize:'13px',color:'#ff7040'}}>⚠ Overextend: +{tempRP} temp RP · State applied after attack</div>
-                }
+                {tempRP > 0 ? (
+                  <div style={{background:'#1a0800',border:`1px solid #ff402055`,borderRadius:'3px',padding:'8px 12px',fontSize:'13px',color:'#ff7040'}}>⚠ Overextend: +{tempRP} temp RP · State applied after attack</div>
+                ) : oxRolledThisAttack ? (
+                  <div style={{background:'#1a1008',border:`1px solid #88404055`,borderRadius:'3px',padding:'8px 12px',fontSize:'12px',color:'#c08080',lineHeight:1.45}}>
+                    ⚠ Overextend already used this attack (failed save — no temp RP). You can declare overextension again on a later attack.
+                  </div>
+                ) : (
+                  <button type="button" onClick={()=>setOxOpen(true)} style={{...Btn('#ff4020'),padding:'7px',width:'100%',fontSize:'11px',background:'#1a0800',letterSpacing:'0.08em'}}>⚠ OVEREXTEND</button>
+                )}
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
                 <button onClick={cancelPreStake} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
@@ -2325,26 +2360,48 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             <div style={{background:'#100806',border:`1px solid #ff402055`,borderRadius:'4px',padding:'16px'}}>
               <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'0.18em',color:'#ff5030',marginBottom:'12px'}}>⚠ OVEREXTEND</div>
               <div style={{fontSize:'13px',color:T.textMuted,lineHeight:'1.7',marginBottom:'14px'}}>
-                Declare extra RP beyond your pool. Roll d20 — on 10+, you gain temp RP for this attack.<br/>
+                Declare extra RP beyond your pool (max = your available RP). Save DC = 10 + (10 × OE ÷ A), clamped 10–20 (OE = borrow, A = available). Roll d20 — meet or beat DC to gain temp RP for this attack.<br/>
                 <span style={{color:'#ff7040'}}>Overextended state applies after the attack regardless of outcome.</span>
               </div>
-              <Fld label="Extra RP to borrow" style={{marginBottom:'12px'}}>
-                <StableNumInput value={oxAmount} onChange={v=>setOxAmount(Math.max(0,v))} min={0}
-                  style={{...inp(),textAlign:'center',fontSize:'22px',color:'#ff5030'}}/>
+              <Fld label={`Extra RP to borrow (max ${curRP})`} style={{marginBottom:'8px'}}>
+                <StableNumInput
+                  value={oxAmount}
+                  onChange={setOxAmount}
+                  min={0}
+                  max={curRP}
+                  style={{...inp(),textAlign:'center',fontSize:'22px',color:'#ff5030'}}
+                />
               </Fld>
-              {!oxRoll&&<button onClick={rollOX} disabled={oxAmount===0} style={{...Btn('#ff4020'),padding:'9px',width:'100%',fontSize:'12px',background:'#1a0800',marginBottom:'10px',opacity:oxAmount===0?0.3:1}}>⬡ ROLL d20</button>}
+              {!oxRoll && (
+                <div style={{fontSize:'12px',color:T.textMuted,marginBottom:'12px',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>
+                  OE <strong style={{color:'#ff7040'}}>{Math.min(oxAmount, curRP)}</strong>
+                  {' · '}
+                  DC <strong style={{color:'#ff7040'}}>{calcOverextensionDC(Math.min(oxAmount, curRP), curRP)}</strong>
+                </div>
+              )}
+              {!oxRoll&&<button onClick={rollOX} disabled={oxAmount===0||curRP===0} style={{...Btn('#ff4020'),padding:'9px',width:'100%',fontSize:'12px',background:'#1a0800',marginBottom:'10px',opacity:oxAmount===0||curRP===0?0.3:1}}>⬡ ROLL d20</button>}
               {oxRoll&&(
                 <div style={{background:oxResult==='success'?'#0a2010':'#1e0808',border:`1px solid ${oxResult==='success'?'#50a04055':'#cc404055'}`,borderRadius:'3px',padding:'12px',marginBottom:'12px',textAlign:'center'}}>
                   <div style={{fontSize:'34px',fontWeight:'700',color:oxResult==='success'?'#60d040':'#e05050',marginBottom:'4px'}}>{oxRoll}</div>
                   <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.14em',color:oxResult==='success'?'#60d040':'#e05050',marginBottom:'4px'}}>
                     {oxResult==='success'?`SUCCESS — +${oxAmount} temp RP granted`:'FAIL — No extra RP · Overextended state applied'}
                   </div>
-                  <div style={{fontSize:'12px',color:T.textMuted}}>DC 10 · Rolled {oxRoll}</div>
+                  <div style={{fontSize:'12px',color:T.textMuted}}>
+                    DC {calcOverextensionDC(Math.min(oxAmount, curRP), curRP)} · Rolled {oxRoll}
+                  </div>
                 </div>
               )}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-                <button onClick={()=>{setOxOpen(false);setOxAmount(0);setOxRoll(null);setOxResult(null);setTempRP(0);}} style={{...Btn(T.textMuted),padding:'9px',fontSize:'11px'}}>CANCEL</button>
-                <button onClick={confirmOX} disabled={!oxRoll} style={{...Btn('#ff4020'),padding:'9px',fontSize:'11px',background:'#1a0800',opacity:oxRoll?1:0.3}}>CONFIRM</button>
+              <div style={{display:'grid',gridTemplateColumns: oxRoll ? '1fr' : '1fr 1fr',gap:'8px'}}>
+                {!oxRoll && (
+                  <button
+                    type="button"
+                    onClick={()=>{setOxOpen(false);setOxAmount(0);setOxRoll(null);setOxResult(null);setTempRP(0);}}
+                    style={{...Btn(T.textMuted),padding:'9px',fontSize:'11px'}}
+                  >
+                    CANCEL
+                  </button>
+                )}
+                <button type="button" onClick={confirmOX} disabled={!oxRoll} style={{...Btn('#ff4020'),padding:'9px',fontSize:'11px',background:'#1a0800',opacity:oxRoll?1:0.3}}>CONFIRM</button>
               </div>
             </div>
           )}

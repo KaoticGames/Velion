@@ -101,7 +101,10 @@ export const calcOverextensionDC = (
   availableRP:        number,
 ): number => {
   if (!availableRP) return 20;
-  return Math.min(20, Math.round(10 + (10 * overextendedAmount / availableRP)));
+  return Math.max(
+    10,
+    Math.min(20, Math.round(10 + (10 * overextendedAmount) / availableRP)),
+  );
 };
 
 /**
