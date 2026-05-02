@@ -403,32 +403,93 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const [bankRP,  setBankRP]  = useState(0);
   const [banking, setBanking] = useState(false);
   const [curHP,   setCurHP]   = useState(INIT_MAX_HP);
-  /** After Start Turn merges bank into pool; End Turn clears so Start Turn can be used again next round. */
+  /** True while Start Turn has been used for the current round. */
   const [inActiveTurn, setInActiveTurn] = useState(false);
+  /** One new bank commit until End Turn merges or cancels; Bank locked while temporary RP from a prior merge is active. */
+  const [canCommitBank, setCanCommitBank] = useState(true);
+  /** RP merged from bank on End Turn — stripped next End Turn (above base) if not spent. */
+  const [bankTempRemaining, setBankTempRemaining] = useState(0);
 
   const handleBank = () => {
-    if(bankBlocked) return;
-    if(!banking){ setBankRP(curRP); setBanking(true); } else setBanking(false);
+    if (bankBlocked) return;
+    if (!banking) {
+      if (!canCommitBank) return;
+      setBankRP(curRP);
+      setBanking(true);
+      setCanCommitBank(false);
+    } else {
+      setBanking(false);
+      setBankRP(0);
+      setCanCommitBank(true);
+    }
   };
   const handleTurnStart = () => {
     if (inActiveTurn) return;
-    setCurRP(effBaseRP + bankRP);
-    setBankRP(0);
-    setBanking(false);
     setInActiveTurn(true);
+    if (bankTempRemaining > 0) {
+      setCanCommitBank(false);
+      return;
+    }
+    if (bankRP > 0 || banking) {
+      setCanCommitBank(false);
+      return;
+    }
+    setCurRP(effBaseRP);
+    setCanCommitBank(true);
   };
   const handleEndTurn = () => {
     setInActiveTurn(false);
+    const mTemp = bankTempRemaining;
+    const mBank = bankRP;
+    const mBanking = banking;
+    const eff = effBaseRP;
+
+    setCurRP((prev) => {
+      let next = prev;
+      if (mTemp > 0) {
+        const strip = Math.min(mTemp, Math.max(0, next - eff));
+        next -= strip;
+      }
+      if (mBank > 0 || mBanking) {
+        next += mBank;
+      }
+      return next;
+    });
+
+    if (mBank > 0 || mBanking) {
+      setBankTempRemaining(mBank);
+      setCanCommitBank(false);
+    } else if (mTemp > 0) {
+      setBankTempRemaining(0);
+      setCanCommitBank(true);
+    } else {
+      setCanCommitBank(true);
+    }
+
+    setBankRP(0);
+    setBanking(false);
   };
   const handleShortRest = () => {
     setCurHP(p=>Math.min(maxHP,p+Math.floor(maxHP*0.25)));
     setCurRP(effBaseRP);
+    setBankTempRemaining(0);
     setActive(p=>{const n=new Set(p);['Burned','Poisoned','Bleeding'].forEach(s=>n.delete(s));return n;});
   };
-  const handleLongRest = () => { setCurHP(maxHP); setCurRP(baseRP); setActive(new Set()); setBankRP(0); setBanking(false); setInActiveTurn(false); };
+  const handleLongRest = () => {
+    setCurHP(maxHP);
+    setCurRP(baseRP);
+    setActive(new Set());
+    setBankRP(0);
+    setBanking(false);
+    setInActiveTurn(false);
+    setBankTempRemaining(0);
+    setCanCommitBank(true);
+  };
 
   useEffect(() => {
     setInActiveTurn(false);
+    setBankTempRemaining(0);
+    setCanCommitBank(true);
   }, [characterId]);
 
   // ── Level Up Modal ──
@@ -466,6 +527,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         setCurRP(data.current_rp ?? data.base_rp);
         setBankRP(data.rp_banked ?? 0);
         setBanking(!!data.rp_banking);
+        setCanCommitBank((Number(data.rp_banked) || 0) <= 0 && !data.rp_banking);
+        setBankTempRemaining(0);
         setCurHP(Number(data.max_hp));
         setLuGRoll(data.growth_roll_this_level ?? null);
         setLuOpen(false);
@@ -975,6 +1038,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setCurRP(initialData.current_rp ?? initialData.base_rp ?? 1);
     setBankRP(initialData.rp_banked ?? 0);
     setBanking(!!initialData.rp_banking);
+    setCanCommitBank((Number(initialData.rp_banked) || 0) <= 0 && !initialData.rp_banking);
     setGold(initialData.gold || 0);
     setNotes(initialData.notes || '');
     if (initialData.portrait_url) setPortrait(initialData.portrait_url);
@@ -1075,7 +1139,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const rpSyncRef = useRef({ characterId: null, rev: null });
   useEffect(() => {
     if (!initialData || !characterId || !initialized.current) return;
-    if (rpSyncRef.current.characterId !== characterId) {
+    const prevCharId = rpSyncRef.current.characterId;
+    if (prevCharId !== characterId) {
       rpSyncRef.current = { characterId, rev: null };
     }
     const rev =
@@ -1086,6 +1151,10 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setCurRP(initialData.current_rp ?? initialData.base_rp ?? 1);
     setBankRP(initialData.rp_banked ?? 0);
     setBanking(!!initialData.rp_banking);
+    if (prevCharId !== characterId) {
+      setCanCommitBank((Number(initialData.rp_banked) || 0) <= 0 && !initialData.rp_banking);
+      setBankTempRemaining(0);
+    }
   }, [characterId, initialData?.updated_at, initialData?.current_rp, initialData?.rp_banked, initialData?.rp_banking, initialData?.base_rp]);
 
   // 3. Auto-save debounce — fires 3s after any saveable field changes
@@ -1351,7 +1420,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               <label style={LBL}>Banked RP</label>
               <div style={{background:T.surface,border:`1px solid ${banking?'#2a6daa55':T.border}`,borderRadius:'3px',padding:'6px 12px',fontSize:'20px',color:banking?'#4a8dcc':T.textDim,fontWeight:'600',textAlign:'center'}}>{bankRP}</div>
             </div>
-            <button onClick={handleBank} disabled={bankBlocked}
+            <button onClick={handleBank} disabled={bankBlocked || (!canCommitBank && !banking)}
               style={{...Btn(banking?T.rp:T.textMuted),padding:'8px 14px',marginTop:'18px',background:banking?`${T.rp}15`:'transparent'}}>
               {banking?'● BANKED':'○ BANK'}
             </button>

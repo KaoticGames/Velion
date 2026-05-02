@@ -144,7 +144,13 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
   const [banking, setBanking] = useState(false);
   const [rpReady, setRpReady] = useState(false);
   const [inActiveTurn, setInActiveTurn] = useState(false);
+  /** Bank slot + lock while temporary merged RP is live for the round. */
+  const [canCommitBank, setCanCommitBank] = useState(true);
+  /** RP merged from bank on End Turn — stripped next End Turn (above base) if not spent. */
+  const [bankTempRemaining, setBankTempRemaining] = useState(0);
   const lastHydratedKey = useRef<string | null>(null);
+  /** After switching character, sync bank gate once from server — do not overwrite on refetch. */
+  const bankGateCharIdRef = useRef<string | null>(null);
   const [stakeRP, setStakeRP] = useState(0);
   const [activeFlow, setActiveFlow] = useState<ActiveFlow | null>(null);
 
@@ -187,7 +193,10 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
 
   useEffect(() => {
     lastHydratedKey.current = null;
+    bankGateCharIdRef.current = null;
     setInActiveTurn(false);
+    setBankTempRemaining(0);
+    setCanCommitBank(true);
   }, [characterId]);
 
   const generalInventory = inventory.filter(
@@ -212,6 +221,11 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
       : `${character.id}\0init\0${character.current_rp ?? ''}\0${character.rp_banked ?? ''}`;
     if (lastHydratedKey.current === key) return;
     lastHydratedKey.current = key;
+    const syncBankGate = bankGateCharIdRef.current !== character.id;
+    if (syncBankGate) {
+      bankGateCharIdRef.current = character.id;
+      setCanCommitBank((Number(character.rp_banked) || 0) <= 0 && !character.rp_banking);
+    }
     setCurRP(character.current_rp ?? character.base_rp ?? 0);
     setBankRP(character.rp_banked ?? 0);
     setBanking(!!character.rp_banking);
@@ -280,24 +294,66 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
   const handleBank = () => {
     if (!character || !rpReady) return;
     if (!banking) {
+      if (!canCommitBank) return;
       setBankRP(curRP);
       setBanking(true);
+      setCanCommitBank(false);
     } else {
       setBanking(false);
+      setBankRP(0);
+      setCanCommitBank(true);
     }
   };
 
   const handleTurnStart = () => {
     if (!character || !rpReady || inActiveTurn) return;
-    setCurRP(effBaseRP + bankRP);
-    setBankRP(0);
-    setBanking(false);
     setInActiveTurn(true);
+    if (bankTempRemaining > 0) {
+      setCanCommitBank(false);
+      setMode('main');
+      return;
+    }
+    if (bankRP > 0 || banking) {
+      setCanCommitBank(false);
+      setMode('main');
+      return;
+    }
+    setCurRP(effBaseRP);
+    setCanCommitBank(true);
     setMode('main');
   };
 
   const handleEndTurn = () => {
     setInActiveTurn(false);
+    const mTemp = bankTempRemaining;
+    const mBank = bankRP;
+    const mBanking = banking;
+    const eff = effBaseRP;
+
+    setCurRP((prev) => {
+      let next = prev;
+      if (mTemp > 0) {
+        const strip = Math.min(mTemp, Math.max(0, next - eff));
+        next -= strip;
+      }
+      if (mBank > 0 || mBanking) {
+        next += mBank;
+      }
+      return next;
+    });
+
+    if (mBank > 0 || mBanking) {
+      setBankTempRemaining(mBank);
+      setCanCommitBank(false);
+    } else if (mTemp > 0) {
+      setBankTempRemaining(0);
+      setCanCommitBank(true);
+    } else {
+      setCanCommitBank(true);
+    }
+
+    setBankRP(0);
+    setBanking(false);
   };
 
   const emitQuickRoll = (action: 'check' | 'attack' | 'damage' | 'custom', formula: string, label: string) => {
@@ -703,7 +759,17 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                   ← BACK
                 </button>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch', marginBottom: '10px', flexWrap: 'wrap' }}>
-                  <button type="button" onClick={handleBank} style={{ ...subBtn, flex: 1, borderColor: banking ? `${T.rp}88` : `${T.gold}55` }}>
+                  <button
+                    type="button"
+                    onClick={handleBank}
+                    disabled={!canCommitBank && !banking}
+                    style={{
+                      ...subBtn,
+                      flex: 1,
+                      borderColor: banking ? `${T.rp}88` : `${T.gold}55`,
+                      opacity: !canCommitBank && !banking ? 0.35 : 1,
+                    }}
+                  >
                     {banking ? '● BANKED' : '○ BANK RP'}
                   </button>
                   <button
@@ -738,7 +804,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                   </button>
                 </div>
                 <p style={{ margin: 0, fontSize: '10px', color: T.textDim, lineHeight: 1.45 }}>
-                  Bank RP for next round. <strong style={{ color: T.text }}>Start Turn</strong> merges bank into your pool once per round; <strong style={{ color: T.text }}>End Turn</strong> when your turn is over so you can start again next round.
+                  <strong style={{ color: T.text }}>End Turn</strong> adds banked RP to your pool. <strong style={{ color: T.text }}>Start Turn</strong> then locks Bank until that round ends; any of that bonus RP still above your base at the next <strong style={{ color: T.text }}>End Turn</strong> is removed, and Bank unlocks for the following round.
                 </p>
               </div>
             )}
