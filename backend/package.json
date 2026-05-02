@@ -8,8 +8,12 @@
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
+    "db:migrate:prod": "node dist/db/migrate.js",
     "db:seed": "tsx src/db/seed.ts",
+    "db:seed:prod": "node dist/db/seed.js",
     "db:seed:general-items": "tsx src/db/seed_general_items.ts",
+    "db:seed:general-items:prod": "node dist/db/seed_general_items.js",
+    "db:setup:prod": "npm run db:migrate:prod && npm run db:seed:prod && npm run db:seed:general-items:prod",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push"
   },

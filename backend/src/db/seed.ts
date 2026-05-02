@@ -1,6 +1,7 @@
 /**
  * Velion Mythera — Library Seed Data
- * Run with: npx tsx src/db/seed.ts
+ * Dev:  npm run db:seed
+ * Prod: npm run build && npm run db:seed:prod  (uses compiled JS; no tsx required)
  *
  * Populates the library with official (is_homebrew: false) content.
  * All values sourced from the Velion Mythera Player's Guide and SRD.
@@ -15,10 +16,11 @@
  * Soft cap recommendation: ~60% total physical mitigation.
  */
 
-import 'dotenv/config';
 import path from 'path';
 import { config } from 'dotenv';
-config({ path: path.resolve(process.cwd(), '.env.development') });
+
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
+config({ path: path.resolve(process.cwd(), envFile) });
 config({ path: path.resolve(process.cwd(), '.env') });
 
 import { db } from './index';

@@ -1,6 +1,73 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { extractApiError } from '@/lib/api';
+import WizardEquipmentStep from '@/components/character-wizard/WizardEquipmentStep';
+import { commitStartingEquipment, type StartingGearState } from '@/lib/startingEquipment';
+
+type AttrHelpKey = 'power' | 'agility' | 'focus' | 'presence';
+
+type AttributeHelpEntry = {
+  label: string;
+  summary: string;
+  bullets?: readonly string[];
+  paragraphs: readonly string[];
+};
+
+/** Player-facing copy; gear thresholds match library / compendium (armor tiers, bracers, weapons with req_*). */
+const ATTRIBUTE_HELP: Record<AttrHelpKey, AttributeHelpEntry> = {
+  power: {
+    label: 'Power',
+    summary: 'Raw physical might and endurance—forcing your way through obstacles, wearing heavy kit, and winning contests of brute force.',
+    bullets: [
+      'Equipment: heavier armor and many two-handed or high-impact weapons list a Power requirement; higher Power keeps those options open as you upgrade.',
+      'Play: breaking doors, grappling, resisting being pinned or dragged, and any check where you solve the problem by pushing harder.',
+      'Examples: crowbars and similar tools boost Power when forcing things open; traps and restraints often set a Power DC to resist or break free.',
+    ],
+    paragraphs: [
+      'When the table asks “can you physically overwhelm this?”—that is usually Power, not Agility.',
+      'If you want a front-liner in plate or a striker who leans on big weapons, put one of your best rolls here.',
+    ],
+  },
+  agility: {
+    label: 'Agility',
+    summary: 'Speed, balance, and precision—dodging, sneaking, climbing, and landing finesse or ranged strikes.',
+    bullets: [
+      'Equipment: light weapons, bows, rapiers, and other finesse or ranged lines often need Agility; plan ahead if you want that fighting style.',
+      'Play: initiative-like moments, slipping past guards, tumbling, fine manipulation, and attacks that rely on placement over muscle.',
+      'Examples: climbing ropes, picking locks (often with tools), and any check where you solve the problem by moving cleanly.',
+    ],
+    paragraphs: [
+      'Agility is how you stay untouched and how you connect when the fiction is about timing and lines, not raw lift.',
+      'Duelists, scouts, and sharpshooters typically want Agility high; pair it with enough Power or Focus for the armor or magic you still want to wear.',
+    ],
+  },
+  focus: {
+    label: 'Focus',
+    summary: 'Mental clarity and arcane bandwidth—perception, medicine, investigation, and binding power through Focus Bracers and spell gems.',
+    bullets: [
+      'Equipment: channeling weapons and advanced spell gems demand Focus; bracer tiers scale with it (e.g. more gem slots on higher-Focus bracers—see compendium).',
+      'Play: noticing ambushes, reading situations under stress, stabilizing allies, and any check where calm attention beats muscle.',
+      'Spell gems: once slotted, gems use their own rules in combat; Focus is what lets you qualify for stronger bracers and heavier magical tools.',
+    ],
+    paragraphs: [
+      'If you picture a mage, medic, or tactician, Focus is usually non-negotiable alongside your combat stat.',
+      'Presence is charm and leadership in the open; Focus is the tight read on danger and the steady hand on the conduit.',
+    ],
+  },
+  presence: {
+    label: 'Presence',
+    summary: 'Force of personality—commanding respect, bending social outcomes, and steering scenes without a blade.',
+    bullets: [
+      'Equipment: few items key off Presence the way they do Power, Agility, or Focus; social tests use your score and modifiers directly.',
+      'Chosen path: if Presence is your Chosen Attribute, its modifier feeds Base RP (Level + Chosen modifier + Growth Pool)—words can be your combat spine.',
+      'Play: intimidation, persuasion, performances, bargains, and rallying allies when the fight is about nerve.',
+    ],
+    paragraphs: [
+      'High Presence means the table believes you when you negotiate or stare someone down.',
+      'Face characters still need other stats for gear and survival—plan a secondary attribute so you are not locked out of equipment you want.',
+    ],
+  },
+};
 
 // ── Design tokens ─────────────────────────────────────────────────────────
 const T = {
@@ -17,6 +84,12 @@ const ATTR_COLOR: Record<string, string> = {
 
 const ATTRS = ['Power', 'Agility', 'Focus', 'Presence'] as const;
 type Attr = typeof ATTRS[number];
+
+const toAttrKey = (a: Attr): AttrHelpKey => a.toLowerCase() as AttrHelpKey;
+
+const HELP_KEY_ATTR: Record<AttrHelpKey, Attr> = {
+  power: 'Power', agility: 'Agility', focus: 'Focus', presence: 'Presence',
+};
 
 // ── SRD formulas ──────────────────────────────────────────────────────────
 const calcMod    = (v: number) => Math.floor((v - 10) / 2);
@@ -49,6 +122,10 @@ const STEPS = [
 
 interface PoolEntry { id: number; rolls: number[]; result: number; }
 
+/** Reserved width for attribute guide (steps 2–3) so the main column never reflows when the panel appears. */
+const ATTR_GUIDE_RAIL_PX = 300;
+const ATTR_GUIDE_GAP_PX  = 28;
+
 // ── Style helpers ─────────────────────────────────────────────────────────
 const inp = (x: React.CSSProperties = {}): React.CSSProperties => ({
   background: T.surface, border: `1px solid ${T.border}`, color: T.text,
@@ -67,6 +144,50 @@ const mkBtn = (color = T.gold, filled = false): React.CSSProperties => ({
 });
 
 // ─────────────────────────────────────────────────────────────────────────
+/** Only rendered while an attribute is hovered or focused — no placeholder column. */
+function AttributeHelpPanel({ highlighted }: { highlighted: AttrHelpKey | null }) {
+  if (!highlighted) return null;
+  const help = ATTRIBUTE_HELP[highlighted];
+  const accent = ATTR_COLOR[HELP_KEY_ATTR[highlighted]];
+  return (
+    <aside
+      style={{
+        width: '100%', boxSizing: 'border-box', flexShrink: 0, alignSelf: 'flex-start',
+        background: T.card, border: `1px solid ${T.gold}33`,
+        borderTop: `2px solid ${accent}`, borderLeft: `3px solid ${accent}`,
+        borderRadius: '4px', padding: '18px 16px',
+        boxShadow: `0 0 24px ${accent}14`,
+        transition: 'border-color .15s, box-shadow .15s',
+      }}
+    >
+      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '9px', letterSpacing: '.2em', color: T.textMuted, marginBottom: '12px' }}>
+        ATTRIBUTE GUIDE
+      </div>
+      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '16px', letterSpacing: '.12em', color: accent, fontWeight: 600, marginBottom: '8px' }}>
+        {help.label}
+      </div>
+      <p style={{ fontFamily: "'EB Garamond', serif", fontSize: '14px', lineHeight: 1.65, color: T.textMuted, margin: '0 0 12px', fontStyle: 'italic' }}>
+        {help.summary}
+      </p>
+      {help.bullets && help.bullets.length > 0 && (
+        <ul style={{ margin: '0 0 14px', paddingLeft: '0', listStyle: 'none', color: T.text, fontFamily: "'EB Garamond', serif", fontSize: '12px', lineHeight: 1.55 }}>
+          {help.bullets.map((b, i) => (
+            <li key={i} style={{ marginBottom: '6px', paddingLeft: '2px' }}>
+              <span style={{ color: accent, marginRight: '6px' }}>▸</span>
+              {b}
+            </li>
+          ))}
+        </ul>
+      )}
+      {help.paragraphs.map((p, i) => (
+        <p key={i} style={{ fontFamily: "'EB Garamond', serif", fontSize: '13px', lineHeight: 1.7, color: T.text, margin: '0 0 12px' }}>
+          {p}
+        </p>
+      ))}
+    </aside>
+  );
+}
+
 export default function CharacterWizard() {
   const navigate = useNavigate();
   const [step, setStep]               = useState(1);
@@ -93,10 +214,14 @@ export default function CharacterWizard() {
   const [assignment, setAssignment]   = useState<Record<Attr, number | null>>({
     Power: null, Agility: null, Focus: null, Presence: null,
   });
+  const [highlightedAttr, setHighlightedAttr] = useState<'power' | 'agility' | 'focus' | 'presence' | null>(null);
   const nextId = useRef(0);
 
   // ── Step 3 ────────────────────────────────────────────────────────────
   const [chosen, setChosen]           = useState<Attr>('Power');
+
+  // ── Step 4: starting equipment (library picks; committed after character POST) ──
+  const [startingGear, setStartingGear] = useState<StartingGearState>({});
 
   // ── Derived ───────────────────────────────────────────────────────────
   const allAssigned = ATTRS.every(a => assignment[a] !== null);
@@ -109,6 +234,49 @@ export default function CharacterWizard() {
   const gp = growthPool ?? 0;
   const baseRP = calcBaseRP(1, attrs[chosen], gp);
   const maxHP  = calcMaxHP(baseRP, 1);
+
+  /** Vertical offset so panel bottom meets the 2×2 grid; horizontal width is fixed by ATTR_GUIDE_RAIL_PX. */
+  const stepRowRef     = useRef<HTMLDivElement>(null);
+  const guideTargetRef = useRef<HTMLDivElement>(null);
+  const guideWrapRef   = useRef<HTMLDivElement>(null);
+  const [guidePanelOffset, setGuidePanelOffset] = useState(0);
+
+  const recalcGuideOffset = useCallback(() => {
+    const row    = stepRowRef.current;
+    const target = guideTargetRef.current;
+    const wrap   = guideWrapRef.current;
+    if (!row || !target || !wrap || !highlightedAttr || (step !== 2 && step !== 3)) {
+      setGuidePanelOffset(0);
+      return;
+    }
+    const aside = wrap.querySelector('aside');
+    if (!aside) {
+      setGuidePanelOffset(0);
+      return;
+    }
+    const rowTop       = row.getBoundingClientRect().top;
+    const targetBottom = target.getBoundingClientRect().bottom;
+    const h            = aside.getBoundingClientRect().height;
+    setGuidePanelOffset(Math.max(0, Math.round(targetBottom - rowTop - h)));
+  }, [step, highlightedAttr]);
+
+  useLayoutEffect(() => {
+    recalcGuideOffset();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(recalcGuideOffset) : null;
+    const row    = stepRowRef.current;
+    const target = guideTargetRef.current;
+    const wrap   = guideWrapRef.current;
+    if (row)    ro?.observe(row);
+    if (target) ro?.observe(target);
+    if (wrap)   ro?.observe(wrap);
+    window.addEventListener('resize', recalcGuideOffset);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', recalcGuideOffset);
+    };
+  }, [recalcGuideOffset, pool.length, assignment, allAssigned, growthPool, chosen, rolling, rollingGrowth]);
+
+  useEffect(() => { setHighlightedAttr(null); }, [step]);
 
   // ── Portrait ──────────────────────────────────────────────────────────
   const handleFile = (file: File) => {
@@ -226,6 +394,12 @@ export default function CharacterWizard() {
         chosen_attribute: chosen.toLowerCase(),
         growth_pool:      gp,
       });
+      try {
+        await commitStartingEquipment(data.id, startingGear);
+      } catch (gearErr) {
+        console.error('[CharacterWizard] Starting equipment failed:', gearErr);
+        // Character exists; sheet can equip manually
+      }
       navigate(`/characters/${data.id}`);
     } catch (err) {
       setError(extractApiError(err).message);
@@ -327,7 +501,13 @@ export default function CharacterWizard() {
         </div>
 
         {/* ── Main content ──────────────────────────────────────────── */}
-        <div style={{ padding:'56px 64px', display:'flex', flexDirection:'column', maxWidth:'760px' }}>
+        <div style={{
+          padding:'56px 64px', display:'flex', flexDirection:'column',
+          maxWidth: step === 2 || step === 3
+            ? `${760 + ATTR_GUIDE_GAP_PX + ATTR_GUIDE_RAIL_PX}px`
+            : '760px',
+          width:'100%',
+        }}>
           <div key={step} style={{ animation:'fadeIn .25s ease-out', flex:1 }}>
 
             {/* ══ STEP 1: ORIGIN ════════════════════════════════════════ */}
@@ -392,6 +572,17 @@ export default function CharacterWizard() {
 
             {/* ══ STEP 2: ATTRIBUTES ════════════════════════════════════ */}
             {step === 2 && <>
+            <div
+              ref={stepRowRef}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `minmax(0, 1fr) ${ATTR_GUIDE_RAIL_PX}px`,
+                columnGap: ATTR_GUIDE_GAP_PX,
+                alignItems: 'start',
+              }}
+              onMouseLeave={() => setHighlightedAttr(null)}
+            >
+              <div style={{ minWidth: 0 }}>
               <Heading num={2} title="ATTRIBUTES" sub="Roll your pool, then assign each result where you want it." />
 
               <Callout title="THE METHOD">
@@ -439,11 +630,31 @@ export default function CharacterWizard() {
                   {pool.map(entry => {
                     const isAssigned = ATTRS.some(a => assignment[a] === entry.id);
                     const isSel      = selected === entry.id;
+                    const assignedAttr = ATTRS.find(a => assignment[a] === entry.id);
                     return (
                       <div
                         key={entry.id}
                         className="pool-card"
+                        role="button"
+                        tabIndex={isAssigned ? -1 : 0}
+                        aria-label={assignedAttr ? `Rolled ${entry.result}, assigned to ${assignedAttr}` : `Rolled ${entry.result}, select to assign`}
                         onClick={() => { if (!isAssigned) setSelected(prev => prev === entry.id ? null : entry.id); }}
+                        onMouseEnter={() => {
+                          if (assignedAttr) setHighlightedAttr(toAttrKey(assignedAttr));
+                          else setHighlightedAttr(null);
+                        }}
+                        onMouseLeave={() => setHighlightedAttr(null)}
+                        onFocus={() => {
+                          if (assignedAttr) setHighlightedAttr(toAttrKey(assignedAttr));
+                          else setHighlightedAttr(null);
+                        }}
+                        onBlur={() => setHighlightedAttr(null)}
+                        onKeyDown={e => {
+                          if (isAssigned) return;
+                          if (e.key !== 'Enter' && e.key !== ' ') return;
+                          e.preventDefault();
+                          setSelected(prev => prev === entry.id ? null : entry.id);
+                        }}
                         style={{
                           background:   isSel ? T.goldGlow : isAssigned ? T.surface : T.card,
                           border:       `2px solid ${isSel ? T.gold : isAssigned ? T.border : T.goldDim}`,
@@ -476,10 +687,10 @@ export default function CharacterWizard() {
                 )}
               </>}
 
-              {/* Attribute assignment slots */}
-              {pool.length > 0 && <>
+              {pool.length > 0 && (
+                <>
                 <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'.18em', color:T.textMuted, marginBottom:'12px' }}>ASSIGN TO ATTRIBUTES</div>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
+                <div ref={guideTargetRef} style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
                   {ATTRS.map(attr => {
                     const entry = pool.find(p => p.id === assignment[attr]);
                     const color = ATTR_COLOR[attr];
@@ -488,10 +699,23 @@ export default function CharacterWizard() {
                     return (
                       <div
                         key={attr}
+                        role="button"
+                        tabIndex={0}
                         className="attr-slot"
+                        onMouseEnter={() => setHighlightedAttr(toAttrKey(attr))}
+                        onFocus={() => setHighlightedAttr(toAttrKey(attr))}
+                        onBlur={() => setHighlightedAttr(null)}
                         onClick={() => {
+                          setHighlightedAttr(toAttrKey(attr));
                           if (selected !== null) { assignTo(attr, selected); }
                           else if (entry) { unassign(attr); }
+                        }}
+                        onKeyDown={e => {
+                          if (e.key !== 'Enter' && e.key !== ' ') return;
+                          e.preventDefault();
+                          setHighlightedAttr(toAttrKey(attr));
+                          if (selected !== null) assignTo(attr, selected);
+                          else if (entry) unassign(attr);
                         }}
                         style={{
                           background:   entry ? `${color}0e` : willReceive||willSwap ? T.goldGlow : T.card,
@@ -520,7 +744,8 @@ export default function CharacterWizard() {
                     );
                   })}
                 </div>
-              </>}
+                </>
+              )}
 
               {/* ── Growth Pool Roll ───────────────────────────────────── */}
               {allAssigned && (
@@ -569,10 +794,36 @@ export default function CharacterWizard() {
                   )}
                 </div>
               )}
+              </div>
+              <div
+                ref={guideWrapRef}
+                style={{
+                  width: ATTR_GUIDE_RAIL_PX,
+                  minWidth: ATTR_GUIDE_RAIL_PX,
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ marginTop: guidePanelOffset, width: '100%' }}>
+                  <AttributeHelpPanel highlighted={highlightedAttr} />
+                </div>
+              </div>
+            </div>
             </>}
 
             {/* ══ STEP 3: CALLING ═══════════════════════════════════════ */}
             {step === 3 && <>
+            <div
+              ref={stepRowRef}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `minmax(0, 1fr) ${ATTR_GUIDE_RAIL_PX}px`,
+                columnGap: ATTR_GUIDE_GAP_PX,
+                alignItems: 'start',
+                marginBottom:'32px',
+              }}
+              onMouseLeave={() => setHighlightedAttr(null)}
+            >
+              <div style={{ minWidth: 0 }}>
               <Heading num={3} title="CALLING" sub="One attribute defines your path. Choose wisely." />
 
               <Callout title="THE CHOSEN ATTRIBUTE">
@@ -581,12 +832,17 @@ export default function CharacterWizard() {
                 <strong style={{ color:T.text }}>Base RP = Level + Chosen Modifier + Growth Pool</strong>
               </Callout>
 
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px', marginBottom:'32px' }}>
+                <div ref={guideTargetRef} style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px' }}>
                 {ATTRS.map(attr => {
                   const val=attrs[attr], mod=calcMod(val), isChosen=chosen===attr, color=ATTR_COLOR[attr];
                   const thisRP=calcBaseRP(1,val,gp), thisHP=calcMaxHP(thisRP,1);
                   return (
-                    <button key={attr} onClick={() => setChosen(attr)}
+                    <button key={attr}
+                      type="button"
+                      onMouseEnter={() => setHighlightedAttr(toAttrKey(attr))}
+                      onFocus={() => setHighlightedAttr(toAttrKey(attr))}
+                      onBlur={() => setHighlightedAttr(null)}
+                      onClick={() => { setHighlightedAttr(toAttrKey(attr)); setChosen(attr); }}
                       style={{ background: isChosen ? `${color}14` : T.card, border:`2px solid ${isChosen ? color : T.border}`, borderRadius:'4px', padding:'20px', cursor:'pointer', textAlign:'left', transition:'all .2s' }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
                         <div style={{ fontFamily:"'Cinzel',serif", fontSize:'13px', color, letterSpacing:'.14em' }}>{attr.toUpperCase()}</div>
@@ -615,10 +871,10 @@ export default function CharacterWizard() {
                     </button>
                   );
                 })}
-              </div>
+                </div>
 
               {/* Formula breakdown */}
-              <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:'4px', padding:'20px 24px' }}>
+              <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:'4px', padding:'20px 24px', marginTop:'24px' }}>
                 <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'.18em', color:T.textMuted, marginBottom:'14px' }}>
                   YOUR STARTING VALUES WITH {chosen.toUpperCase()} CHOSEN
                 </div>
@@ -632,32 +888,33 @@ export default function CharacterWizard() {
                   <FCell label="MAX HP" value={fmtNum(maxHP)} color={T.hp} large note={`${baseRP} × (1+10)²`} />
                 </div>
               </div>
+              </div>
+              <div
+                ref={guideWrapRef}
+                style={{
+                  width: ATTR_GUIDE_RAIL_PX,
+                  minWidth: ATTR_GUIDE_RAIL_PX,
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ marginTop: guidePanelOffset, width: '100%' }}>
+                  <AttributeHelpPanel highlighted={highlightedAttr} />
+                </div>
+              </div>
+            </div>
             </>}
 
             {/* ══ STEP 4: EQUIPMENT ═════════════════════════════════════ */}
             {step === 4 && <>
               <Heading num={4} title="EQUIPMENT" sub="Arm yourself for the road ahead." />
-
-              <div style={{ background:T.card, border:`1px solid ${T.border}`, borderTop:`2px solid ${T.goldDim}`, borderRadius:'4px', padding:'40px', textAlign:'center', marginBottom:'24px' }}>
-                <div style={{ fontSize:'36px', marginBottom:'16px' }}>⚔</div>
-                <div style={{ fontFamily:"'Cinzel',serif", fontSize:'13px', letterSpacing:'.2em', color:T.gold, marginBottom:'12px' }}>LIBRARY CONNECTION PENDING</div>
-                <p style={{ color:T.textMuted, fontSize:'15px', lineHeight:'1.7', fontFamily:"'EB Garamond',serif", maxWidth:'400px', margin:'0 auto 16px' }}>
-                  Starting equipment selection will connect to the weapon, armor, and spell gem libraries in a future update.
-                  Your character will begin with no equipment equipped.
-                </p>
-                <p style={{ color:T.textMuted, fontSize:'14px', fontStyle:'italic', fontFamily:"'EB Garamond',serif" }}>
-                  You can equip items from your character sheet at any time once the library is populated.
-                </p>
-              </div>
-
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
-                {['Main Hand','Off Hand','Helmet','Chestplate','Leggings','Gauntlets','Boots','Focus Bracer'].map(slot => (
-                  <div key={slot} style={{ background:T.surface, border:`1px dashed ${T.border}`, borderRadius:'3px', padding:'10px 14px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                    <span style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'.1em', color:T.textMuted }}>{slot.toUpperCase()}</span>
-                    <span style={{ fontFamily:"'EB Garamond',serif", fontSize:'13px', color:T.textDim, fontStyle:'italic' }}>empty</span>
-                  </div>
-                ))}
-              </div>
+              <WizardEquipmentStep
+                power={attrs.Power}
+                agility={attrs.Agility}
+                focus={attrs.Focus}
+                presence={attrs.Presence}
+                value={startingGear}
+                onChange={setStartingGear}
+              />
             </>}
 
             {/* ══ STEP 5: DESTINY ═══════════════════════════════════════ */}
@@ -703,6 +960,27 @@ export default function CharacterWizard() {
                     <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', color:T.hp, letterSpacing:'.12em', marginBottom:'2px' }}>MAX HP</div>
                     <div style={{ fontFamily:"'Cinzel',serif", fontSize:'28px', color:T.text }}>{fmtNum(maxHP)}</div>
                   </div>
+                </div>
+
+                {/* Starting equipment recap */}
+                <div style={{ background:T.card, border:`1px solid ${T.border}`, borderTop:`2px solid ${T.goldDim}`, borderRadius:'4px', padding:'20px', gridColumn:'1/-1' }}>
+                  <SLbl>STARTING EQUIPMENT</SLbl>
+                  {Object.keys(startingGear).length === 0 ? (
+                    <p style={{ fontFamily:"'EB Garamond',serif", fontSize:'14px', color:T.textMuted, fontStyle:'italic', margin:0 }}>None selected — you can equip from your character sheet.</p>
+                  ) : (
+                    <ul style={{ margin:0, paddingLeft:'18px', color:T.text, fontFamily:"'EB Garamond',serif", fontSize:'14px', lineHeight:1.7 }}>
+                      {(['main_hand','off_hand','helmet','shirt','chestplate','pants','leggings','gauntlets','boots','bracer'] as const).map(slot => {
+                        const g = startingGear[slot];
+                        if (!g) return null;
+                        const label =
+                          slot === 'main_hand' ? 'Main hand'
+                          : slot === 'off_hand' ? 'Off hand'
+                          : slot === 'chestplate' ? 'Chestplate'
+                          : slot.charAt(0).toUpperCase() + slot.slice(1);
+                        return <li key={slot}><span style={{ color:T.textMuted }}>{label}:</span> {g.name}</li>;
+                      })}
+                    </ul>
+                  )}
                 </div>
               </div>
 

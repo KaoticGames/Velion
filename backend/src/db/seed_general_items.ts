@@ -16,7 +16,10 @@ import { Pool }       from 'pg';
 import { eq }         from 'drizzle-orm';
 import { generalItems } from './schema/inventory';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
 const db   = drizzle(pool);
 
 const ITEMS: Omit<typeof generalItems.$inferInsert, 'id'>[] = [
