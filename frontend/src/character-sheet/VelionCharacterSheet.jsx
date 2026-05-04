@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { characterKeys } from "@/hooks/useCharacter";
@@ -65,6 +65,9 @@ const pSteps   = (rp, avail) => {
   const p = rp / avail;
   return p<=.2?1 : p<=.4?2 : p<=.6?3 : p<=.8?4 : 5;
 };
+
+/** Defensive Bonus to save (Compendium): RP committed ÷ Base RP → +0…+5 (same % bands as pSteps). */
+const defensiveBonusFromCommit = (rpCommitted, baseRP) => pSteps(rpCommitted, baseRP);
 
 // Seed values so HP/RP start at max
 const INIT_LVL    = 1;
@@ -266,19 +269,16 @@ function calcOverextensionDC(oeAmount, availableRP) {
 }
 
 // ── StableNumInput: prevents focus loss in modals ─────────────────────────
-// Keeps a local string, only notifies parent on blur/Enter
-function StableNumInput({ value, onChange, min=0, max=Infinity, style={}, placeholder='', autoFocus=false }) {
-  const [local, setLocal] = useState(String(value ?? ''));
-  const prev = useRef(value);
+// Keeps a local string while typing; syncs from `value` in an effect so slider / +/- updates apply (never setState during render).
+function StableNumInput({ value, onChange, min=0, max=Infinity, style={}, placeholder='', autoFocus=false, clearOnFocus=false }) {
+  const [local, setLocal] = useState(() => String(value ?? ''));
 
-  if (value !== prev.current) {
-    prev.current = value;
+  useLayoutEffect(() => {
     setLocal(String(value ?? ''));
-  }
+  }, [value]);
 
   const commit = useCallback((raw) => {
     const n = raw==='' ? min : Math.max(min, Math.min(max, parseInt(raw,10)||0));
-    prev.current = n;
     setLocal(String(n));
     onChange(n);
   }, [min, max, onChange]);
@@ -288,6 +288,7 @@ function StableNumInput({ value, onChange, min=0, max=Infinity, style={}, placeh
       type="text" inputMode="numeric"
       value={local} autoFocus={autoFocus} placeholder={placeholder}
       onChange={e => setLocal(e.target.value.replace(/[^0-9]/g,''))}
+      onFocus={() => { if (clearOnFocus) setLocal(''); }}
       onBlur={e => commit(e.target.value)}
       onKeyDown={e => { if(e.key==='Enter') commit(e.target.value); }}
       style={style}
@@ -347,7 +348,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
   // ── Save Roll Modal ──
   const [saveModal, setSaveModal] = useState(null);
-  // null | {attr,val,mod,roll,roll2,altRoll,total,nat20,nat1,mode,defSteps,defRpCommit}
+  // null | { attr, mod, roll, roll2, altRoll, total, nat20, nat1, mode, defRpCommit, defensiveBonus }
 
   const enqueueDiceRolls = (items) => {
     const wasIdle = !rollLockRef.current;
@@ -452,14 +453,31 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   }, [sessionId, accessToken, characterId, rollUserId]);
 
   const rollSave = (attr, mode = 'normal', defRpCommit = 0) => {
-    const mod = calcMod(attrs[attr]);
+    const resistanceMod = calcMod(attrs[attr]);
+    let modifier = resistanceMod;
+    let defensiveBonus = 0;
+    let committedRp = 0;
+    if (mode === 'defensive') {
+      committedRp = Math.max(0, Math.min(Number(defRpCommit) || 0, curRP));
+      defensiveBonus = defensiveBonusFromCommit(committedRp, effBaseRP);
+      modifier = resistanceMod + defensiveBonus;
+      if (committedRp > 0) setCurRP((p) => Math.max(0, p - committedRp));
+    }
     const use2 = mode === 'advantage' || mode === 'disadvantage';
     requestSessionDiceRoll({
       formula: use2 ? '2d20' : '1d20',
-      label: mode === 'defensive' ? `${attr} Defensive Roll` : `${attr} Check`,
-      modifier: mod,
+      label: mode === 'defensive' ? `${attr} Defensive Save` : `${attr} Check`,
+      modifier,
       advantageKeep: mode === 'advantage' ? 'high' : mode === 'disadvantage' ? 'low' : undefined,
       source_label: charName || 'Character',
+      requestMeta: {
+        kind: 'saveRoll',
+        attr,
+        mode,
+        resistanceMod,
+        defensiveBonus,
+        defRpCommit: mode === 'defensive' ? committedRp : 0,
+      },
     });
   };
 
@@ -686,9 +704,6 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const [atkIsCrit,   setAtkIsCrit]   = useState(false);
   const [atkResult,   setAtkResult]   = useState(null);
   const atkStakedRef   = useRef(0);
-  const atkDragValRef  = useRef(0);       // tracks value during drag without re-renders
-  const atkFillRef     = useRef(null);    // direct DOM ref to fill bar
-  const atkThumbRef    = useRef(null);    // direct DOM ref to thumb dot
   // Overextend
   const [oxOpen,   setOxOpen]   = useState(false);
   const [oxAmount, setOxAmount] = useState(0);
@@ -697,17 +712,29 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const [tempRP,   setTempRP]   = useState(0);
   /** One overextend roll per attack open; blocks cancel-then-reroll and repeat attempts after success. */
   const [oxRolledThisAttack, setOxRolledThisAttack] = useState(false);
+  /** Between End Turn and next Start Turn — weapon dice ×1, costs 1 RP, no overextend. */
+  const [atkOppFlow, setAtkOppFlow] = useState(false);
+  const [gemOppFlow, setGemOppFlow] = useState(false);
 
-  const openAttack = w => {
+  const openAttack = (w, opportunity = false) => {
     resetDiceQueue();
     setAtkWeapon(w); setAtkRP(0); setAtkStaked(0); setAtkStage('stake');
     setAtkCritRoll(null); setAtkIsCrit(false);
     setAtkResult(null); setOxOpen(false); setOxAmount(0); setOxRoll(null); setOxResult(null); setTempRP(0);
     setOxRolledThisAttack(false);
+    setAtkOppFlow(!!opportunity);
     atkStakedRef.current = 0;
     setWepModal('attack');
   };
   const doStake = () => {
+    if (atkOppFlow) {
+      if (curRP < 1) return;
+      atkStakedRef.current = 1;
+      setCurRP((p) => Math.max(0, p - 1));
+      setAtkStaked(1);
+      setAtkStage('roll');
+      return;
+    }
     const staked = atkRP + tempRP;
     atkStakedRef.current = staked;
     setCurRP(p=>Math.max(0,p-atkRP));
@@ -716,17 +743,21 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   };
   // Stage 2a: roll d20 for crit first
   const doCritRoll = () => {
+    const opp = atkOppFlow;
     requestSessionDiceRoll({
       formula: '1d20',
-      label: `${atkWeapon?.name || 'Weapon'} Attack Roll`,
+      label: opp
+        ? `Opportunity — ${atkWeapon?.name || 'Weapon'} Attack`
+        : `${atkWeapon?.name || 'Weapon'} Attack Roll`,
       source_label: charName || 'Character',
-      requestMeta: { kind: 'atkCrit' },
+      requestMeta: { kind: 'atkCrit', opportunity: opp },
     });
   };
   // Stage 2b: roll damage dice — only available after crit roll
   const doDmgRoll = () => {
     if (!atkWeapon) return;
     const staked = atkStakedRef.current;
+    const dmgMult = atkOppFlow ? 1 : staked;
     const sides = parseInt(atkWeapon.dieType.replace(/\D/g,'')) || 6;
     const isCrit = atkIsCrit;
     const channels = atkWeapon.channels.map(ch => ({
@@ -740,14 +771,17 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       critRoll: atkCritRoll,
       isCrit,
       staked,
-      tempRPFlag: tempRP > 0,
-      oxFail: oxResult === 'fail',
+      tempRPFlag: !atkOppFlow && tempRP > 0,
+      oxFail: !atkOppFlow && oxResult === 'fail',
+      isOpportunity: atkOppFlow,
     };
     weaponDmgAccRef.current = new Array(channels.length).fill(null);
     const items = channels.map((ch, idx) => ({
       formula: `${ch.nd * (isCrit ? 2 : 1)}d${sides}`,
-      label: `${atkWeapon.name} ${ch.element} Damage`,
-      postMultiplier: staked,
+      label: atkOppFlow
+        ? `Opportunity — ${atkWeapon.name} ${ch.element}`
+        : `${atkWeapon.name} ${ch.element} Damage`,
+      postMultiplier: dmgMult,
       source_label: charName || 'Character',
       requestMeta: { kind: 'weaponDmg', idx, count: channels.length },
     }));
@@ -760,6 +794,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setAtkCritRoll(null); setAtkIsCrit(false); setAtkResult(null);
     setOxOpen(false); setOxAmount(0); setOxRoll(null); setOxResult(null); setTempRP(0);
     setOxRolledThisAttack(false);
+    setAtkOppFlow(false);
   };
   const cancelPreStake = () => {
     resetDiceQueue();
@@ -768,6 +803,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setAtkCritRoll(null); setAtkIsCrit(false);
     setOxOpen(false); setOxAmount(0); setOxRoll(null); setOxResult(null); setTempRP(0);
     setOxRolledThisAttack(false);
+    setAtkOppFlow(false);
   };
   // Post-stake cancel — RP already spent, just dismiss
   const cancelPostStake = () => {
@@ -777,6 +813,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setAtkCritRoll(null); setAtkIsCrit(false);
     setOxOpen(false); setOxAmount(0); setOxRoll(null); setOxResult(null); setTempRP(0);
     setOxRolledThisAttack(false);
+    setAtkOppFlow(false);
     if (tempRP>0||oxResult==='fail') setActive(p=>new Set([...p,'Overextended']));
   };
   const rollOX = () => {
@@ -817,14 +854,23 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const gemFillRef       = useRef(null);
   const gemThumbRef      = useRef(null);
 
-  const openGemAttack = (gem) => {
+  const openGemAttack = (gem, opportunity = false) => {
     resetDiceQueue();
     setGemAtkGem(gem); setGemAtkRP(0); setGemAtkStaked(0); setGemAtkStage('stake');
     setGemAtkCritRoll(null); setGemAtkIsCrit(false); setGemAtkResult(null);
+    setGemOppFlow(!!opportunity);
     gemAtkStakedRef.current = 0;
     setWepModal('gemAttack');
   };
   const doGemStake = () => {
+    if (gemOppFlow) {
+      if (curRP < 1) return;
+      gemAtkStakedRef.current = 1;
+      setCurRP((p) => Math.max(0, p - 1));
+      setGemAtkStaked(1);
+      setGemAtkStage('roll');
+      return;
+    }
     const staked = gemAtkRP;
     gemAtkStakedRef.current = staked;
     setCurRP(p => Math.max(0, p - staked));
@@ -832,11 +878,14 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setGemAtkStage('roll');
   };
   const doGemCritRoll = () => {
+    const opp = gemOppFlow;
     requestSessionDiceRoll({
       formula: '1d20',
-      label: `${gemAtkGem?.element || 'Spell'} Attack Roll`,
+      label: opp
+        ? `Opportunity — ${gemAtkGem?.element || 'Spell'}`
+        : `${gemAtkGem?.element || 'Spell'} Attack Roll`,
       source_label: charName || 'Character',
-      requestMeta: { kind: 'gemCrit' },
+      requestMeta: { kind: 'gemCrit', opportunity: opp },
     });
   };
   const doGemRoll = () => {
@@ -844,12 +893,15 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     const staked = gemAtkStakedRef.current;
     const nd  = Number(gemAtkGem.num_dice) || 1;
     const dt  = Number(gemAtkGem.die_type)  || 6;
-    gemDmgCtxRef.current = { gem: gemAtkGem, staked, nd, dt, isCrit: gemAtkIsCrit };
+    const baseMult = gemOppFlow ? 1 : staked;
+    gemDmgCtxRef.current = { gem: gemAtkGem, staked, nd, dt, isCrit: gemAtkIsCrit, isOpportunity: gemOppFlow };
     gemDmgAccRef.current = [null];
     requestSessionDiceRoll({
       formula: `${nd}d${dt}`,
-      label: `${gemAtkGem.element} Spell Damage`,
-      postMultiplier: staked * (gemAtkIsCrit ? 2 : 1),
+      label: gemOppFlow
+        ? `Opportunity — ${gemAtkGem.element} Spell`
+        : `${gemAtkGem.element} Spell Damage`,
+      postMultiplier: baseMult * (gemAtkIsCrit ? 2 : 1),
       source_label: charName || 'Character',
       requestMeta: { kind: 'gemDmg', idx: 0, count: 1 },
     });
@@ -859,6 +911,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setWepModal(null); setGemAtkGem(null);
     setGemAtkStage('stake'); setGemAtkRP(0); setGemAtkStaked(0);
     setGemAtkCritRoll(null); setGemAtkIsCrit(false); setGemAtkResult(null);
+    setGemOppFlow(false);
   };
 
   /** Local 3D dice always emit this — must not depend on VTT socket (`sessionId` / `SOCKET_URL`). */
@@ -877,6 +930,53 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       const r = num(detail.results?.[0] ?? detail.total);
       setGemAtkCritRoll(r);
       setGemAtkIsCrit(r === 20);
+    } else if (meta?.kind === 'saveRoll') {
+      const mode = meta.mode || 'normal';
+      const attr = meta.attr;
+      const resistanceMod = num(meta.resistanceMod);
+      const defensiveBonus = num(meta.defensiveBonus);
+      const defRpCommit = num(meta.defRpCommit);
+      const faces = Array.isArray(detail.results) ? detail.results.map(num) : [];
+      const total = num(detail.total);
+      if (mode === 'advantage' || mode === 'disadvantage') {
+        const a = faces[0] ?? 0;
+        const b = faces[1] ?? 0;
+        const hi = Math.max(a, b);
+        const lo = Math.min(a, b);
+        const roll = mode === 'advantage' ? hi : lo;
+        const altRoll = mode === 'advantage' ? lo : hi;
+        setSaveModal({
+          attr,
+          mode,
+          roll,
+          roll2: altRoll,
+          altRoll,
+          mod: resistanceMod,
+          defensiveBonus: 0,
+          total,
+          nat20: roll === 20,
+          nat1: roll === 1,
+          defRpCommit: 0,
+        });
+      } else {
+        let roll = faces.length ? num(faces[0]) : NaN;
+        if (!Number.isFinite(roll)) {
+          roll = Math.max(1, Math.min(20, total - resistanceMod - defensiveBonus));
+        }
+        setSaveModal({
+          attr,
+          mode,
+          roll,
+          roll2: null,
+          altRoll: null,
+          mod: resistanceMod,
+          defensiveBonus,
+          total,
+          nat20: roll === 20,
+          nat1: roll === 1,
+          defRpCommit,
+        });
+      }
     } else if (meta?.kind === 'oxCheck') {
       const r = num(detail.results?.[0] ?? detail.total);
       const amt = typeof meta.oxAmount === 'number' ? meta.oxAmount : 0;
@@ -1615,8 +1715,21 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             <div style={{height:'100%',width:`${hpPct}%`,background:`linear-gradient(90deg,#701010,${T.hp})`,borderRadius:'3px',transition:'width 0.3s'}}/>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
-            <button onClick={openDmg}  style={{...Btn('#e05050'),padding:'10px',fontSize:'12px',background:'#2a0808'}}>⚔ DAMAGE</button>
-            <button onClick={openHeal} style={{...Btn('#50a050'),padding:'10px',fontSize:'12px',background:'#062006'}}>✦ HEAL</button>
+            <button type="button" onClick={openDmg}  style={{...Btn('#e05050'),padding:'10px',fontSize:'12px',background:'#2a0808'}}>⚔ DAMAGE</button>
+            <button type="button" onClick={openHeal} style={{...Btn('#50a050'),padding:'10px',fontSize:'12px',background:'#062006'}}>✦ HEAL</button>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setDefRpInput(0);
+              setDefModal({ attr: 'Agility' });
+            }}
+            style={{...Btn('#4a7ab8'),padding:'10px',fontSize:'11px',width:'100%',marginTop:'10px',background:'#080c18',letterSpacing:'0.06em'}}
+          >
+            🛡 DEFENSIVE SAVE
+          </button>
+          <div style={{fontSize:'10px',color:T.textMuted,marginTop:'6px',lineHeight:1.45,textAlign:'center',fontFamily:"'Cinzel',serif",letterSpacing:'0.04em'}}>
+            d20 + Power or Agility mod + defensive bonus (RP spent ÷ Base RP). RP committed is spent.
           </div>
         </div>
       </div>
@@ -1718,8 +1831,22 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               </div>
               {w.notes&&<div style={{fontSize:'12px',color:T.textMuted,marginBottom:'8px',fontStyle:'italic'}}>{w.notes}</div>}
               <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:'6px'}}>
-                <button onClick={()=>openAttack(w)} disabled={S.stunned||S.asleep} style={{...Btn('#c8503a'),padding:'8px',fontSize:'11px',background:'#1e0806',letterSpacing:'0.08em'}}>⚔ ROLL ATTACK</button>
-                <button onClick={()=>openWepEdit(w)} style={{...Btn(T.goldDim),padding:'8px 12px',fontSize:'11px'}}>✎</button>
+                <button
+                  type="button"
+                  onClick={() => openAttack(w, !inActiveTurn)}
+                  disabled={S.stunned || S.asleep || (!inActiveTurn && curRP < 1)}
+                  style={{
+                    ...Btn(inActiveTurn ? '#c8503a' : '#e8a020'),
+                    padding: '8px',
+                    fontSize: '11px',
+                    background: inActiveTurn ? '#1e0806' : '#1a1200',
+                    letterSpacing: '0.08em',
+                    opacity: (S.stunned || S.asleep || (!inActiveTurn && curRP < 1)) ? 0.35 : 1,
+                  }}
+                >
+                  {inActiveTurn ? '⚔ ROLL ATTACK' : '⚔ OPPORTUNITY ATTACK'}
+                </button>
+                <button type="button" onClick={()=>openWepEdit(w)} style={{...Btn(T.goldDim),padding:'8px 12px',fontSize:'11px'}}>✎</button>
               </div>
             </div>
           ))}
@@ -1762,10 +1889,19 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                         <span style={{color:eCol,fontWeight:'500'}}>{gem.num_dice||1}d{gem.die_type||6}</span> × RP <span style={{color:'#302050'}}>⚡</span>
                       </div>
                       <button
-                        onClick={()=>openGemAttack(gem,gi)}
-                        disabled={S.stunned||S.asleep||S.silenced}
-                        style={{...Btn(eCol),padding:'5px',fontSize:'10px',width:'100%',background:`${eCol}10`}}>
-                        ⚡ CAST
+                        type="button"
+                        onClick={() => openGemAttack(gem, !inActiveTurn)}
+                        disabled={S.stunned || S.asleep || S.silenced || (!inActiveTurn && curRP < 1)}
+                        style={{
+                          ...Btn(inActiveTurn ? eCol : '#e8a020'),
+                          padding: '5px',
+                          fontSize: '10px',
+                          width: '100%',
+                          background: inActiveTurn ? `${eCol}10` : '#1a1200',
+                          opacity: (S.stunned || S.asleep || S.silenced || (!inActiveTurn && curRP < 1)) ? 0.35 : 1,
+                        }}
+                      >
+                        {inActiveTurn ? '⚡ CAST' : '⚡ OPPORTUNITY CAST'}
                       </button>
                     </>
                   )}
@@ -2272,8 +2408,10 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* Attack Modal */}
       {wepModal==='attack'&&atkWeapon&&(
         <ModalWrap accentColor="#c8503a" minW="480px">
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:'#c8503a',marginBottom:'2px'}}>
-            {atkStage==='stake'?'STAKE RESOURCE POINTS':atkStage==='roll'?'RESOLVE ATTACK':'ATTACK RESULT'}
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:atkOppFlow?'#a87850':'#c8503a',marginBottom:'2px'}}>
+            {atkOppFlow
+              ? (atkStage === 'stake' ? 'OPPORTUNITY ATTACK' : 'RESOLVE OPPORTUNITY')
+              : atkStage==='stake'?'STAKE RESOURCE POINTS':atkStage==='roll'?'RESOLVE ATTACK':'ATTACK RESULT'}
           </div>
           <div style={{fontSize:'19px',fontWeight:'500',marginBottom:'4px'}}>{atkWeapon.name}</div>
           <div style={{display:'flex',gap:'7px',alignItems:'center',marginBottom:'16px'}}>
@@ -2281,12 +2419,25 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             <span style={{fontSize:'13px',color:T.textMuted}}>
               {atkWeapon.channels.map((ch,ci)=>(
                 <span key={ci}>{ci>0?' + ':''}{ch.dice}{atkWeapon.dieType} <span style={{color:ch.element==='Physical'?T.textMuted:ELEM_COLOR[ch.element]}}>{ch.element}</span></span>
-              ))} × RP
+              ))}{atkOppFlow ? ' × 1 (no RP multiplier)' : ' × RP'}
             </span>
           </div>
 
-          {/* Stage 1: Stake */}
-          {atkStage==='stake'&&!oxOpen&&(
+          {/* Stage 1: Stake — opportunity (1 RP, no overextend) */}
+          {atkStage==='stake'&&!oxOpen&&atkOppFlow&&(
+            <div style={{marginBottom:'16px'}}>
+              <div style={{fontSize:'13px',color:T.textMuted,lineHeight:1.65,marginBottom:'14px',background:'#0c0a08',border:`1px solid ${T.border}`,borderRadius:'3px',padding:'12px'}}>
+                Costs <strong style={{color:T.rp}}>1 RP</strong> from your pool. Damage uses weapon dice <strong>×1</strong> (not × staked RP). Pressure steps / offensive overextend do not apply.
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+                <button type="button" onClick={cancelPreStake} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
+                <button type="button" onClick={doStake} disabled={curRP < 1} style={{...Btn('#c8503a'),padding:'10px',background:'#1a0604',fontSize:'12px',opacity:curRP<1?0.35:1}}>SPEND 1 RP — CONTINUE</button>
+              </div>
+            </div>
+          )}
+
+          {/* Stage 1: Stake — normal turn */}
+          {atkStage==='stake'&&!oxOpen&&!atkOppFlow&&(
             <>
               <div style={{marginBottom:'14px'}}>
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
@@ -2307,26 +2458,25 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                     />
                     <button onClick={()=>setAtkRP(p=>Math.min(curRP+tempRP,p+1))} style={{...Btn('#c8503a'),padding:'0 12px',fontSize:'22px',fontWeight:'300',borderLeft:'none',borderRadius:'0 3px 3px 0',lineHeight:1}}>+</button>
                   </div>
-                  {/* Uncontrolled slider — fill/thumb updated via DOM refs, React state only on release */}
+                  {/* Controlled slider — updates atkRP (and StableNumInput) while dragging */}
                   <div style={{flex:1,position:'relative',padding:'10px 0'}}>
                     <div style={{height:'6px',background:'#1c2030',borderRadius:'3px',position:'relative',overflow:'visible'}}>
-                      <div ref={atkFillRef} style={{height:'100%',width:`${(curRP+tempRP)>0?Math.min(100,(atkRP/(curRP+tempRP))*100):0}%`,background:'#c8503a',borderRadius:'3px'}}/>
-                      <div ref={atkThumbRef} style={{position:'absolute',top:'50%',transform:'translateY(-50%)',left:`calc(${(curRP+tempRP)>0?Math.min(100,(atkRP/(curRP+tempRP))*100):0}% - 8px)`,width:'16px',height:'16px',borderRadius:'50%',background:'#c8503a',boxShadow:'0 0 7px #c8503a99',pointerEvents:'none'}}/>
+                      <div style={{height:'100%',width:`${(curRP+tempRP)>0?Math.min(100,(atkRP/(curRP+tempRP))*100):0}%`,background:'#c8503a',borderRadius:'3px'}}/>
+                      <div style={{position:'absolute',top:'50%',transform:'translateY(-50%)',left:`calc(${(curRP+tempRP)>0?Math.min(100,(atkRP/(curRP+tempRP))*100):0}% - 8px)`,width:'16px',height:'16px',borderRadius:'50%',background:'#c8503a',boxShadow:'0 0 7px #c8503a99',pointerEvents:'none'}}/>
                     </div>
                     <input
-                      key={`atk-${atkRP}-${curRP+tempRP}`}
-                      type="range" min={0} max={curRP+tempRP||1}
-                      defaultValue={atkRP}
-                      onInput={e=>{
-                        const v=Number(e.target.value), mx=curRP+tempRP||1;
-                        const pct=Math.min(100,(v/mx)*100);
-                        atkDragValRef.current=v;
-                        if(atkFillRef.current)  atkFillRef.current.style.width=`${pct}%`;
-                        if(atkThumbRef.current) atkThumbRef.current.style.left=`calc(${pct}% - 8px)`;
+                      key={`atk-rp-max-${curRP}-${tempRP}`}
+                      type="range"
+                      min={0}
+                      max={curRP+tempRP||1}
+                      value={atkRP}
+                      onChange={e=>{
+                        const mx = curRP + tempRP || 1;
+                        const v = Math.max(0, Math.min(mx, Number(e.target.value) || 0));
+                        setAtkRP(v);
                       }}
-                      onMouseUp={()=>setAtkRP(atkDragValRef.current)}
-                      onTouchEnd={()=>setAtkRP(atkDragValRef.current)}
-                      style={{position:'absolute',inset:0,opacity:0,cursor:'pointer',width:'100%',height:'100%',margin:0,padding:0}}/>
+                      style={{position:'absolute',inset:0,opacity:0,cursor:'pointer',width:'100%',height:'100%',margin:0,padding:0}}
+                    />
                   </div>
                 </div>
                 <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'10px',marginBottom:'10px'}}>
@@ -2355,8 +2505,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             </>
           )}
 
-          {/* Overextend sub-panel */}
-          {atkStage==='stake'&&oxOpen&&(
+          {/* Overextend sub-panel (not used on opportunity attacks) */}
+          {atkStage==='stake'&&oxOpen&&!atkOppFlow&&(
             <div style={{background:'#100806',border:`1px solid #ff402055`,borderRadius:'4px',padding:'16px'}}>
               <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'0.18em',color:'#ff5030',marginBottom:'12px'}}>⚠ OVEREXTEND</div>
               <div style={{fontSize:'13px',color:T.textMuted,lineHeight:'1.7',marginBottom:'14px'}}>
@@ -2412,13 +2562,19 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               {/* RP staked summary */}
               <div style={{background:'#0e0a06',border:`1px solid #c8503a44`,borderRadius:'3px',padding:'12px',marginBottom:'14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <div>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'3px'}}>RP STAKED</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'3px'}}>{atkOppFlow ? 'RP COST' : 'RP STAKED'}</div>
                   <div style={{fontSize:'26px',fontWeight:'700',color:'#c8503a'}}>{atkStaked} RP</div>
-                  <div style={{fontSize:'12px',color:T.textDim,marginTop:'2px'}}>Deducted · cannot be recovered</div>
+                  <div style={{fontSize:'12px',color:T.textDim,marginTop:'2px'}}>
+                    {atkOppFlow ? 'Opportunity attack · damage uses ×1' : 'Deducted · cannot be recovered'}
+                  </div>
                 </div>
                 <div style={{textAlign:'right'}}>
                   <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'3px'}}>FORMULA</div>
-                  <div style={{fontSize:'15px',color:T.text}}>{atkWeapon.channels.map((ch,ci)=>`${ci>0?' + ':''}${ch.dice}${atkWeapon.dieType} × ${atkStaked}`).join('')}</div>
+                  <div style={{fontSize:'15px',color:T.text}}>
+                    {atkOppFlow
+                      ? atkWeapon.channels.map((ch,ci)=>`${ci>0?' + ':''}${ch.dice}${atkWeapon.dieType} × 1`).join('')
+                      : atkWeapon.channels.map((ch,ci)=>`${ci>0?' + ':''}${ch.dice}${atkWeapon.dieType} × ${atkStaked}`).join('')}
+                  </div>
                 </div>
               </div>
 
@@ -2457,7 +2613,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                             <div style={{flex:1}}>
                               <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'0.1em',color:elColor,marginBottom:'3px'}}>{ch.element.toUpperCase()}</div>
                               <div style={{fontSize:'12px',color:T.textDim}}>
-                                {ch.rolls.length>1?`(${ch.rolls.join('+')}=${ch.sum})`:ch.rolls[0]} × {atkResult.rpUsed} RP{atkResult.isCrit?' × 2 CRIT':''}
+                                {ch.rolls.length>1?`(${ch.rolls.join('+')}=${ch.sum})`:ch.rolls[0]}
+                                {atkOppFlow ? ' × 1 (opportunity)' : ` × ${atkResult.rpUsed} RP`}
+                                {atkResult.isCrit?' × 2 CRIT':''}
                               </div>
                             </div>
                             <div style={{textAlign:'right'}}>
@@ -2479,7 +2637,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                           <div style={{color:atkResult.isCrit?'#e8a020':'#c8503a',fontWeight:'700',fontSize:'28px'}}>{fmtNum(atkResult.chs.reduce((s,c)=>s+(atkResult.isCrit?c.dmg*2:c.dmg),0))}</div>
                         </div>
                       </div>
-                      {(tempRP>0||oxResult==='fail')&&(
+                      {!atkOppFlow&&(tempRP>0||oxResult==='fail')&&(
                         <div style={{padding:'6px 10px',background:'#1a0800',border:`1px solid #ff402055`,borderRadius:'3px',fontSize:'11px',color:'#ff7040',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>⚠ OVEREXTENDED state applied</div>
                       )}
                     </div>
@@ -2509,18 +2667,34 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         return(
           <ModalWrap accentColor={eCol} minW="440px">
             <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:eCol,marginBottom:'2px'}}>
-              {gemAtkStage==='stake'?'STAKE RESOURCE POINTS':'RESOLVE SPELL ATTACK'}
+              {gemOppFlow
+                ? (gemAtkStage === 'stake' ? 'OPPORTUNITY CAST' : 'RESOLVE OPPORTUNITY CAST')
+                : gemAtkStage==='stake'?'STAKE RESOURCE POINTS':'RESOLVE SPELL ATTACK'}
             </div>
             <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}}>
               <div style={{width:'14px',height:'14px',borderRadius:'50%',background:eCol,boxShadow:`0 0 10px ${eCol}88`,flexShrink:0}}/>
               <div>
                 <div style={{fontSize:'19px',fontWeight:'500',color:eCol}}>{gemAtkGem.element}</div>
-                <div style={{fontSize:'12px',color:T.textMuted}}>{nd}d{dt} × RP · <span style={{color:eCol}}>Auto-hit · No save</span></div>
+                <div style={{fontSize:'12px',color:T.textMuted}}>
+                  {nd}d{dt}{gemOppFlow ? ' × 1 (no RP multiplier)' : ' × RP'} · <span style={{color:eCol}}>Auto-hit · No save</span>
+                </div>
               </div>
               <Badge rarity={gemAtkGem.rarity}/>
             </div>
 
-            {gemAtkStage==='stake'&&(
+            {gemAtkStage==='stake'&&gemOppFlow&&(
+              <div style={{marginBottom:'16px'}}>
+                <div style={{fontSize:'13px',color:T.textMuted,lineHeight:1.65,marginBottom:'14px',background:'#080810',border:`1px solid ${T.border}`,borderRadius:'3px',padding:'12px'}}>
+                  Costs <strong style={{color:T.rp}}>1 RP</strong>. Spell damage uses <strong>×1</strong> (not × staked RP). Normal turn staking does not apply.
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+                  <button type="button" onClick={closeGemAtk} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
+                  <button type="button" onClick={doGemStake} disabled={curRP < 1} style={{...Btn(eCol),padding:'10px',background:`${eCol}10`,fontSize:'12px',opacity:curRP<1?0.35:1}}>SPEND 1 RP — CONTINUE</button>
+                </div>
+              </div>
+            )}
+
+            {gemAtkStage==='stake'&&!gemOppFlow&&(
               <>
                 <div style={{marginBottom:'14px'}}>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
@@ -2573,13 +2747,17 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                 {/* RP staked summary */}
                 <div style={{background:`${eCol}08`,border:`1px solid ${eCol}33`,borderRadius:'3px',padding:'12px',marginBottom:'14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <div>
-                    <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'3px'}}>RP STAKED</div>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'3px'}}>{gemOppFlow ? 'RP COST' : 'RP STAKED'}</div>
                     <div style={{fontSize:'26px',fontWeight:'700',color:eCol}}>{gemAtkStaked} RP</div>
-                    <div style={{fontSize:'12px',color:T.textDim,marginTop:'2px'}}>Multiplier · auto-hits</div>
+                    <div style={{fontSize:'12px',color:T.textDim,marginTop:'2px'}}>
+                      {gemOppFlow ? 'Opportunity cast · damage ×1' : 'Multiplier · auto-hits'}
+                    </div>
                   </div>
                   <div style={{textAlign:'right'}}>
                     <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'3px'}}>FORMULA</div>
-                    <div style={{fontSize:'15px',color:T.text}}>{nd}d{dt} × {gemAtkStaked}</div>
+                    <div style={{fontSize:'15px',color:T.text}}>
+                      {gemOppFlow ? `${nd}d${dt} × 1` : `${nd}d${dt} × ${gemAtkStaked}`}
+                    </div>
                   </div>
                 </div>
 
@@ -2587,7 +2765,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                 <div style={{marginBottom:'12px'}}>
                   <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.14em',color:T.textMuted,marginBottom:'8px'}}>STEP 1 — CRITICAL HIT ROLL</div>
                   {gemAtkCritRoll===null
-                    ? <button onClick={doGemCritRoll} style={{...Btn('#e8a020'),padding:'11px',width:'100%',background:'#1a1000',fontSize:'12px',letterSpacing:'0.1em'}}>⬡ ROLL FOR CRIT (d20)</button>
+                    ? <button type="button" onClick={doGemCritRoll} style={{...Btn('#e8a020'),padding:'11px',width:'100%',background:'#1a1000',fontSize:'12px',letterSpacing:'0.1em'}}>⬡ ROLL FOR CRIT (d20)</button>
                     : <div style={{background:gemAtkIsCrit?'#1a1200':'#0c0c10',border:`1px solid ${gemAtkIsCrit?'#e8a02066':'#2a2a40'}`,borderRadius:'3px',padding:'12px',display:'flex',alignItems:'center',gap:'16px'}}>
                         <div style={{fontSize:'38px',fontWeight:'700',color:gemAtkIsCrit?'#e8a020':T.text,lineHeight:1}}>{gemAtkCritRoll}</div>
                         <div>
@@ -2605,7 +2783,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                 <div style={{marginBottom:'12px',opacity:gemAtkCritRoll===null?0.35:1,transition:'opacity 0.2s'}}>
                   <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.14em',color:T.textMuted,marginBottom:'8px'}}>STEP 2 — DAMAGE ROLL</div>
                   {!gemAtkResult
-                    ? <button onClick={doGemRoll} disabled={gemAtkCritRoll===null} style={{...Btn(eCol),padding:'11px',width:'100%',background:`${eCol}10`,fontSize:'12px',letterSpacing:'0.1em'}}>
+                    ? <button type="button" onClick={doGemRoll} disabled={gemAtkCritRoll===null} style={{...Btn(eCol),padding:'11px',width:'100%',background:`${eCol}10`,fontSize:'12px',letterSpacing:'0.1em'}}>
                         ⚡ ROLL DAMAGE {gemAtkIsCrit&&<span style={{color:'#e8a020'}}> · ×2 CRIT</span>}
                       </button>
                     : <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
@@ -2614,7 +2792,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                           <div style={{flex:1}}>
                             <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'0.1em',color:eCol,marginBottom:'3px'}}>{gemAtkGem.element.toUpperCase()}</div>
                             <div style={{fontSize:'12px',color:T.textDim}}>
-                              {gemAtkResult.rolls.length>1?`(${gemAtkResult.rolls.join('+')}=${gemAtkResult.sum})`:gemAtkResult.rolls[0]} × {gemAtkResult.rpUsed} RP{gemAtkIsCrit?' × 2 CRIT':''}
+                              {gemAtkResult.rolls.length>1?`(${gemAtkResult.rolls.join('+')}=${gemAtkResult.sum})`:gemAtkResult.rolls[0]}
+                              {gemOppFlow ? ' × 1 (opportunity)' : ` × ${gemAtkResult.rpUsed} RP`}
+                              {gemAtkIsCrit?' × 2 CRIT':''}
                             </div>
                           </div>
                           <div style={{textAlign:'right'}}>
@@ -2887,54 +3067,130 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* ── Defensive Save Pre-Roll ──────────────────────────────────── */}
       {defModal&&(()=>{
         const ac   = ATTR_COLOR[defModal.attr];
-        const rpIn = Math.max(0, Math.min(Number(defRpInput)||0, effBaseRP));
-        const dSteps = pSteps(rpIn, effBaseRP);
-        const saveTgt = 10 + 2 * Math.max(0, 5 - dSteps); // illustrative best-case net
+        const rpIn = Math.max(0, Math.min(Number(defRpInput)||0, curRP));
+        const defBonus = defensiveBonusFromCommit(rpIn, effBaseRP);
+        const pctOfBase = effBaseRP > 0 ? Math.round((rpIn / effBaseRP) * 1000) / 10 : 0;
         return(
-          <ModalWrap accentColor={ac} minW="340px">
+          <ModalWrap accentColor={ac} minW="380px">
             <div style={{textAlign:'center',padding:'8px 0'}}>
               <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.28em',color:ac,marginBottom:'4px',opacity:0.7}}>DEFENSIVE SAVE</div>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:'20px',letterSpacing:'0.2em',color:ac,fontWeight:'700',marginBottom:'4px'}}>
-                {defModal.attr==='Power'?'BLOCK':'DODGE'}
-              </div>
-              <div style={{fontSize:'12px',color:'#8a7a68',marginBottom:'18px'}}>
-                {defModal.attr==='Power'?'Power':'Agility'} modifier applied to save roll
+              <div style={{fontSize:'12px',color:T.textMuted,marginBottom:'12px',lineHeight:1.5}}>
+                Save roll = d20 + resistance modifier + defensive bonus (+0–+5). Bonus tiers use <strong style={{color:T.gold}}>Base RP</strong> ({effBaseRP}) as reference; you may commit up to your <strong style={{color:T.rp}}>available RP</strong> ({curRP}).
               </div>
 
-              {/* RP input */}
+              <div style={{marginBottom:'14px',textAlign:'left'}}>
+                <div style={{...LBL,marginBottom:'8px'}}>Resistance (narrative)</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+                  <button
+                    type="button"
+                    onClick={()=>setDefModal(d=>d&&{...d,attr:'Power'})}
+                    style={{...Btn(ATTR_COLOR.Power),padding:'10px',fontSize:'11px',background:defModal.attr==='Power'?`${ATTR_COLOR.Power}22`:'transparent',opacity:defModal.attr==='Power'?1:0.75}}
+                  >
+                    Power — Block
+                  </button>
+                  <button
+                    type="button"
+                    onClick={()=>setDefModal(d=>d&&{...d,attr:'Agility'})}
+                    style={{...Btn(ATTR_COLOR.Agility),padding:'10px',fontSize:'11px',background:defModal.attr==='Agility'?`${ATTR_COLOR.Agility}22`:'transparent',opacity:defModal.attr==='Agility'?1:0.75}}
+                  >
+                    Agility — Dodge
+                  </button>
+                </div>
+                <div style={{fontSize:'12px',color:T.textMuted,marginTop:'8px'}}>
+                  Modifier on die: <strong style={{color:ac}}>{mStr(calcMod(attrs[defModal.attr]))}</strong> ({defModal.attr})
+                </div>
+              </div>
+
               <div style={{background:'#111520',border:`1px solid ${ac}33`,borderRadius:'4px',padding:'14px 18px',marginBottom:'14px',textAlign:'left'}}>
-                <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.18em',color:'#8a7a68',marginBottom:'8px'}}>RP COMMITTED TO DEFENSE</div>
-                <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                  <button onClick={()=>setDefRpInput(v=>Math.max(0,(Number(v)||0)-1))}
-                    style={{...Btn(ac),padding:'4px 12px',fontSize:'18px',lineHeight:'1'}}>−</button>
-                  <input type="number" value={defRpInput} min={0} max={effBaseRP}
-                    onChange={e=>setDefRpInput(Math.max(0,Math.min(Number(e.target.value)||0,effBaseRP)))}
-                    style={{...inp(),width:'70px',textAlign:'center',fontSize:'22px',fontWeight:'700',color:ac,padding:'4px'}}/>
-                  <button onClick={()=>setDefRpInput(v=>Math.min(effBaseRP,(Number(v)||0)+1))}
-                    style={{...Btn(ac),padding:'4px 12px',fontSize:'18px',lineHeight:'1'}}>+</button>
-                  <div style={{marginLeft:'auto',textAlign:'right'}}>
-                    <div style={{fontSize:'11px',color:'#504538'}}>Available</div>
-                    <div style={{fontSize:'16px',fontWeight:'700',color:'#4a9de8'}}>{effBaseRP}</div>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.18em',color:'#8a7a68'}}>RP COMMITTED (spent on roll)</div>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:T.rp}}>
+                    Available: <strong>{curRP}</strong>
+                  </span>
+                </div>
+                <div style={{display:'flex',gap:'12px',alignItems:'center',marginBottom:'8px'}}>
+                  <div style={{display:'flex',alignItems:'stretch',flexShrink:0}}>
+                    <button type="button" onClick={()=>setDefRpInput(v=>Math.max(0,(Number(v)||0)-1))}
+                      style={{...Btn(ac),padding:'0 12px',fontSize:'22px',fontWeight:'300',borderRight:'none',borderRadius:'3px 0 0 3px',lineHeight:1}}>−</button>
+                    <StableNumInput
+                      value={rpIn}
+                      onChange={setDefRpInput}
+                      min={0}
+                      max={curRP}
+                      clearOnFocus
+                      style={{...inp(),width:'72px',textAlign:'center',fontSize:'22px',fontWeight:'700',color:ac,borderRadius:0,borderLeft:'none',borderRight:'none',padding:'4px 6px'}}
+                    />
+                    <button type="button" onClick={()=>setDefRpInput(v=>Math.min(curRP,(Number(v)||0)+1))}
+                      style={{...Btn(ac),padding:'0 12px',fontSize:'22px',fontWeight:'300',borderLeft:'none',borderRadius:'0 3px 3px 0',lineHeight:1}}>+</button>
+                  </div>
+                  <div style={{flex:1,position:'relative',padding:'10px 0'}}>
+                    <div style={{height:'6px',background:'#1c2030',borderRadius:'3px',position:'relative',overflow:'visible'}}>
+                      <div
+                        style={{
+                          height:'100%',
+                          width:`${curRP>0?Math.min(100,(rpIn/curRP)*100):0}%`,
+                          background:ac,
+                          borderRadius:'3px',
+                        }}
+                      />
+                      <div
+                        style={{
+                          position:'absolute',
+                          top:'50%',
+                          transform:'translateY(-50%)',
+                          left:`calc(${curRP>0?Math.min(100,(rpIn/curRP)*100):0}% - 8px)`,
+                          width:'16px',
+                          height:'16px',
+                          borderRadius:'50%',
+                          background:ac,
+                          boxShadow:`0 0 7px ${ac}99`,
+                          pointerEvents:'none',
+                        }}
+                      />
+                    </div>
+                    <input
+                      key={`def-rp-max-${curRP}`}
+                      type="range"
+                      min={0}
+                      max={curRP||1}
+                      value={rpIn}
+                      onChange={e=>{
+                        const mx = curRP || 1;
+                        const v = Math.max(0, Math.min(mx, Number(e.target.value) || 0));
+                        setDefRpInput(v);
+                      }}
+                      style={{position:'absolute',inset:0,opacity:0,cursor:'pointer',width:'100%',height:'100%',margin:0,padding:0}}
+                    />
                   </div>
                 </div>
-                {/* Step readout */}
-                <div style={{marginTop:'12px',display:'flex',alignItems:'center',gap:'8px'}}>
-                  <div style={{flex:1,height:'4px',borderRadius:'2px',background:'#1c2230',overflow:'hidden'}}>
-                    <div style={{height:'100%',width:`${(rpIn/effBaseRP)*100}%`,background:ac,borderRadius:'2px',transition:'width 0.2s'}}/>
-                  </div>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:ac,whiteSpace:'nowrap'}}>
-                    {dSteps} Defensive Step{dSteps!==1?'s':''}
-                  </div>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:'#8a7a68'}}>vs Base RP (bonus tiers)</span>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:ac,whiteSpace:'nowrap'}}>+{defBonus} defensive bonus</span>
                 </div>
-                <div style={{fontSize:'12px',color:'#504538',marginTop:'6px'}}>
-                  Defensive Steps reduce incoming Pressure before the Save Target is set.
-                  Each Step lowers the target by 2.
+                <div style={{display:'flex',gap:'4px',marginBottom:'2px'}}>
+                  {[1,2,3,4,5].map(i=>(
+                    <div
+                      key={i}
+                      style={{
+                        flex:1,
+                        height:'7px',
+                        borderRadius:'2px',
+                        background:i<=defBonus?ac:'#1c2230',
+                        transition:'background 0.12s',
+                      }}
+                    />
+                  ))}
+                </div>
+                <div style={{fontSize:'11px',color:'#504538',marginTop:'8px',lineHeight:1.5}}>
+                  {rpIn === 0
+                    ? '0% of Base RP → +0 defensive bonus.'
+                    : `${pctOfBase}% of Base RP → +${defBonus} on the d20 roll (max +5).`}
                 </div>
               </div>
 
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-                <button onClick={()=>setDefModal(null)} style={{...Btn('#8a7a68'),padding:'10px',fontSize:'11px'}}>CANCEL</button>
-                <button onClick={()=>{setDefModal(null);rollSave(defModal.attr,'defensive',rpIn);}}
+                <button type="button" onClick={()=>setDefModal(null)} style={{...Btn('#8a7a68'),padding:'10px',fontSize:'11px'}}>CANCEL</button>
+                <button type="button" onClick={()=>{setDefModal(null);rollSave(defModal.attr,'defensive',rpIn);}}
                   style={{...Btn(ac),padding:'10px',fontSize:'12px',background:`${ac}15`,fontWeight:'600'}}>
                   🎲 ROLL SAVE
                 </button>
@@ -3007,35 +3263,68 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
               {/* Formula breakdown */}
               <div style={{fontSize:'13px',color:'#8a7a68',marginBottom:'14px'}}>
-                d20({saveModal.roll}) {saveModal.mod>=0?'+':'−'} <span style={{color:ac}}>{Math.abs(saveModal.mod)}</span>
-                {' '}({saveModal.attr} mod) = <strong style={{color:ac}}>{saveModal.total}</strong>
-                {saveModal.roll2!==null&&<span style={{color:'#504538'}}> · {saveModal.mode==='advantage'?'↑':'↓'} {saveModal.altRoll} dropped</span>}
+                {saveModal.mode === 'defensive' ? (
+                  <>
+                    d20({saveModal.roll}) {saveModal.mod >= 0 ? '+' : '−'}{' '}
+                    <span style={{ color: ac }}>{Math.abs(saveModal.mod)}</span> ({saveModal.attr}){' '}
+                    + <span style={{ color: T.rp }}>{saveModal.defensiveBonus ?? 0}</span> (defensive){' '}
+                    = <strong style={{ color: ac }}>{saveModal.total}</strong>
+                  </>
+                ) : (
+                  <>
+                    d20({saveModal.roll}) {saveModal.mod >= 0 ? '+' : '−'}{' '}
+                    <span style={{ color: ac }}>{Math.abs(saveModal.mod)}</span> ({saveModal.attr} mod) ={' '}
+                    <strong style={{ color: ac }}>{saveModal.total}</strong>
+                  </>
+                )}
+                {saveModal.roll2 !== null && saveModal.roll2 !== undefined && (
+                  <span style={{ color: '#504538' }}>
+                    {' '}
+                    · {saveModal.mode === 'advantage' ? '↑' : '↓'} {saveModal.altRoll} dropped
+                  </span>
+                )}
               </div>
 
-              {/* Defensive Steps readout */}
-              {saveModal.mode==='defensive'&&saveModal.defSteps!==null&&(
-                <div style={{background:'#0d1018',border:`1px solid ${ac}33`,borderRadius:'4px',
-                  padding:'12px 16px',marginBottom:'14px',textAlign:'left'}}>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.16em',color:'#8a7a68'}}>RP COMMITTED</span>
-                    <span style={{fontSize:'15px',fontWeight:'700',color:'#4a9de8'}}>{saveModal.defRpCommit}</span>
+              {saveModal.mode === 'defensive' && (
+                <div
+                  style={{
+                    background: '#0d1018',
+                    border: `1px solid ${ac}33`,
+                    borderRadius: '4px',
+                    padding: '12px 16px',
+                    marginBottom: '14px',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontFamily: "'Cinzel',serif", fontSize: '10px', letterSpacing: '0.16em', color: '#8a7a68' }}>
+                      RP COMMITTED (spent)
+                    </span>
+                    <span style={{ fontSize: '15px', fontWeight: '700', color: T.rp }}>{saveModal.defRpCommit}</span>
                   </div>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.16em',color:'#8a7a68'}}>DEFENSIVE STEPS</span>
-                    <span style={{fontSize:'22px',fontWeight:'700',color:ac}}>{saveModal.defSteps}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontFamily: "'Cinzel',serif", fontSize: '10px', letterSpacing: '0.16em', color: '#8a7a68' }}>
+                      DEFENSIVE BONUS
+                    </span>
+                    <span style={{ fontSize: '22px', fontWeight: '700', color: ac }}>+{saveModal.defensiveBonus ?? 0}</span>
                   </div>
-                  <div style={{height:'1px',background:'#1c2230',margin:'10px 0'}}/>
-                  <div style={{fontSize:'12px',color:'#504538',lineHeight:'1.6'}}>
-                    Tell your DM: <span style={{color:'#8a7a68'}}>Save {saveModal.total}</span> with <span style={{color:ac}}>{saveModal.defSteps} Defensive Step{saveModal.defSteps!==1?'s':''}</span>.
-                    They will subtract your steps from their Pressure to set the final Save Target.
+                  <div style={{ height: '1px', background: '#1c2230', margin: '10px 0' }} />
+                  <div style={{ fontSize: '12px', color: '#504538', lineHeight: 1.6 }}>
+                    Save total <strong style={{ color: '#8a7a68' }}>{saveModal.total}</strong> vs the attacker
+                    {'\u2019'}s Save Target (from Pressure Steps). Natural 20 on the d20 is a defensive critical.
                   </div>
                 </div>
               )}
 
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-                <button onClick={()=>rollSave(saveModal.attr, saveModal.mode, saveModal.defRpCommit)}
-                  style={{...Btn(ac),padding:'9px',fontSize:'11px',background:`${ac}12`}}>⬡ REROLL</button>
-                <button onClick={()=>setSaveModal(null)} style={{...Btn('#8a7a68'),padding:'9px'}}>CLOSE</button>
+              <div style={{ display: 'grid', gridTemplateColumns: saveModal.mode === 'defensive' ? '1fr' : '1fr 1fr', gap: '8px' }}>
+                {saveModal.mode !== 'defensive' && (
+                  <button type="button" onClick={() => rollSave(saveModal.attr, saveModal.mode, 0)} style={{ ...Btn(ac), padding: '9px', fontSize: '11px', background: `${ac}12` }}>
+                    ⬡ REROLL
+                  </button>
+                )}
+                <button type="button" onClick={() => setSaveModal(null)} style={{ ...Btn('#8a7a68'), padding: '9px' }}>
+                  CLOSE
+                </button>
               </div>
             </div>
           </ModalWrap>
