@@ -1,3 +1,6 @@
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '@/store/authStore';
+
 // ── Campaigns page stub ─────────────────────────────────────────────────────
 export function Campaigns() {
   return <ComingSoon icon="🏰" label="CAMPAIGNS" desc="Campaign management, session scheduling, and the DM encounter builder are coming in the next build phase." />;
@@ -15,6 +18,12 @@ export function Compendium() {
 
 // ── 404 ──────────────────────────────────────────────────────────────────────
 export function NotFound() {
+  const { user, isReady, isLoading } = useAuthStore();
+  const location = useLocation();
+  const mockAuthEnabled = import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true';
+  if (!mockAuthEnabled && isReady && !isLoading && !user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
   return <ComingSoon icon="✦" label="LOST IN THE VOID" desc="This page does not exist. Perhaps it never did." />;
 }
 
