@@ -520,6 +520,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const [curHP,   setCurHP]   = useState(INIT_MAX_HP);
   /** True while Start Turn has been used for the current round. */
   const [inActiveTurn, setInActiveTurn] = useState(false);
+  /** Bank only after Start Turn; still allow clearing ○ BANKED if turn ended while banking. */
+  const bankNeedsActiveTurn = !inActiveTurn && !banking;
   /** One new bank commit until End Turn merges or cancels; Bank locked while temporary RP from a prior merge is active. */
   const [canCommitBank, setCanCommitBank] = useState(true);
   /** RP merged from bank on End Turn — stripped next End Turn (above base) if not spent. */
@@ -527,6 +529,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
   const handleBank = () => {
     if (bankBlocked) return;
+    if (bankNeedsActiveTurn) return;
     if (!banking) {
       if (!canCommitBank) return;
       setBankRP(curRP);
@@ -1690,12 +1693,13 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               <label style={LBL}>Banked RP</label>
               <div style={{background:T.surface,border:`1px solid ${banking?'#2a6daa55':T.border}`,borderRadius:'3px',padding:'6px 12px',fontSize:'20px',color:banking?'#4a8dcc':T.textDim,fontWeight:'600',textAlign:'center'}}>{bankRP}</div>
             </div>
-            <button onClick={handleBank} disabled={bankBlocked || (!canCommitBank && !banking)}
+            <button onClick={handleBank} disabled={bankBlocked || bankNeedsActiveTurn || (!canCommitBank && !banking)}
               style={{...Btn(banking?T.rp:T.textMuted),padding:'8px 14px',marginTop:'18px',background:banking?`${T.rp}15`:'transparent'}}>
               {banking?'● BANKED':'○ BANK'}
             </button>
           </div>
           {bankBlocked&&<div style={{fontSize:'10px',color:'#803020',marginTop:'4px',fontFamily:"'Cinzel',serif"}}>Banking blocked by active state</div>}
+          {bankNeedsActiveTurn&&!bankBlocked&&<div style={{fontSize:'10px',color:T.textMuted,marginTop:'4px',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>Start your turn to bank RP</div>}
         </div>
 
         {/* ── Hit Points ── */}
