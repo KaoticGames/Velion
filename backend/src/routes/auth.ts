@@ -11,17 +11,40 @@ const router = Router();
 const BCRYPT_ROUNDS = 12;
 /** HttpOnly refresh cookie, DB `expires_at`, and JWT refresh `exp` — align with `signRefreshToken` in lib/jwt.ts */
 const REFRESH_DAYS  = 7;
+const COOKIE_PATH = '/api/v1/auth';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-const setRefreshCookie = (res: Response, token: string) => {
-  res.cookie('refresh_token', token, {
+type CookieSameSite = 'strict' | 'lax' | 'none';
+const cookieSameSite = (): CookieSameSite => {
+  const raw = (process.env.AUTH_COOKIE_SAMESITE ?? '').toLowerCase();
+  if (raw === 'none') return 'none';
+  if (raw === 'lax') return 'lax';
+  if (raw === 'strict') return 'strict';
+  // Cross-site frontend/API deployments need `none`; same-site can stay strict.
+  return process.env.NODE_ENV === 'production' ? 'none' : 'strict';
+};
+
+const refreshCookieOptions = () => {
+  const sameSite = cookieSameSite();
+  const secure = process.env.NODE_ENV === 'production' || sameSite === 'none';
+  return {
     httpOnly: true,
-    secure:   process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge:   REFRESH_DAYS * 24 * 60 * 60 * 1000,
-    path:     '/api/v1/auth',
-  });
+    secure,
+    sameSite,
+    maxAge: REFRESH_DAYS * 24 * 60 * 60 * 1000,
+    path: COOKIE_PATH,
+    domain: process.env.AUTH_COOKIE_DOMAIN || undefined,
+  } as const;
+};
+
+const refreshCookieClearOptions = () => {
+  const { httpOnly, secure, sameSite, path, domain } = refreshCookieOptions();
+  return { httpOnly, secure, sameSite, path, domain } as const;
+};
+
+const setRefreshCookie = (res: Response, token: string) => {
+  res.cookie('refresh_token', token, refreshCookieOptions());
 };
 
 const betaGateEnabled = () => process.env.BETA_GATE_ENABLED !== 'false';
@@ -234,7 +257,7 @@ router.post('/logout', requireAuth, async (req: Request, res: Response): Promise
       await db.update(refreshTokens).set({ revoked_at: new Date() }).where(eq(refreshTokens.id, payload.token_id));
     } catch { /* ignore invalid token on logout */ }
   }
-  res.clearCookie('refresh_token', { path: '/api/v1/auth' });
+  res.clearCookie('refresh_token', refreshCookieClearOptions());
   res.json({ success: true });
 });
 
@@ -260,7 +283,7 @@ router.patch('/password', requireAuth, async (req: Request, res: Response): Prom
   // Revoke all refresh tokens for security
   await db.update(refreshTokens).set({ revoked_at: new Date() }).where(eq(refreshTokens.user_id, userId));
 
-  res.clearCookie('refresh_token', { path: '/api/v1/auth' });
+  res.clearCookie('refresh_token', refreshCookieClearOptions());
   res.json({ success: true });
 });
 
