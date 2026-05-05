@@ -93,7 +93,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: data.user, accessToken: data.access_token });
     } catch (e) {
       if (axios.isAxiosError(e) && e.response?.status === 401) {
-        set({ user: null, accessToken: null });
+        try {
+          // Touch can fail transiently (stale cookie/token race). Try full rotation once.
+          await get().refreshSession();
+        } catch {
+          set({ user: null, accessToken: null });
+        }
       }
     }
   },
