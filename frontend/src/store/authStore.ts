@@ -4,12 +4,14 @@
  * Access token is stored IN MEMORY ONLY (never localStorage/sessionStorage).
  * Refresh token is an HttpOnly cookie managed by the browser + backend.
  *
- * On app load, the store attempts a silent token refresh to restore session
- * from the existing cookie, enabling persistent login without XSS exposure.
+ * Session length is a **sliding 7-day** window: `POST /auth/touch` (activity, throttled)
+ * and proactive timers extend `expires_at` + new JWTs. Full rotation uses `/auth/refresh`
+ * (login hydrate, 401 recovery).
  */
 
+import axios from 'axios';
 import { create } from 'zustand';
-import api, { setTokenAccessors, extractApiError } from '@/lib/api';
+import api, { setTokenAccessors } from '@/lib/api';
 import { setSessionKickHandler, scheduleProactiveAccessRefresh } from '@/lib/authSession';
 
 export type SubscriptionTier = 'free' | 'player' | 'dm';
@@ -35,8 +37,10 @@ interface AuthState {
   register: (email: string, password: string, displayName: string) => Promise<void>;
   logout:   () => Promise<void>;
   hydrate:  () => Promise<void>;          // called once on app mount
-  /** POST /auth/refresh — new access token + user; used on load and before JWT exp */
+  /** POST /auth/refresh — token rotation; hydrate + 401 recovery */
   refreshSession: () => Promise<void>;
+  /** POST /auth/touch — slide 7-day window (same refresh row); activity + proactive timer */
+  touchSession: () => Promise<void>;
 
   // Internal — used by api.ts interceptor
   _setToken: (token: string) => void;
@@ -83,6 +87,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: data.user, accessToken: data.access_token });
   },
 
+  touchSession: async () => {
+    try {
+      const { data } = await api.post<{ access_token: string; user: AuthUser }>('/auth/touch');
+      set({ user: data.user, accessToken: data.access_token });
+    } catch (e) {
+      if (axios.isAxiosError(e) && e.response?.status === 401) {
+        set({ user: null, accessToken: null });
+      }
+    }
+  },
+
   // ── Hydrate (silent refresh on app load) ───────────────────────────────
   hydrate: async () => {
     set({ isLoading: true });
@@ -121,12 +136,12 @@ useAuthStore.subscribe((state) => {
   lastScheduledAccessToken = state.accessToken ?? null;
   scheduleProactiveAccessRefresh(
     () => useAuthStore.getState().accessToken,
-    () => useAuthStore.getState().refreshSession(),
+    () => useAuthStore.getState().touchSession(),
   );
 });
 scheduleProactiveAccessRefresh(
   () => useAuthStore.getState().accessToken,
-  () => useAuthStore.getState().refreshSession(),
+  () => useAuthStore.getState().touchSession(),
 );
 
 // ── Convenience selectors ─────────────────────────────────────────────────

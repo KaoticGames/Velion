@@ -2,10 +2,8 @@
  * Session management + forced re-auth (no React context).
  * kickHandler is wired from authStore on module load.
  *
- * Access tokens eventually expire; we **refresh** before `exp` using the HttpOnly
- * refresh cookie (same as `/auth/refresh` on 401). We do not log out at `exp` —
- * that was forcing ~15m logouts when the JWT lifetime was short and bypassed
- * the refresh flow.
+ * Access tokens eventually expire; we call **`/auth/touch`** before `exp` to slide the
+ * 7-day session window and mint a new access JWT. We do not log out at access `exp`.
  */
 
 let kickHandler: () => void = () => {};
@@ -38,12 +36,12 @@ function decodeJwtExpMs(token: string): number | null {
 const REFRESH_BEFORE_EXPIRY_MS = 2 * 60 * 1000;
 
 /**
- * Schedule a silent `/auth/refresh` before the access JWT expires.
- * On refresh failure, kicks to login (cookie revoked / expired).
+ * Schedule `/auth/touch` before the access JWT expires (slides the 7-day window).
+ * The callback should swallow non-fatal errors; 401 is handled inside `touchSession`.
  */
 export function scheduleProactiveAccessRefresh(
   getToken: () => string | null,
-  refresh: () => Promise<void>,
+  touch: () => Promise<void>,
 ) {
   if (refreshTimer) {
     clearTimeout(refreshTimer);
@@ -62,13 +60,9 @@ export function scheduleProactiveAccessRefresh(
     const ideal = msUntilExp - REFRESH_BEFORE_EXPIRY_MS;
     delay = ideal > 0 ? ideal : Math.max(5_000, Math.floor(msUntilExp / 2));
   }
-  refreshTimer = setTimeout(async () => {
+  refreshTimer = setTimeout(() => {
     refreshTimer = null;
-    try {
-      await refresh();
-    } catch {
-      kickToLogin();
-    }
+    void touch();
   }, delay);
 }
 

@@ -49,11 +49,12 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Only attempt refresh on 401 and not on the refresh endpoint itself
+    // Only attempt refresh on 401 — not on auth endpoints that use the cookie alone
     if (
       error.response?.status === 401 &&
       !original._retry &&
-      !original.url?.includes('/auth/refresh')
+      !original.url?.includes('/auth/refresh') &&
+      !original.url?.includes('/auth/touch')
     ) {
       original._retry = true;
 

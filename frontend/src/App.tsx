@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router }       from './router';
 import { useAuthStore } from './store/authStore';
 import GlobalDiceOverlay from '@/components/GlobalDiceOverlay';
+import { useSessionActivityExtend } from '@/hooks/useSessionActivityExtend';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,6 +19,7 @@ const queryClient = new QueryClient({
 function AuthGate() {
   const hydrate = useAuthStore((s) => s.hydrate);
   const mockAuth = import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true';
+  useSessionActivityExtend();
 
   useEffect(() => {
     // In dev mock mode, skip the refresh call (no backend required)

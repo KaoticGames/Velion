@@ -180,6 +180,51 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
   res.json({ access_token: new_access_token, user: userPublic(user) });
 });
 
+/**
+ * Sliding session: extend the **same** refresh row to now+REFRESH_DAYS (no rotation).
+ * Call from the client on user activity (throttled) so “7 days” restarts from last use.
+ */
+router.post('/touch', async (req: Request, res: Response): Promise<void> => {
+  const cookie = req.cookies?.refresh_token;
+  if (!cookie) {
+    res.status(401).json({ error: { code: 'NO_REFRESH_TOKEN', message: 'No refresh token.', status: 401 } });
+    return;
+  }
+
+  let payload: ReturnType<typeof verifyRefreshToken>;
+  try {
+    payload = verifyRefreshToken(cookie);
+  } catch {
+    res.status(401).json({ error: { code: 'REFRESH_TOKEN_INVALID', message: 'Refresh token invalid.', status: 401 } });
+    return;
+  }
+
+  const [stored] = await db.select().from(refreshTokens)
+    .where(and(eq(refreshTokens.id, payload.token_id), isNull(refreshTokens.revoked_at), gt(refreshTokens.expires_at, new Date())))
+    .limit(1);
+
+  if (!stored) {
+    res.status(401).json({ error: { code: 'REFRESH_TOKEN_REVOKED', message: 'Refresh token revoked or expired.', status: 401 } });
+    return;
+  }
+
+  const [user] = await db.select().from(users).where(eq(users.id, stored.user_id)).limit(1);
+  if (!user) {
+    res.status(401).json({ error: { code: 'USER_NOT_FOUND', message: 'Account not found.', status: 401 } });
+    return;
+  }
+  if (rejectIfBetaRevoked(res, user)) return;
+
+  const expires_at = new Date(Date.now() + REFRESH_DAYS * 24 * 60 * 60 * 1000);
+  await db.update(refreshTokens).set({ expires_at }).where(eq(refreshTokens.id, stored.id));
+
+  const access_token    = signAccessToken({ user_id: user.id, email: user.email, subscription_tier: user.subscription_tier });
+  const refresh_token = signRefreshToken({ user_id: user.id, token_id: stored.id });
+  setRefreshCookie(res, refresh_token);
+
+  res.json({ access_token, user: userPublic(user) });
+});
+
 // ── POST /auth/logout ─────────────────────────────────────────────────────
 router.post('/logout', requireAuth, async (req: Request, res: Response): Promise<void> => {
   const cookie = req.cookies?.refresh_token;
