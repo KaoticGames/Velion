@@ -10,7 +10,7 @@
 
 import { create } from 'zustand';
 import api, { setTokenAccessors, extractApiError } from '@/lib/api';
-import { setSessionKickHandler, scheduleAccessTokenExpiry } from '@/lib/authSession';
+import { setSessionKickHandler, scheduleProactiveAccessRefresh } from '@/lib/authSession';
 
 export type SubscriptionTier = 'free' | 'player' | 'dm';
 
@@ -35,6 +35,8 @@ interface AuthState {
   register: (email: string, password: string, displayName: string) => Promise<void>;
   logout:   () => Promise<void>;
   hydrate:  () => Promise<void>;          // called once on app mount
+  /** POST /auth/refresh — new access token + user; used on load and before JWT exp */
+  refreshSession: () => Promise<void>;
 
   // Internal — used by api.ts interceptor
   _setToken: (token: string) => void;
@@ -76,14 +78,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: null, accessToken: null });
   },
 
+  refreshSession: async () => {
+    const { data } = await api.post<{ access_token: string; user: AuthUser }>('/auth/refresh');
+    set({ user: data.user, accessToken: data.access_token });
+  },
+
   // ── Hydrate (silent refresh on app load) ───────────────────────────────
   hydrate: async () => {
     set({ isLoading: true });
     try {
-      const { data } = await api.post<{ access_token: string; user: AuthUser }>('/auth/refresh');
-      set({ user: data.user, accessToken: data.access_token });
+      await get().refreshSession();
     } catch {
-      // No valid session — user will need to log in
       set({ user: null, accessToken: null });
     } finally {
       set({ isLoading: false, isReady: true });
@@ -114,9 +119,15 @@ let lastScheduledAccessToken: string | null | undefined = undefined;
 useAuthStore.subscribe((state) => {
   if (state.accessToken === lastScheduledAccessToken) return;
   lastScheduledAccessToken = state.accessToken ?? null;
-  scheduleAccessTokenExpiry(() => useAuthStore.getState().accessToken);
+  scheduleProactiveAccessRefresh(
+    () => useAuthStore.getState().accessToken,
+    () => useAuthStore.getState().refreshSession(),
+  );
 });
-scheduleAccessTokenExpiry(() => useAuthStore.getState().accessToken);
+scheduleProactiveAccessRefresh(
+  () => useAuthStore.getState().accessToken,
+  () => useAuthStore.getState().refreshSession(),
+);
 
 // ── Convenience selectors ─────────────────────────────────────────────────
 export const selectUser    = (s: AuthState) => s.user;

@@ -11,7 +11,9 @@ import type { DiceResult } from '@/vtt/types';
 /** Remote viewers: “tumble” time before authoritative faces + dice log line appear. */
 const IMMERSIVE_SETTLE_MS = 2000;
 /** After settle, keep the summary card visible before clearing. */
-const IMMERSIVE_HOLD_MS = 3200;
+const IMMERSIVE_HOLD_MS = 2000;
+/** After local physics finishes (`onRollComplete`), keep the dice canvas visible before clearing. */
+const LOCAL_ROLL_SCENE_HOLD_MS = 2000;
 
 type DiceVisibility = 'public' | 'private' | 'dm';
 type DiceType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100';
@@ -400,7 +402,7 @@ export default function GlobalDiceOverlay() {
     diceSceneTimerRef.current = window.setTimeout(() => {
       diceSceneTimerRef.current = null;
       hideFullScreenDiceScene();
-    }, 4200);
+    }, LOCAL_ROLL_SCENE_HOLD_MS);
   };
 
   useEffect(() => {

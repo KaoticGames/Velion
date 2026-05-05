@@ -1,6 +1,11 @@
 /**
- * Session expiry + forced re-auth (no React context).
+ * Session management + forced re-auth (no React context).
  * kickHandler is wired from authStore on module load.
+ *
+ * Access tokens eventually expire; we **refresh** before `exp` using the HttpOnly
+ * refresh cookie (same as `/auth/refresh` on 401). We do not log out at `exp` —
+ * that was forcing ~15m logouts when the JWT lifetime was short and bypassed
+ * the refresh flow.
  */
 
 let kickHandler: () => void = () => {};
@@ -14,7 +19,7 @@ export function kickToLogin() {
   kickHandler();
 }
 
-let expiryTimer: ReturnType<typeof setTimeout> | null = null;
+let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 function decodeJwtExpMs(token: string): number | null {
   try {
@@ -29,20 +34,41 @@ function decodeJwtExpMs(token: string): number | null {
   }
 }
 
-/** Re-schedule client-side logout when the access JWT expires (no HTTP round-trip). */
-export function scheduleAccessTokenExpiry(getToken: () => string | null) {
-  if (expiryTimer) {
-    clearTimeout(expiryTimer);
-    expiryTimer = null;
+/** Refresh this long before access JWT `exp` (rolling session / avoids idle expiry). */
+const REFRESH_BEFORE_EXPIRY_MS = 2 * 60 * 1000;
+
+/**
+ * Schedule a silent `/auth/refresh` before the access JWT expires.
+ * On refresh failure, kicks to login (cookie revoked / expired).
+ */
+export function scheduleProactiveAccessRefresh(
+  getToken: () => string | null,
+  refresh: () => Promise<void>,
+) {
+  if (refreshTimer) {
+    clearTimeout(refreshTimer);
+    refreshTimer = null;
   }
   const token = getToken();
   if (!token) return;
   const expMs = decodeJwtExpMs(token);
   if (!expMs) return;
-  const delay = Math.max(0, expMs - Date.now());
-  expiryTimer = setTimeout(() => {
-    expiryTimer = null;
-    kickToLogin();
+  const now = Date.now();
+  const msUntilExp = expMs - now;
+  let delay: number;
+  if (msUntilExp <= 0) {
+    delay = 0;
+  } else {
+    const ideal = msUntilExp - REFRESH_BEFORE_EXPIRY_MS;
+    delay = ideal > 0 ? ideal : Math.max(5_000, Math.floor(msUntilExp / 2));
+  }
+  refreshTimer = setTimeout(async () => {
+    refreshTimer = null;
+    try {
+      await refresh();
+    } catch {
+      kickToLogin();
+    }
   }, delay);
 }
 
