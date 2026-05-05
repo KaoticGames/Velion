@@ -316,7 +316,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const rollUserId = useAuthStore(s => s.user?.id ?? '');
   const rollSocketRef = useRef(null);
   const [sessionDiceLog, setSessionDiceLog] = useState([]);
-  const [diceLogCollapsed, setDiceLogCollapsed] = useState(false);
+  /** false = expanded roll log panel; true = upper-right dock chip only */
+  const [diceLogCollapsed, setDiceLogCollapsed] = useState(true);
   const rollQueueRef = useRef([]);
   const rollLockRef = useRef(false);
   /** Set after `session:state` — do not emit `dice:roll` before join completes */
@@ -2892,128 +2893,97 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         </ModalWrap>
       )}
 
-      {sessionId && (
-        <div
+      {diceLogCollapsed ? (
+        <button
+          type="button"
+          onClick={() => setDiceLogCollapsed(false)}
+          title="Expand dice log"
           style={{
-            position:'fixed',
-            right:'12px',
-            top:'72px',
-            width: diceLogCollapsed ? '42px' : '300px',
-            height: 'min(68vh, 520px)',
+            position: 'fixed',
+            right: '16px',
+            top: '72px',
             zIndex: 980,
-            background:'#0d1018ee',
-            border:`1px solid ${T.border}`,
-            borderRadius:'6px',
-            boxShadow:'0 8px 28px rgba(0,0,0,0.45)',
-            display:'flex',
-            flexDirection:'column',
-            overflow:'hidden',
-            transition:'width 0.15s ease',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 14px',
+            background: '#0d1018ee',
+            border: `1px solid ${T.border}`,
+            borderRadius: '6px',
+            boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
+            cursor: 'pointer',
+            fontFamily: "'Cinzel',serif",
           }}
         >
-          {diceLogCollapsed ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', padding: '6px 0', flexShrink: 0 }}>
-              <button
-                type="button"
-                onClick={() => setDiceLogCollapsed(false)}
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  color: T.textMuted,
-                  fontFamily: "'Cinzel',serif",
-                  fontSize: '11px',
-                  cursor: 'pointer',
-                  padding: '4px',
-                }}
-                title="Expand dice log"
-              >
-                ◀
-              </button>
-              <button
-                type="button"
-                title="Open 3D dice roller (full screen)"
-                onClick={() => {
-                  window.dispatchEvent(
-                    new CustomEvent('velion:dice-roll-request', {
-                      detail: {
-                        formula: '1d20',
-                        label: '',
-                        visibility: 'public',
-                        source_label: charName || 'Character',
-                        autoOpen: true,
-                      },
-                    }),
-                  );
-                }}
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  fontSize: '20px',
-                  lineHeight: 1,
-                  padding: '2px',
-                }}
-              >
-                🎲
-              </button>
-            </div>
-          ) : (
-            <>
-              <div style={{ display: 'flex', flexShrink: 0, borderBottom: `1px solid ${T.border}` }}>
-                <button
-                  type="button"
-                  onClick={() => setDiceLogCollapsed(true)}
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    borderRight: `1px solid ${T.border}`,
-                    background: 'transparent',
-                    color: T.textMuted,
-                    fontFamily: "'Cinzel',serif",
-                    fontSize: '9px',
-                    letterSpacing: '0.16em',
-                    padding: '8px',
-                    cursor: 'pointer',
-                    textAlign: 'center',
-                  }}
-                  title="Collapse dice log"
-                >
-                  DICE LOG ▶
-                </button>
-                <button
-                  type="button"
-                  title="Open 3D dice roller (full screen)"
-                  onClick={() => {
-                    window.dispatchEvent(
-                      new CustomEvent('velion:dice-roll-request', {
-                        detail: {
-                          formula: '1d20',
-                          label: '',
-                          visibility: 'public',
-                          source_label: charName || 'Character',
-                          autoOpen: true,
-                        },
-                      }),
-                    );
-                  }}
-                  style={{
-                    width: '44px',
-                    flexShrink: 0,
-                    border: 'none',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    fontSize: '18px',
-                    color: T.gold,
-                  }}
-                >
-                  🎲
-                </button>
-              </div>
-              <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                <DiceLog entries={sessionDiceLog} userId={rollUserId} isDM={false} />
-              </div>
-            </>
-          )}
+          <span style={{ color: T.textMuted, fontSize: '11px', flexShrink: 0 }} aria-hidden>
+            ◀
+          </span>
+          <span
+            style={{
+              color: T.gold,
+              fontSize: '10px',
+              letterSpacing: '0.2em',
+            }}
+          >
+            Dice log
+          </span>
+        </button>
+      ) : (
+        <div
+          style={{
+            position: 'fixed',
+            right: '16px',
+            top: '72px',
+            width: '300px',
+            maxHeight: 'min(60vh, 440px)',
+            zIndex: 980,
+            background: '#0d1018ee',
+            border: `1px solid ${T.border}`,
+            borderRadius: '6px',
+            boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setDiceLogCollapsed(true)}
+            title="Collapse dice log"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '40px 1fr 40px',
+              alignItems: 'center',
+              flexShrink: 0,
+              width: '100%',
+              border: 'none',
+              borderBottom: `1px solid ${T.border}`,
+              borderRadius: 0,
+              background: 'transparent',
+              cursor: 'pointer',
+              padding: '10px 0',
+              fontFamily: "'Cinzel',serif",
+            }}
+          >
+            <span aria-hidden />
+            <span
+              style={{
+                textAlign: 'center',
+                fontSize: '9px',
+                letterSpacing: '0.18em',
+                color: T.textMuted,
+              }}
+            >
+              Dice log
+            </span>
+            <span style={{ color: T.textMuted, fontSize: '11px', textAlign: 'center' }} aria-hidden>
+              ▶
+            </span>
+          </button>
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <DiceLog entries={sessionDiceLog} userId={rollUserId} isDM={false} />
+          </div>
         </div>
       )}
 
