@@ -5,9 +5,10 @@ type Props = {
 /** Opens Google OAuth in a popup; parent completes login via `useGoogleOAuthCompletion` + `refreshSession`. */
 export function GoogleSignInButton({ disabled }: Props) {
   const openPopup = () => {
+    // VITE_API_URL is …/api/v1 — OAuth lives under …/api/v1/auth/oauth/…
     const base = (import.meta.env.VITE_API_URL as string).replace(/\/$/, '');
     const origin = encodeURIComponent(window.location.origin);
-    const url = `${base}/oauth/google/start?popup=1&origin=${origin}`;
+    const url = `${base}/auth/oauth/google/start?popup=1&origin=${origin}`;
     const w = 520;
     const h = 640;
     const left = window.screenX + (window.outerWidth - w) / 2;
