@@ -43,11 +43,20 @@ const server = createServer(app);
 const PORT   = parseInt(process.env.PORT ?? '3001', 10);
 const isDev  = process.env.NODE_ENV !== 'production';
 const CORS_ORIGIN = process.env.CORS_ORIGIN ?? 'http://localhost:5173';
+const CORS_ORIGINS = CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
+const isOriginAllowed = (origin?: string): boolean => {
+  // No Origin header for curl/health checks/server-to-server requests.
+  if (!origin) return true;
+  return CORS_ORIGINS.includes(origin);
+};
 
 // ── Socket.io ─────────────────────────────────────────────────────────────
 const io = new SocketServer(server, {
   cors: {
-    origin:      CORS_ORIGIN,
+    origin:      (origin, callback) => {
+      if (isOriginAllowed(origin)) return callback(null, true);
+      return callback(new Error(`Socket origin not allowed: ${origin ?? 'unknown'}`), false);
+    },
     credentials: true,
   },
   // Prefer WebSocket, fall back to polling for corporate firewalls
@@ -63,7 +72,10 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin:      CORS_ORIGIN,
+  origin:      (origin, callback) => {
+    if (isOriginAllowed(origin)) return callback(null, true);
+    return callback(new Error(`CORS origin not allowed: ${origin ?? 'unknown'}`));
+  },
   credentials: true,         // Required: sends HttpOnly refresh cookie
   methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

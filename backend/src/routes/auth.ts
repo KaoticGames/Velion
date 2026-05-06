@@ -5,47 +5,17 @@ import { v4 as uuidv4 }               from 'uuid';
 import { db }                          from '../db';
 import { users, refreshTokens, earlyAccessSignups } from '../db/schema';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../lib/jwt';
+import {
+  refreshCookieClearOptions,
+  setRefreshTokenCookie,
+} from '../lib/refreshCookie';
 import { requireAuth }                 from '../middleware/auth';
+import { attachGoogleOAuthRoutes }     from './oauthGoogle';
 
 const router = Router();
 const BCRYPT_ROUNDS = 12;
 /** HttpOnly refresh cookie, DB `expires_at`, and JWT refresh `exp` — align with `signRefreshToken` in lib/jwt.ts */
 const REFRESH_DAYS  = 7;
-const COOKIE_PATH = '/api/v1/auth';
-
-// ── Helpers ───────────────────────────────────────────────────────────────
-
-type CookieSameSite = 'strict' | 'lax' | 'none';
-const cookieSameSite = (): CookieSameSite => {
-  const raw = (process.env.AUTH_COOKIE_SAMESITE ?? '').toLowerCase();
-  if (raw === 'none') return 'none';
-  if (raw === 'lax') return 'lax';
-  if (raw === 'strict') return 'strict';
-  // Cross-site frontend/API deployments need `none`; same-site can stay strict.
-  return process.env.NODE_ENV === 'production' ? 'none' : 'strict';
-};
-
-const refreshCookieOptions = () => {
-  const sameSite = cookieSameSite();
-  const secure = process.env.NODE_ENV === 'production' || sameSite === 'none';
-  return {
-    httpOnly: true,
-    secure,
-    sameSite,
-    maxAge: REFRESH_DAYS * 24 * 60 * 60 * 1000,
-    path: COOKIE_PATH,
-    domain: process.env.AUTH_COOKIE_DOMAIN || undefined,
-  } as const;
-};
-
-const refreshCookieClearOptions = () => {
-  const { httpOnly, secure, sameSite, path, domain } = refreshCookieOptions();
-  return { httpOnly, secure, sameSite, path, domain } as const;
-};
-
-const setRefreshCookie = (res: Response, token: string) => {
-  res.cookie('refresh_token', token, refreshCookieOptions());
-};
 
 const betaGateEnabled = () => process.env.BETA_GATE_ENABLED !== 'false';
 
@@ -122,7 +92,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   const expires_at      = new Date(Date.now() + REFRESH_DAYS * 24 * 60 * 60 * 1000);
 
   await db.insert(refreshTokens).values({ id: token_id, user_id: user.id, expires_at });
-  setRefreshCookie(res, refresh_token);
+  setRefreshTokenCookie(res, refresh_token);
 
   res.status(201).json({ access_token, user: userPublic(user) });
 });
@@ -135,11 +105,22 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     .where(and(eq(users.email, email?.toLowerCase()), isNull(users.deleted_at)))
     .limit(1);
 
-  // Constant-time comparison even on user not found
-  const hash = user?.password_hash ?? '$2b$12$invalidhashpadding000000000000000000';
-  const valid = await bcrypt.compare(password ?? '', hash);
+  if (!user) {
+    const hash = '$2b$12$invalidhashpadding000000000000000000';
+    await bcrypt.compare(password ?? '', hash);
+    res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.', status: 401 } });
+    return;
+  }
 
-  if (!user || !valid) {
+  if (!user.password_hash) {
+    res.status(401).json({
+      error: { code: 'OAUTH_ONLY', message: 'This account signs in with Google.', status: 401 },
+    });
+    return;
+  }
+
+  const valid = await bcrypt.compare(password ?? '', user.password_hash);
+  if (!valid) {
     res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.', status: 401 } });
     return;
   }
@@ -152,7 +133,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   const expires_at    = new Date(Date.now() + REFRESH_DAYS * 24 * 60 * 60 * 1000);
 
   await db.insert(refreshTokens).values({ id: token_id, user_id: user.id, expires_at });
-  setRefreshCookie(res, refresh_token);
+  setRefreshTokenCookie(res, refresh_token);
 
   res.json({ access_token, user: userPublic(user) });
 });
@@ -198,7 +179,7 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
   const expires_at        = new Date(Date.now() + REFRESH_DAYS * 24 * 60 * 60 * 1000);
 
   await db.insert(refreshTokens).values({ id: new_token_id, user_id: user.id, expires_at });
-  setRefreshCookie(res, new_refresh_token);
+  setRefreshTokenCookie(res, new_refresh_token);
 
   res.json({ access_token: new_access_token, user: userPublic(user) });
 });
@@ -243,7 +224,7 @@ router.post('/touch', async (req: Request, res: Response): Promise<void> => {
 
   const access_token    = signAccessToken({ user_id: user.id, email: user.email, subscription_tier: user.subscription_tier });
   const refresh_token = signRefreshToken({ user_id: user.id, token_id: stored.id });
-  setRefreshCookie(res, refresh_token);
+  setRefreshTokenCookie(res, refresh_token);
 
   res.json({ access_token, user: userPublic(user) });
 });
@@ -272,6 +253,16 @@ router.patch('/password', requireAuth, async (req: Request, res: Response): Prom
   }
 
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user.password_hash) {
+    res.status(422).json({
+      error: {
+        code:    'NO_PASSWORD_SET',
+        message: 'This account uses Google sign-in. Use Google to manage access, or contact support to add a password.',
+        status:  422,
+      },
+    });
+    return;
+  }
   const valid = await bcrypt.compare(current_password ?? '', user.password_hash);
   if (!valid) {
     res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Current password is incorrect.', status: 401 } });
@@ -286,5 +277,7 @@ router.patch('/password', requireAuth, async (req: Request, res: Response): Prom
   res.clearCookie('refresh_token', refreshCookieClearOptions());
   res.json({ success: true });
 });
+
+attachGoogleOAuthRoutes(router);
 
 export default router;

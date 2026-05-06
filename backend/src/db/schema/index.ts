@@ -1,5 +1,6 @@
 // Central schema export — Drizzle uses this to generate migrations
 export * from './users';
+export * from './oauth_accounts';
 export * from './characters';
 export * from './campaigns';
 export * from './sessions';
