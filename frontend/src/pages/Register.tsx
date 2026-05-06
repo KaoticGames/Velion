@@ -2,8 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { extractApiError } from '@/lib/api';
-import { GoogleSignInButton } from '@/components/GoogleSignInButton';
-import { TwitchSignInButton } from '@/components/TwitchSignInButton';
+import { SocialAuthIconRow } from '@/components/SocialAuthIconRow';
 import { useGoogleOAuthCompletion } from '@/hooks/useGoogleOAuthCompletion';
 
 const T = {
@@ -81,21 +80,10 @@ export default function Register() {
           <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: '22px', color: T.gold, letterSpacing: '0.14em', fontWeight: '600' }}>
             BEGIN YOUR LEGEND
           </h1>
+          <SocialAuthIconRow disabled={loading} />
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <GoogleSignInButton disabled={loading} />
-          <TwitchSignInButton disabled={loading} />
-        </div>
-
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '12px', margin: '22px 0',
-          color: T.textMuted, fontFamily: "'Cinzel', serif", fontSize: '9px', letterSpacing: '0.2em',
-        }}>
-          <div style={{ flex: 1, height: '1px', background: T.border }} />
-          OR
-          <div style={{ flex: 1, height: '1px', background: T.border }} />
-        </div>
+        <div style={{ height: 1, background: T.border, margin: '20px 0' }} />
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '18px' }}>

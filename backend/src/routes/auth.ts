@@ -12,6 +12,7 @@ import {
 import { requireAuth }                 from '../middleware/auth';
 import { attachGoogleOAuthRoutes }     from './oauthGoogle';
 import { attachTwitchOAuthRoutes }     from './oauthTwitch';
+import { attachDiscordOAuthRoutes }    from './oauthDiscord';
 
 const router = Router();
 const BCRYPT_ROUNDS = 12;
@@ -281,5 +282,6 @@ router.patch('/password', requireAuth, async (req: Request, res: Response): Prom
 
 attachGoogleOAuthRoutes(router);
 attachTwitchOAuthRoutes(router);
+attachDiscordOAuthRoutes(router);
 
 export default router;
