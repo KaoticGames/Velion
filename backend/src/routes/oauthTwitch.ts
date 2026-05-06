@@ -9,15 +9,15 @@ import {
   popupResultPage,
 } from '../lib/oauthCommon';
 
-const PROVIDER = 'google';
+const PROVIDER = 'twitch';
 
-const GOOGLE_AUTH = 'https://accounts.google.com/o/oauth2/v2/auth';
-const GOOGLE_TOKEN = 'https://oauth2.googleapis.com/token';
-const GOOGLE_USERINFO = 'https://www.googleapis.com/oauth2/v3/userinfo';
+const TWITCH_AUTH = 'https://id.twitch.tv/oauth2/authorize';
+const TWITCH_TOKEN = 'https://id.twitch.tv/oauth2/token';
+const TWITCH_USERS = 'https://api.twitch.tv/helix/users';
 
-const OAUTH_STATE_COOKIE = 'oauth_google_state';
-const OAUTH_ORIGIN_COOKIE = 'oauth_google_origin';
-const OAUTH_POPUP_COOKIE = 'oauth_google_popup';
+const OAUTH_STATE_COOKIE = 'oauth_twitch_state';
+const OAUTH_ORIGIN_COOKIE = 'oauth_twitch_origin';
+const OAUTH_POPUP_COOKIE = 'oauth_twitch_popup';
 
 function clearOauthCookies(res: Response) {
   const o = shortLivedCookieOptions();
@@ -26,61 +26,67 @@ function clearOauthCookies(res: Response) {
   res.clearCookie(OAUTH_POPUP_COOKIE, { ...o, maxAge: undefined });
 }
 
-type GoogleProfile = {
-  sub: string;
+type TwitchUser = {
+  id: string;
+  login: string;
+  display_name: string;
   email?: string;
-  email_verified?: boolean;
-  name?: string;
-  picture?: string;
+  profile_image_url?: string;
 };
 
-const googleRedirectUri = (): string => `${apiPublicBase()}/api/v1/auth/oauth/google/callback`;
+type TwitchUsersResponse = { data: TwitchUser[] };
 
-async function exchangeGoogleCode(code: string): Promise<{ access_token: string }> {
-  const client_id = process.env.GOOGLE_OAUTH_CLIENT_ID!;
-  const client_secret = process.env.GOOGLE_OAUTH_CLIENT_SECRET!;
+const twitchRedirectUri = (): string => `${apiPublicBase()}/api/v1/auth/oauth/twitch/callback`;
+
+async function exchangeTwitchCode(code: string): Promise<{ access_token: string }> {
+  const client_id = process.env.TWITCH_OAUTH_CLIENT_ID!;
+  const client_secret = process.env.TWITCH_OAUTH_CLIENT_SECRET!;
   const body = new URLSearchParams({
-    code,
     client_id,
     client_secret,
-    redirect_uri: googleRedirectUri(),
-    grant_type: 'authorization_code',
+    code,
+    grant_type:   'authorization_code',
+    redirect_uri: twitchRedirectUri(),
   });
-  const r = await fetch(GOOGLE_TOKEN, {
+  const r = await fetch(TWITCH_TOKEN, {
     method:  'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body:    body.toString(),
   });
   if (!r.ok) {
     const t = await r.text();
-    throw new Error(`Google token exchange failed: ${r.status} ${t}`);
+    throw new Error(`Twitch token exchange failed: ${r.status} ${t}`);
   }
   return r.json() as Promise<{ access_token: string }>;
 }
 
-async function fetchGoogleProfile(accessToken: string): Promise<GoogleProfile> {
-  const r = await fetch(GOOGLE_USERINFO, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+async function fetchTwitchUser(accessToken: string, clientId: string): Promise<TwitchUser | null> {
+  const r = await fetch(TWITCH_USERS, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Client-Id':   clientId,
+    },
   });
   if (!r.ok) {
     const t = await r.text();
-    throw new Error(`Google userinfo failed: ${r.status} ${t}`);
+    throw new Error(`Twitch user lookup failed: ${r.status} ${t}`);
   }
-  return r.json() as Promise<GoogleProfile>;
+  const json = (await r.json()) as TwitchUsersResponse;
+  return json.data?.[0] ?? null;
 }
 
-export function attachGoogleOAuthRoutes(router: Router): void {
-  router.get('/oauth/google/start', async (req: Request, res: Response): Promise<void> => {
-    if (!process.env.GOOGLE_OAUTH_CLIENT_ID || !process.env.GOOGLE_OAUTH_CLIENT_SECRET) {
+export function attachTwitchOAuthRoutes(router: Router): void {
+  router.get('/oauth/twitch/start', async (req: Request, res: Response): Promise<void> => {
+    if (!process.env.TWITCH_OAUTH_CLIENT_ID || !process.env.TWITCH_OAUTH_CLIENT_SECRET) {
       res.status(501).json({
-        error: { code: 'GOOGLE_OAUTH_DISABLED', message: 'Google sign-in is not configured.', status: 501 },
+        error: { code: 'TWITCH_OAUTH_DISABLED', message: 'Twitch sign-in is not configured.', status: 501 },
       });
       return;
     }
 
     let redirectUri: string;
     try {
-      redirectUri = googleRedirectUri();
+      redirectUri = twitchRedirectUri();
     } catch (e) {
       res.status(500).json({
         error: {
@@ -109,18 +115,18 @@ export function attachGoogleOAuthRoutes(router: Router): void {
     res.cookie(OAUTH_POPUP_COOKIE, popup ? '1' : '0', cookieOpts);
 
     const params = new URLSearchParams({
-      client_id:     process.env.GOOGLE_OAUTH_CLIENT_ID,
+      client_id:     process.env.TWITCH_OAUTH_CLIENT_ID,
       redirect_uri:  redirectUri,
       response_type: 'code',
-      scope:         'openid email profile',
+      scope:         'user:read:email',
       state,
-      prompt:        'select_account',
+      force_verify:  'true',
     });
 
-    res.redirect(`${GOOGLE_AUTH}?${params.toString()}`);
+    res.redirect(`${TWITCH_AUTH}?${params.toString()}`);
   });
 
-  router.get('/oauth/google/callback', async (req: Request, res: Response): Promise<void> => {
+  router.get('/oauth/twitch/callback', async (req: Request, res: Response): Promise<void> => {
     const frontendOrigin = req.cookies?.[OAUTH_ORIGIN_COOKIE] as string | undefined;
     const cookieState = req.cookies?.[OAUTH_STATE_COOKIE] as string | undefined;
     const popupCookie = req.cookies?.[OAUTH_POPUP_COOKIE] as string | undefined;
@@ -144,7 +150,7 @@ export function attachGoogleOAuthRoutes(router: Router): void {
 
     const err = req.query.error as string | undefined;
     if (err) {
-      fail('Google sign-in was cancelled or denied.', 'OAUTH_DENIED');
+      fail('Twitch sign-in was cancelled or denied.', 'OAUTH_DENIED');
       return;
     }
 
@@ -155,39 +161,46 @@ export function attachGoogleOAuthRoutes(router: Router): void {
       return;
     }
 
-    if (!process.env.GOOGLE_OAUTH_CLIENT_ID || !process.env.GOOGLE_OAUTH_CLIENT_SECRET) {
-      fail('Google sign-in is not configured.', 'GOOGLE_OAUTH_DISABLED');
+    const clientId = process.env.TWITCH_OAUTH_CLIENT_ID;
+    if (!clientId || !process.env.TWITCH_OAUTH_CLIENT_SECRET) {
+      fail('Twitch sign-in is not configured.', 'TWITCH_OAUTH_DISABLED');
       return;
     }
 
-    let profile: GoogleProfile;
+    let twUser: TwitchUser | null;
     try {
-      const tok = await exchangeGoogleCode(code);
-      profile = await fetchGoogleProfile(tok.access_token);
+      const tok = await exchangeTwitchCode(code);
+      twUser = await fetchTwitchUser(tok.access_token, clientId);
     } catch (e) {
-      fail(e instanceof Error ? e.message : 'Google authentication failed.', 'OAUTH_GOOGLE');
+      fail(e instanceof Error ? e.message : 'Twitch authentication failed.', 'OAUTH_TWITCH');
       return;
     }
 
-    if (!profile.sub) {
-      fail('Google did not return a user id.', 'OAUTH_PROFILE');
+    if (!twUser?.id) {
+      fail('Twitch did not return a user id.', 'OAUTH_PROFILE');
       return;
     }
-    if (!profile.email || !profile.email_verified) {
-      fail('Google did not return a verified email address.', 'OAUTH_EMAIL');
+    if (!twUser.email?.trim()) {
+      fail(
+        'Twitch did not return an email. Ensure your Twitch account has a verified email and you granted email access.',
+        'OAUTH_EMAIL',
+      );
       return;
     }
 
-    const emailLower = profile.email.toLowerCase();
-    const display_name =
-      (profile.name && profile.name.trim()) || emailLower.split('@')[0] || 'Player';
+    const emailLower = twUser.email.trim().toLowerCase();
+    const displayName =
+      (twUser.display_name && twUser.display_name.trim()) ||
+      (twUser.login && twUser.login.trim()) ||
+      emailLower.split('@')[0] ||
+      'Player';
 
     const user = await findOrCreateOAuthUser({
       provider:          PROVIDER,
-      providerUserId:    profile.sub,
+      providerUserId:    twUser.id,
       emailLower,
-      displayName:       display_name,
-      avatarUrl:         profile.picture ?? null,
+      displayName,
+      avatarUrl:         twUser.profile_image_url ?? null,
       isPopup,
       frontendOrigin,
       clearOauthCookies,

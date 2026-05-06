@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { extractApiError } from '@/lib/api';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+import { TwitchSignInButton } from '@/components/TwitchSignInButton';
 import { useGoogleOAuthCompletion } from '@/hooks/useGoogleOAuthCompletion';
 
 const T = {
@@ -82,7 +83,10 @@ export default function Register() {
           </h1>
         </div>
 
-        <GoogleSignInButton disabled={loading} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <GoogleSignInButton disabled={loading} />
+          <TwitchSignInButton disabled={loading} />
+        </div>
 
         <div style={{
           display: 'flex', alignItems: 'center', gap: '12px', margin: '22px 0',

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Listens for postMessage from the Google OAuth popup (callback page on the API origin).
+ * Listens for postMessage from OAuth popups (Google, Twitch, etc.) on the API origin.
  */
 export function useGoogleOAuthCompletion(
   onSuccess: () => void | Promise<void>,
@@ -26,7 +26,7 @@ export function useGoogleOAuthCompletion(
       if (e.data.ok) {
         await Promise.resolve(onSuccessRef.current());
       } else {
-        const msg = typeof e.data.message === 'string' ? e.data.message : 'Google sign-in failed.';
+        const msg = typeof e.data.message === 'string' ? e.data.message : 'Sign-in failed.';
         onErrorRef.current(msg);
       }
     };

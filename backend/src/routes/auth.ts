@@ -11,6 +11,7 @@ import {
 } from '../lib/refreshCookie';
 import { requireAuth }                 from '../middleware/auth';
 import { attachGoogleOAuthRoutes }     from './oauthGoogle';
+import { attachTwitchOAuthRoutes }     from './oauthTwitch';
 
 const router = Router();
 const BCRYPT_ROUNDS = 12;
@@ -114,7 +115,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 
   if (!user.password_hash) {
     res.status(401).json({
-      error: { code: 'OAUTH_ONLY', message: 'This account signs in with Google.', status: 401 },
+      error: { code: 'OAUTH_ONLY', message: 'This account signs in with Google or Twitch.', status: 401 },
     });
     return;
   }
@@ -257,7 +258,7 @@ router.patch('/password', requireAuth, async (req: Request, res: Response): Prom
     res.status(422).json({
       error: {
         code:    'NO_PASSWORD_SET',
-        message: 'This account uses Google sign-in. Use Google to manage access, or contact support to add a password.',
+        message: 'This account uses social sign-in. Use Google or Twitch to manage access, or contact support to add a password.',
         status:  422,
       },
     });
@@ -279,5 +280,6 @@ router.patch('/password', requireAuth, async (req: Request, res: Response): Prom
 });
 
 attachGoogleOAuthRoutes(router);
+attachTwitchOAuthRoutes(router);
 
 export default router;
