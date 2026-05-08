@@ -208,11 +208,15 @@ export function attachDiscordOAuthRoutes(router: Router): void {
     if (!user) return;
 
     clearOauthCookies(res);
-    await issueOAuthSession(res, user);
+    const session = await issueOAuthSession(res, user);
 
     if (isPopup) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(popupResultPage(frontendOrigin, { ok: true }));
+      res.send(popupResultPage(frontendOrigin, {
+        ok:            true,
+        access_token:  session.access_token,
+        user:          session.user,
+      }));
       return;
     }
 

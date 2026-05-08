@@ -16,17 +16,21 @@ export default function Login() {
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
 
-  const { login, refreshSession } = useAuthStore();
+  const { login, refreshSession, bootstrapSession } = useAuthStore();
   const navigate  = useNavigate();
   const location  = useLocation();
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/characters';
 
   useGoogleOAuthCompletion(
-    async () => {
+    async (msg) => {
       setError('');
       setLoading(true);
       try {
-        await refreshSession();
+        if (msg.access_token && msg.user) {
+          bootstrapSession(msg.access_token, msg.user);
+        } else {
+          await refreshSession();
+        }
         navigate(from, { replace: true });
       } catch (err) {
         setError(extractApiError(err).message);

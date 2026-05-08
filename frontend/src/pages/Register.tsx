@@ -18,15 +18,19 @@ export default function Register() {
   const [error,       setError]       = useState('');
   const [loading,     setLoading]     = useState(false);
 
-  const { register, refreshSession } = useAuthStore();
+  const { register, refreshSession, bootstrapSession } = useAuthStore();
   const navigate = useNavigate();
 
   useGoogleOAuthCompletion(
-    async () => {
+    async (msg) => {
       setError('');
       setLoading(true);
       try {
-        await refreshSession();
+        if (msg.access_token && msg.user) {
+          bootstrapSession(msg.access_token, msg.user);
+        } else {
+          await refreshSession();
+        }
         navigate('/characters', { replace: true });
       } catch (err) {
         setError(extractApiError(err).message);

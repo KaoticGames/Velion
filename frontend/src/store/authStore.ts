@@ -39,6 +39,8 @@ interface AuthState {
   hydrate:  () => Promise<void>;          // called once on app mount
   /** POST /auth/refresh — token rotation; hydrate + 401 recovery */
   refreshSession: () => Promise<void>;
+  /** Apply access token + user from OAuth popup (avoids refresh race before cookie is visible to parent). */
+  bootstrapSession: (access_token: string, user: AuthUser) => void;
   /** POST /auth/touch — slide 7-day window (same refresh row); activity + proactive timer */
   touchSession: () => Promise<void>;
 
@@ -85,6 +87,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   refreshSession: async () => {
     const { data } = await api.post<{ access_token: string; user: AuthUser }>('/auth/refresh');
     set({ user: data.user, accessToken: data.access_token });
+  },
+
+  bootstrapSession: (access_token, user) => {
+    set({ accessToken: access_token, user });
   },
 
   touchSession: async () => {
