@@ -69,6 +69,9 @@ registerSessionNamespace(io);
 app.use(helmet({
   // Required for Socket.io and API responses
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  // OAuth popup completion relies on window.opener postMessage back to the frontend.
+  // COOP can isolate browsing contexts and null out window.opener across origins.
+  crossOriginOpenerPolicy: false,
 }));
 
 app.use(cors({

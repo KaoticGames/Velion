@@ -42,15 +42,34 @@ export function popupResultPage(frontendOrigin: string, data: Record<string, unk
 <script>
 (function () {
   var payload = ${payload};
+  var delivered = false;
   try {
     if (window.opener && !window.opener.closed) {
       window.opener.postMessage(payload, ${JSON.stringify(frontendOrigin)});
+      delivered = true;
     }
   } catch (e) {}
-  window.close();
+  if (delivered) {
+    window.close();
+  }
 })();
 </script>
-<p style="font-family:system-ui,sans-serif;text-align:center;margin-top:48px;color:#444">You can close this window.</p>
+<div style="max-width:480px;margin:48px auto 0;padding:0 20px;font-family:system-ui,sans-serif;text-align:center;color:#444">
+  <p id="oauth-status" style="margin:0 0 8px;font-size:16px;font-weight:600"></p>
+  <p style="margin:0;font-size:14px">You can close this window.</p>
+</div>
+<script>
+(function () {
+  var el = document.getElementById('oauth-status');
+  if (!el) return;
+  var p = ${payload};
+  if (p && p.ok) {
+    el.textContent = 'Sign-in complete.';
+    return;
+  }
+  el.textContent = (p && typeof p.message === 'string' && p.message) ? p.message : 'Sign-in failed.';
+})();
+</script>
 </body></html>`;
 }
 
