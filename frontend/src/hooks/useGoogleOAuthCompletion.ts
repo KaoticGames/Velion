@@ -1,5 +1,17 @@
 import { useEffect, useRef } from 'react';
 
+/** Origin that serves `/auth/oauth/.../callback` HTML (the popup's document origin when it posts back). */
+function oauthPopupOrigin(): string {
+  const raw = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+  try {
+    return new URL(raw).origin;
+  } catch {
+    // Relative base (e.g. `/api/v1` with Vite proxy) — OAuth runs on the same host as the SPA.
+    if (typeof window !== 'undefined') return window.location.origin;
+    return '';
+  }
+}
+
 /**
  * Listens for postMessage from OAuth popups (Google, Twitch, etc.) on the API origin.
  */
@@ -13,15 +25,11 @@ export function useGoogleOAuthCompletion(
   onErrorRef.current = onError;
 
   useEffect(() => {
-    let apiOrigin: string;
-    try {
-      apiOrigin = new URL(import.meta.env.VITE_API_URL as string).origin;
-    } catch {
-      return;
-    }
+    const messageOrigin = oauthPopupOrigin();
+    if (!messageOrigin) return;
 
     const handler = async (e: MessageEvent) => {
-      if (e.origin !== apiOrigin) return;
+      if (e.origin !== messageOrigin) return;
       if (!e.data || e.data.type !== 'velion-oauth') return;
       if (e.data.ok) {
         await Promise.resolve(onSuccessRef.current());
