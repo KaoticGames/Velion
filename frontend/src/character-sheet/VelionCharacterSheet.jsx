@@ -361,7 +361,42 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
   const PORTRAIT_TYPES = useMemo(() => new Set(['image/png', 'image/jpeg', 'image/webp']), []);
 
-  const onPort = async (e) => {
+  const canLoadImageUrl = useCallback((url) => new Promise((resolve) => {
+    if (!url) { resolve(false); return; }
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  }), []);
+
+  const deriveUnsignedR2ObjectUrl = (uploadUrl) => {
+    try {
+      const u = new URL(uploadUrl);
+      const p = u.pathname.startsWith('/') ? u.pathname.slice(1) : u.pathname;
+      if (!p) return '';
+      return `${u.origin}/${p}`;
+    } catch {
+      return '';
+    }
+  };
+
+  const resolvePortraitPublicUrl = useCallback(async (presign) => {
+    const candidates = [];
+    if (typeof presign?.public_url === 'string' && presign.public_url.trim()) {
+      candidates.push(presign.public_url.trim());
+    }
+    const fallback = deriveUnsignedR2ObjectUrl(presign?.upload_url || '');
+    if (fallback && !candidates.includes(fallback)) candidates.push(fallback);
+    for (const url of candidates) {
+      // Probe image URL before persisting so broken public-domain config doesn't save bad links.
+      // eslint-disable-next-line no-await-in-loop
+      const ok = await canLoadImageUrl(url);
+      if (ok) return url;
+    }
+    return candidates[0] || '';
+  }, [canLoadImageUrl]);
+
+  const onPort = useCallback(async (e) => {
     const f = e.target.files?.[0];
     if (e.target) e.target.value = '';
     if (!f) return;
@@ -397,7 +432,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       if (!putRes.ok) {
         throw new Error(`Storage upload failed (${putRes.status})`);
       }
-      const pub = presign.public_url;
+      const pub = await resolvePortraitPublicUrl(presign);
+      if (!pub) throw new Error('No usable portrait URL returned from storage.');
       const { data: updated } = await api.patch(`/characters/${characterId}`, { portrait_url: pub });
       const url = updated?.portrait_url ?? pub;
       setPortrait(url);
@@ -412,7 +448,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     } finally {
       setPortraitUploading(false);
     }
-  };
+  }, [PORTRAIT_TYPES, characterId, queryClient, resolvePortraitPublicUrl]);
 
   // ── Identity ──
   const [charName,   setCharName]   = useState('');
