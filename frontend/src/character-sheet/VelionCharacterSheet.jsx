@@ -356,9 +356,62 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const gemDmgAccRef = useRef([]);
   const portRef = useRef();
   const [portrait, setPortrait] = useState(null);
-  const onPort = e => {
-    const f=e.target.files[0]; if(!f) return;
-    const r=new FileReader(); r.onload=ev=>setPortrait(ev.target.result); r.readAsDataURL(f);
+  const [portraitUploading, setPortraitUploading] = useState(false);
+  const [portraitErr, setPortraitErr] = useState('');
+
+  const PORTRAIT_TYPES = useMemo(() => new Set(['image/png', 'image/jpeg', 'image/webp']), []);
+
+  const onPort = async (e) => {
+    const f = e.target.files?.[0];
+    if (e.target) e.target.value = '';
+    if (!f) return;
+    setPortraitErr('');
+
+    if (!characterId) {
+      const r = new FileReader();
+      r.onload = (ev) => setPortrait(ev.target.result);
+      r.readAsDataURL(f);
+      return;
+    }
+
+    let contentType = f.type || 'image/jpeg';
+    if (contentType === 'image/jpg') contentType = 'image/jpeg';
+    if (!PORTRAIT_TYPES.has(contentType)) {
+      setPortraitErr('Use PNG, JPEG, or WEBP.');
+      return;
+    }
+
+    setPortraitUploading(true);
+    try {
+      const { data: presign } = await api.post('/tokens/upload-url', {
+        character_id: characterId,
+        filename: f.name || 'portrait.jpg',
+        content_type: contentType,
+        asset_type: 'portrait',
+      });
+      const putRes = await fetch(presign.upload_url, {
+        method: 'PUT',
+        body: f,
+        headers: { 'Content-Type': contentType },
+      });
+      if (!putRes.ok) {
+        throw new Error(`Storage upload failed (${putRes.status})`);
+      }
+      const pub = presign.public_url;
+      const { data: updated } = await api.patch(`/characters/${characterId}`, { portrait_url: pub });
+      const url = updated?.portrait_url ?? pub;
+      setPortrait(url);
+      queryClient.setQueryData(characterKeys.detail(characterId), (prev) =>
+        prev && typeof prev === 'object' ? { ...prev, portrait_url: url } : prev,
+      );
+      queryClient.invalidateQueries({ queryKey: characterKeys.list() });
+    } catch (err) {
+      const ex = extractApiError(err);
+      setPortraitErr(ex?.message || err?.message || 'Portrait upload failed.');
+      console.error('[VelionSheet] portrait upload:', err);
+    } finally {
+      setPortraitUploading(false);
+    }
   };
 
   // ── Identity ──
@@ -1364,6 +1417,11 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setTimeout(() => { skipSaves.current = false; }, 200);
   }, [initialData]);
 
+  useEffect(() => {
+    if (!initialized.current || initialData == null) return;
+    if (initialData.portrait_url) setPortrait(initialData.portrait_url);
+  }, [initialData?.portrait_url]);
+
   // 2. Hydrate equipment from API data (weapons, armor, bracer, gems)
   useEffect(() => {
     if (!initialData || !initialized.current) return;
@@ -1597,13 +1655,40 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* ══ IDENTITY ═════════════════════════════════════════════════════ */}
       <div style={{display:'grid',gridTemplateColumns:'130px 1fr',gap:'16px',marginBottom:'14px'}}>
         <div>
-          <div onClick={()=>portRef.current.click()} style={{width:'130px',height:'160px',background:T.surface,border:`1px solid ${T.border}`,borderRadius:'4px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',cursor:'pointer',overflow:'hidden'}}>
+          <div
+            onClick={() => { if (!portraitUploading) portRef.current?.click(); }}
+            style={{
+              width:'130px',
+              height:'160px',
+              background:T.surface,
+              border:`1px solid ${T.border}`,
+              borderRadius:'4px',
+              display:'flex',
+              flexDirection:'column',
+              alignItems:'center',
+              justifyContent:'center',
+              cursor: portraitUploading ? 'wait' : 'pointer',
+              overflow:'hidden',
+              opacity: portraitUploading ? 0.72 : 1,
+              position:'relative',
+            }}
+          >
             {portrait?<img src={portrait} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="portrait"/>
               :<><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#2a2e3a" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
               <span style={{fontFamily:"'Cinzel',serif",fontSize:'9px',letterSpacing:'0.12em',color:'#2a2e3a',marginTop:'8px'}}>PORTRAIT</span>
-              <span style={{fontFamily:"'Cinzel',serif",fontSize:'8px',color:'#1a1c28',marginTop:'3px'}}>CLICK TO UPLOAD</span></>}
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:'8px',color:'#1a1c28',marginTop:'3px'}}>{characterId ? 'CLICK TO UPLOAD' : 'LOCAL PREVIEW'}</span></>}
+            {portraitUploading && (
+              <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(6,8,12,0.75)',fontFamily:"'Cinzel',serif",fontSize:'9px',letterSpacing:'0.14em',color:T.gold}}>
+                UPLOADING…
+              </div>
+            )}
           </div>
-          <input ref={portRef} type="file" accept="image/*" onChange={onPort} style={{display:'none'}}/>
+          <input ref={portRef} type="file" accept="image/png,image/jpeg,image/webp,image/*" onChange={onPort} style={{display:'none'}}/>
+          {(portraitErr || (!characterId && portrait)) && (
+            <div style={{ fontSize: '9px', color: portraitErr ? '#e05050' : T.textDim, marginTop: '6px', maxWidth: '130px', lineHeight: 1.35 }}>
+              {portraitErr || (!characterId && portrait ? 'Save character to cloud to persist portrait.' : '')}
+            </div>
+          )}
         </div>
         <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
           <Fld label="Character Name">
