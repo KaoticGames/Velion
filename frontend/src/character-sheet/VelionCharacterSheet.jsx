@@ -396,6 +396,20 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     return candidates[0] || '';
   }, [canLoadImageUrl]);
 
+  const getPortraitRenderUrl = useCallback(async (characterIdArg, storedUrl) => {
+    if (!characterIdArg || !storedUrl || typeof storedUrl !== 'string') return storedUrl;
+    if (storedUrl.startsWith('data:')) return storedUrl;
+    try {
+      const { data } = await api.post('/tokens/portrait/read-url', {
+        character_id: characterIdArg,
+        portrait_url: storedUrl,
+      });
+      return data?.read_url || storedUrl;
+    } catch {
+      return storedUrl;
+    }
+  }, []);
+
   const onPort = useCallback(async (e) => {
     const f = e.target.files?.[0];
     if (e.target) e.target.value = '';
@@ -436,7 +450,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       if (!pub) throw new Error('No usable portrait URL returned from storage.');
       const { data: updated } = await api.patch(`/characters/${characterId}`, { portrait_url: pub });
       const url = updated?.portrait_url ?? pub;
-      setPortrait(url);
+      const renderUrl = await getPortraitRenderUrl(characterId, url);
+      setPortrait(renderUrl);
       queryClient.setQueryData(characterKeys.detail(characterId), (prev) =>
         prev && typeof prev === 'object' ? { ...prev, portrait_url: url } : prev,
       );
@@ -448,7 +463,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     } finally {
       setPortraitUploading(false);
     }
-  }, [PORTRAIT_TYPES, characterId, queryClient, resolvePortraitPublicUrl]);
+  }, [PORTRAIT_TYPES, characterId, getPortraitRenderUrl, queryClient, resolvePortraitPublicUrl]);
 
   // ── Identity ──
   const [charName,   setCharName]   = useState('');
@@ -1457,6 +1472,16 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     if (!initialized.current || initialData == null) return;
     if (initialData.portrait_url) setPortrait(initialData.portrait_url);
   }, [initialData?.portrait_url]);
+
+  useEffect(() => {
+    if (!characterId || !initialData?.portrait_url) return;
+    let cancelled = false;
+    void (async () => {
+      const renderUrl = await getPortraitRenderUrl(characterId, initialData.portrait_url);
+      if (!cancelled && renderUrl) setPortrait(renderUrl);
+    })();
+    return () => { cancelled = true; };
+  }, [characterId, getPortraitRenderUrl, initialData?.portrait_url]);
 
   // 2. Hydrate equipment from API data (weapons, armor, bracer, gems)
   useEffect(() => {

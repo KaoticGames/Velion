@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // R2 is S3-compatible — endpoint format is required
@@ -27,6 +27,18 @@ export const getPresignedUploadUrl = async (
     Bucket:      BUCKET,
     Key:         key,
     ContentType: contentType,
+  });
+  return getSignedUrl(r2, command, { expiresIn });
+};
+
+/** Generate a presigned GET URL for reading a private/public object safely. */
+export const getPresignedReadUrl = async (
+  key: string,
+  expiresIn = 900, // 15 minutes
+): Promise<string> => {
+  const command = new GetObjectCommand({
+    Bucket: BUCKET,
+    Key: key,
   });
   return getSignedUrl(r2, command, { expiresIn });
 };
