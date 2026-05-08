@@ -25,7 +25,7 @@ const T = {
 // ── Shared micro-components ───────────────────────────────────────────────────
 const Formula = ({ children }: { children: string }) => (
   <div style={{
-    fontFamily: "'Courier New', monospace", fontSize: '15px', color: T.rp,
+    fontFamily: "'Courier New', monospace", fontSize: '18px', color: T.rp,
     background: T.rpDim + '44', border: `1px solid ${T.rp}33`,
     borderRadius: '3px', padding: '8px 14px', margin: '10px 0',
     letterSpacing: '0.04em',
@@ -35,11 +35,11 @@ const Formula = ({ children }: { children: string }) => (
 const Table = ({
   headers, rows, accentCol = 0,
 }: { headers: string[]; rows: string[][]; accentCol?: number }) => (
-  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px', marginBottom: '12px' }}>
+  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '18px', marginBottom: '12px' }}>
     <thead>
       <tr>{headers.map(h => (
         <th key={h} style={{
-          fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.14em',
+          fontFamily: "'Cinzel',serif", fontSize: '15px', letterSpacing: '0.14em',
           color: T.textMuted, borderBottom: `1px solid ${T.border}`, padding: '7px 10px', textAlign: 'left',
         }}>{h}</th>
       ))}</tr>
@@ -65,14 +65,14 @@ const Callout = ({
     border: `1px solid ${color}44`, borderLeft: `3px solid ${color}`,
     borderRadius: '3px', background: color + '0a', padding: '12px 14px', margin: '14px 0',
   }}>
-    <div style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.18em', color, marginBottom: '6px' }}>{label}</div>
-    <div style={{ fontSize: '15px', color: T.text, lineHeight: '1.7' }}>{children}</div>
+    <div style={{ fontFamily: "'Cinzel',serif", fontSize: '15px', letterSpacing: '0.18em', color, marginBottom: '6px' }}>{label}</div>
+    <div style={{ fontSize: '18px', color: T.text, lineHeight: '1.7' }}>{children}</div>
   </div>
 );
 
 const DMBadge = () => (
   <span style={{
-    fontFamily: "'Cinzel',serif", fontSize: '11px', letterSpacing: '0.2em',
+    fontFamily: "'Cinzel',serif", fontSize: '14px', letterSpacing: '0.2em',
     color: T.dmGold, background: T.dmGold + '18', border: `1px solid ${T.dmGold}44`,
     borderRadius: '3px', padding: '2px 7px', marginLeft: '10px', verticalAlign: 'middle',
   }}>DM ONLY</span>
@@ -84,7 +84,7 @@ const SectionHead = ({ id, title, dmOnly = false }: { id: string; title: string;
       <div style={{ height: '1px', flex: 1, background: `linear-gradient(to right, ${T.goldDim}, transparent)` }} />
     </div>
     <h2 style={{
-      fontFamily: "'Cinzel',serif", fontSize: '18px', letterSpacing: '0.22em',
+      fontFamily: "'Cinzel',serif", fontSize: '21px', letterSpacing: '0.22em',
       color: dmOnly ? T.dmGold : T.gold, margin: '0 0 4px', fontWeight: '600',
     }}>
       {title}{dmOnly && <DMBadge />}
@@ -94,13 +94,13 @@ const SectionHead = ({ id, title, dmOnly = false }: { id: string; title: string;
 
 const SubHead = ({ children }: { children: React.ReactNode }) => (
   <h3 style={{
-    fontFamily: "'Cinzel',serif", fontSize: '14px', letterSpacing: '0.18em',
+    fontFamily: "'Cinzel',serif", fontSize: '17px', letterSpacing: '0.18em',
     color: T.textMuted, margin: '22px 0 10px', fontWeight: '600', textTransform: 'uppercase',
   }}>{children}</h3>
 );
 
 const P = ({ children }: { children: React.ReactNode }) => (
-  <p style={{ fontSize: '16px', color: T.text, lineHeight: '1.8', margin: '0 0 12px' }}>{children}</p>
+  <p style={{ fontSize: '19px', color: T.text, lineHeight: '1.8', margin: '0 0 12px' }}>{children}</p>
 );
 
 const StateBadge = ({
@@ -111,10 +111,10 @@ const StateBadge = ({
     borderRadius: '3px', padding: '10px 12px', marginBottom: '8px',
   }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
-      <span style={{ fontFamily: "'Cinzel',serif", fontSize: '14px', color, fontWeight: '600' }}>{name}</span>
-      <span style={{ fontFamily: "'Cinzel',serif", fontSize: '11px', letterSpacing: '0.16em', color: T.textMuted }}>{cat}</span>
+      <span style={{ fontFamily: "'Cinzel',serif", fontSize: '17px', color, fontWeight: '600' }}>{name}</span>
+      <span style={{ fontFamily: "'Cinzel',serif", fontSize: '14px', letterSpacing: '0.16em', color: T.textMuted }}>{cat}</span>
     </div>
-    <div style={{ fontSize: '15px', color: T.textMuted, lineHeight: '1.6' }}>{effect}</div>
+    <div style={{ fontSize: '18px', color: T.textMuted, lineHeight: '1.6' }}>{effect}</div>
   </div>
 );
 
@@ -212,7 +212,7 @@ export default function Compendium() {
         overflowY: 'auto', padding: '24px 0', background: T.surface,
       }}>
         <div style={{
-          padding: '0 20px 16px', fontFamily: "'Cinzel',serif", fontSize: '11px',
+          padding: '0 20px 16px', fontFamily: "'Cinzel',serif", fontSize: '14px',
           letterSpacing: '0.3em', color: T.textDim,
         }}>COMPENDIUM</div>
 
@@ -228,7 +228,7 @@ export default function Compendium() {
               color: active === sec.id
                 ? (sec.dm ? T.dmGold : T.gold)
                 : sec.dm ? '#a07830' : T.textMuted,
-              fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.12em',
+              fontFamily: "'Cinzel',serif", fontSize: '15px', letterSpacing: '0.12em',
               cursor: 'pointer', transition: 'all 0.15s',
             }}>
             {sec.label}
@@ -247,8 +247,8 @@ export default function Compendium() {
               alt="Velion Mythera"
               style={{ display: 'block', height: '100px', width: 'auto', marginBottom: '8px' }}
             />
-            <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: '32px', letterSpacing: '0.16em', color: T.gold, margin: '0 0 10px', fontWeight: '700' }}>Compendium</h1>
-            <p style={{ fontSize: '16px', color: T.textMuted, lineHeight: '1.7', maxWidth: '560px' }}>
+            <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: '35px', letterSpacing: '0.16em', color: T.gold, margin: '0 0 10px', fontWeight: '700' }}>Compendium</h1>
+            <p style={{ fontSize: '19px', color: T.textMuted, lineHeight: '1.7', maxWidth: '560px' }}>
               A guide to the mechanics of Velion Mythera. The system exists to serve the story —
               not the other way around. Every number here is a starting point, not a ceiling.
             </p>
@@ -258,8 +258,8 @@ export default function Compendium() {
                 background: T.dmGold + '14', border: `1px solid ${T.dmGold}33`,
                 borderRadius: '3px', padding: '6px 14px',
               }}>
-                <span style={{ color: T.dmGold, fontSize: '14px' }}>⚔</span>
-                <span style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.15em', color: T.dmGold }}>
+                <span style={{ color: T.dmGold, fontSize: '17px' }}>⚔</span>
+                <span style={{ fontFamily: "'Cinzel',serif", fontSize: '15px', letterSpacing: '0.15em', color: T.dmGold }}>
                   DM VIEW — enemy system and encounter pool sections visible
                 </span>
               </div>
@@ -290,8 +290,8 @@ export default function Compendium() {
               ['Combat Healing',          'Healing Dice × Staked RP'],
             ].map(([label, formula]) => (
               <div key={label} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: '3px', padding: '12px 14px' }}>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: '11px', letterSpacing: '0.16em', color: T.textMuted, marginBottom: '6px' }}>{label}</div>
-                <code style={{ fontSize: '14px', color: T.rp, fontFamily: "'Courier New', monospace" }}>{formula}</code>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: '14px', letterSpacing: '0.16em', color: T.textMuted, marginBottom: '6px' }}>{label}</div>
+                <code style={{ fontSize: '17px', color: T.rp, fontFamily: "'Courier New', monospace" }}>{formula}</code>
               </div>
             ))}
           </div>
@@ -369,8 +369,8 @@ export default function Compendium() {
               body: 'Remaining RP may be held for reactive defense and opportunity attacks (available until next turn) or declared banked (carries forward, but unavailable for reactions until next turn).' },
           ].map(({ ph, color, body }) => (
             <div key={ph} style={{ borderLeft: `3px solid ${color}`, paddingLeft: '14px', marginBottom: '14px' }}>
-              <div style={{ fontFamily: "'Cinzel',serif", fontSize: '13px', letterSpacing: '0.15em', color, marginBottom: '4px' }}>{ph}</div>
-              <div style={{ fontSize: '15px', color: T.text, lineHeight: '1.7' }}>{body}</div>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: '16px', letterSpacing: '0.15em', color, marginBottom: '4px' }}>{ph}</div>
+              <div style={{ fontSize: '18px', color: T.text, lineHeight: '1.7' }}>{body}</div>
             </div>
           ))}
           <SubHead>Critical System</SubHead>
@@ -779,11 +779,11 @@ export default function Compendium() {
                 flexShrink: 0, width: '28px', height: '28px', borderRadius: '50%',
                 background: T.goldFaint, border: `1px solid ${T.goldDim}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: "'Cinzel',serif", fontSize: '13px', color: T.gold, marginTop: '1px',
+                fontFamily: "'Cinzel',serif", fontSize: '16px', color: T.gold, marginTop: '1px',
               }}>{n}</div>
               <div>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: '13px', letterSpacing: '0.14em', color: T.gold, marginBottom: '4px' }}>{title}</div>
-                <div style={{ fontSize: '15px', color: T.text, lineHeight: '1.7' }}>{body}</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: '16px', letterSpacing: '0.14em', color: T.gold, marginBottom: '4px' }}>{title}</div>
+                <div style={{ fontSize: '18px', color: T.text, lineHeight: '1.7' }}>{body}</div>
               </div>
             </div>
           ))}
@@ -797,8 +797,8 @@ export default function Compendium() {
                 margin: '40px 0 20px', padding: '14px 18px',
                 background: T.dmGold + '0c', border: `1px solid ${T.dmGold}33`, borderRadius: '3px',
               }}>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: '13px', letterSpacing: '0.2em', color: T.dmGold, marginBottom: '6px' }}>⚔ DM-ONLY SECTIONS BELOW</div>
-                <div style={{ fontSize: '15px', color: T.textMuted }}>The following sections are visible only to users with DM accounts.</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: '16px', letterSpacing: '0.2em', color: T.dmGold, marginBottom: '6px' }}>⚔ DM-ONLY SECTIONS BELOW</div>
+                <div style={{ fontSize: '18px', color: T.textMuted }}>The following sections are visible only to users with DM accounts.</div>
               </div>
 
               <SectionHead id="enemies" title="Enemy System" dmOnly />
@@ -875,7 +875,7 @@ export default function Compendium() {
           {/* Footer */}
           <div style={{
             marginTop: '60px', paddingTop: '20px', borderTop: `1px solid ${T.border}`,
-            textAlign: 'center', fontFamily: "'Cinzel',serif", fontSize: '11px',
+            textAlign: 'center', fontFamily: "'Cinzel',serif", fontSize: '14px',
             letterSpacing: '0.3em', color: T.textDim,
           }}>
             VELION MYTHERA COMPENDIUM — RULES REFERENCE — v3.0

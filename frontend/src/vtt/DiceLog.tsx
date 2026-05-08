@@ -41,14 +41,14 @@ export default function DiceLog({ entries, userId, isDM }: Props) {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ padding: '10px 10px 6px', borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
-        <span style={{ fontFamily: "'Cinzel',serif", fontSize: '8px', letterSpacing: '0.22em', color: T.textDim }}>
+        <span style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.22em', color: T.textDim }}>
           DICE LOG
         </span>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
         {entries.length === 0 && (
-          <div style={{ fontSize: '10px', color: T.textDim, textAlign: 'center', padding: '16px 0', fontFamily: "'Cinzel',serif", letterSpacing: '0.12em' }}>
+          <div style={{ fontSize: '13px', color: T.textDim, textAlign: 'center', padding: '16px 0', fontFamily: "'Cinzel',serif", letterSpacing: '0.12em' }}>
             NO ROLLS YET
           </div>
         )}
@@ -72,23 +72,23 @@ export default function DiceLog({ entries, userId, isDM }: Props) {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
-                <span style={{ fontSize: '9px', color: T.textMuted, fontFamily: "'Cinzel',serif", letterSpacing: '0.08em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '75%' }}>
+                <span style={{ fontSize: '12px', color: T.textMuted, fontFamily: "'Cinzel',serif", letterSpacing: '0.08em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '75%' }}>
                   {entry.source_label ?? (isDM ? 'DM Roll' : isOwn ? 'You' : 'Player')}
                 </span>
-                <span style={{ fontSize: '11px', flexShrink: 0 }} title={entry.visibility}>
+                <span style={{ fontSize: '14px', flexShrink: 0 }} title={entry.visibility}>
                   {VISIBILITY_ICON[entry.visibility]}
                 </span>
               </div>
 
               {entry.label && (
-                <div style={{ fontSize: '10px', color: T.textMuted, marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: '13px', color: T.textMuted, marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {entry.label}
                 </div>
               )}
 
               {hasBreakdown ? (
                 <div style={{
-                  fontSize: '11px',
+                  fontSize: '14px',
                   fontWeight: 600,
                   color: T.text,
                   fontFamily: "'Cinzel',serif",
@@ -105,7 +105,7 @@ export default function DiceLog({ entries, userId, isDM }: Props) {
                       <span
                         key={ri}
                         style={{
-                          fontSize: '11px', fontWeight: 700, padding: '1px 4px',
+                          fontSize: '14px', fontWeight: 700, padding: '1px 4px',
                           borderRadius: '2px',
                           background: T.surface,
                           color: T.textMuted,
@@ -115,9 +115,9 @@ export default function DiceLog({ entries, userId, isDM }: Props) {
                     ))}
                   </div>
                   <span style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                    <span style={{ fontSize: '9px', color: T.textDim }}>{entry.formula} = </span>
+                    <span style={{ fontSize: '12px', color: T.textDim }}>{entry.formula} = </span>
                     <span style={{
-                      fontSize: '16px', fontWeight: 700,
+                      fontSize: '19px', fontWeight: 700,
                       color: isHighTotal ? T.green : isLowTotal ? T.hp : color,
                       fontFamily: "'Cinzel',serif",
                     }}>

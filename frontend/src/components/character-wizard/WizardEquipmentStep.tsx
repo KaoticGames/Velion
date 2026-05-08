@@ -48,13 +48,13 @@ function meetsBracer(b: BracerRow, focus: number) {
 }
 
 const lbl: React.CSSProperties = {
-  fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.14em',
+  fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.14em',
   color: T.textMuted, display: 'block', marginBottom: '6px',
 };
 const mkBtn = (color = T.gold, filled = false): React.CSSProperties => ({
   background: filled ? color : 'transparent',
   border: `1px solid ${color}`, color: filled ? '#06070c' : color,
-  fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.12em',
+  fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.12em',
   padding: '8px 14px', borderRadius: '3px', cursor: 'pointer',
 });
 
@@ -148,15 +148,15 @@ export default function WizardEquipmentStep({
   return (
     <>
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderLeft: `3px solid ${T.gold}`, borderRadius: '4px', padding: '16px 18px', marginBottom: '24px' }}>
-        <div style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.18em', color: T.gold, marginBottom: '8px' }}>STARTING GEAR</div>
-        <p style={{ fontFamily: "'EB Garamond', serif", fontSize: '14px', lineHeight: 1.65, color: T.textMuted, margin: 0 }}>
+        <div style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.18em', color: T.gold, marginBottom: '8px' }}>STARTING GEAR</div>
+        <p style={{ fontFamily: "'EB Garamond', serif", fontSize: '17px', lineHeight: 1.65, color: T.textMuted, margin: 0 }}>
           Choose <strong style={{ color: T.text }}>Common</strong> or <strong style={{ color: T.text }}>Uncommon</strong> items from the library.
           Items must meet your attributes (Power {power}, Agility {agility}, Focus {focus}). Everything is optional — you can equip later on your sheet.
         </p>
       </div>
 
       {loading && (
-        <div style={{ fontFamily: "'Cinzel', serif", fontSize: '11px', color: T.textMuted, letterSpacing: '0.12em', marginBottom: '16px' }}>
+        <div style={{ fontFamily: "'Cinzel', serif", fontSize: '14px', color: T.textMuted, letterSpacing: '0.12em', marginBottom: '16px' }}>
           Loading library…
         </div>
       )}
@@ -175,7 +175,7 @@ export default function WizardEquipmentStep({
               <div style={{ minWidth: 0 }}>
                 <div style={{ ...lbl, marginBottom: '4px' }}>{label.toUpperCase()}</div>
                 <div style={{
-                  fontFamily: "'EB Garamond', serif", fontSize: '14px',
+                  fontFamily: "'EB Garamond', serif", fontSize: '17px',
                   color: cur ? T.text : T.textDim, fontStyle: cur ? 'normal' : 'italic',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
@@ -216,10 +216,10 @@ export default function WizardEquipmentStep({
             onClick={e => e.stopPropagation()}
           >
             <div style={{ padding: '18px 20px', borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ fontFamily: "'Cinzel', serif", fontSize: '11px', letterSpacing: '0.2em', color: T.textMuted, marginBottom: '6px' }}>
+              <div style={{ fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.2em', color: T.textMuted, marginBottom: '6px' }}>
                 LIBRARY
               </div>
-              <div style={{ fontFamily: "'Cinzel', serif", fontSize: '16px', color: T.gold, letterSpacing: '0.1em' }}>
+              <div style={{ fontFamily: "'Cinzel', serif", fontSize: '19px', color: T.gold, letterSpacing: '0.1em' }}>
                 {picker.kind === 'weapon' && `Weapon — ${picker.slot === 'main_hand' ? 'Main Hand' : 'Off Hand'}`}
                 {picker.kind === 'armor' && `Armor — ${SLOT_ROWS.find(r => r.slot === picker.slot)?.label ?? picker.slot}`}
                 {picker.kind === 'bracer' && 'Focus Bracer'}
@@ -232,7 +232,7 @@ export default function WizardEquipmentStep({
                 style={{
                   marginTop: '14px', width: '100%', boxSizing: 'border-box',
                   background: T.surface, border: `1px solid ${T.border}`, color: T.text,
-                  borderRadius: '3px', padding: '10px 12px', fontSize: '15px', fontFamily: "'EB Garamond', serif",
+                  borderRadius: '3px', padding: '10px 12px', fontSize: '18px', fontFamily: "'EB Garamond', serif",
                   outline: 'none',
                 }}
               />
@@ -241,7 +241,7 @@ export default function WizardEquipmentStep({
               {picker.kind === 'weapon' && (
                 <>
                   {filteredWeapons.length === 0 && (
-                    <p style={{ color: T.textMuted, fontFamily: "'EB Garamond', serif", fontSize: '14px' }}>No weapons match your filters and attributes.</p>
+                    <p style={{ color: T.textMuted, fontFamily: "'EB Garamond', serif", fontSize: '17px' }}>No weapons match your filters and attributes.</p>
                   )}
                   {filteredWeapons.map(w => (
                     <button
@@ -254,8 +254,8 @@ export default function WizardEquipmentStep({
                         padding: '12px 14px', marginBottom: '8px', cursor: 'pointer', color: T.text,
                       }}
                     >
-                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', color: T.gold }}>{w.name}</div>
-                      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: '12px', color: T.textMuted, marginTop: '4px' }}>
+                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '15px', color: T.gold }}>{w.name}</div>
+                      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: '15px', color: T.textMuted, marginTop: '4px' }}>
                         {w.rarity} · P {w.req_power} / A {w.req_agility} / F {w.req_focus}
                       </div>
                     </button>
@@ -265,7 +265,7 @@ export default function WizardEquipmentStep({
               {picker.kind === 'armor' && (
                 <>
                   {armorForPicker.length === 0 && (
-                    <p style={{ color: T.textMuted, fontFamily: "'EB Garamond', serif", fontSize: '14px' }}>No armor for this slot matches your filters.</p>
+                    <p style={{ color: T.textMuted, fontFamily: "'EB Garamond', serif", fontSize: '17px' }}>No armor for this slot matches your filters.</p>
                   )}
                   {armorForPicker.map(a => (
                     <button
@@ -278,8 +278,8 @@ export default function WizardEquipmentStep({
                         padding: '12px 14px', marginBottom: '8px', cursor: 'pointer', color: T.text,
                       }}
                     >
-                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', color: T.gold }}>{a.name}</div>
-                      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: '12px', color: T.textMuted, marginTop: '4px' }}>
+                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '15px', color: T.gold }}>{a.name}</div>
+                      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: '15px', color: T.textMuted, marginTop: '4px' }}>
                         {a.rarity} · {parseFloat(a.mitigation_percent || '0')}% mit · Power {a.req_power}+
                       </div>
                     </button>
@@ -289,7 +289,7 @@ export default function WizardEquipmentStep({
               {picker.kind === 'bracer' && (
                 <>
                   {filteredBracers.length === 0 && (
-                    <p style={{ color: T.textMuted, fontFamily: "'EB Garamond', serif", fontSize: '14px' }}>No bracers match your Focus.</p>
+                    <p style={{ color: T.textMuted, fontFamily: "'EB Garamond', serif", fontSize: '17px' }}>No bracers match your Focus.</p>
                   )}
                   {filteredBracers.map(b => (
                     <button
@@ -302,8 +302,8 @@ export default function WizardEquipmentStep({
                         padding: '12px 14px', marginBottom: '8px', cursor: 'pointer', color: T.text,
                       }}
                     >
-                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', color: T.gold }}>{b.name}</div>
-                      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: '12px', color: T.textMuted, marginTop: '4px' }}>
+                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '15px', color: T.gold }}>{b.name}</div>
+                      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: '15px', color: T.textMuted, marginTop: '4px' }}>
                         {b.grade} · {b.gem_slots} gem slots · Focus {b.req_focus}+
                       </div>
                     </button>

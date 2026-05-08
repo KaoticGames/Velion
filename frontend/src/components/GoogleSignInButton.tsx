@@ -33,7 +33,7 @@ export function GoogleSignInButton({ disabled }: Props) {
         background:      '#fff',
         color:           '#3c4043',
         fontFamily:      "'Roboto', system-ui, sans-serif",
-        fontSize:        '14px',
+        fontSize: '17px',
         fontWeight:      500,
         letterSpacing:   '0.01em',
         cursor:          disabled ? 'not-allowed' : 'pointer',

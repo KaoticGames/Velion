@@ -50,18 +50,18 @@ const cap = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 
 const inp = (extra: React.CSSProperties = {}): React.CSSProperties => ({
   background: T.surface, border: `1px solid ${T.border}`, color: T.text,
-  borderRadius: '3px', padding: '6px 10px', fontSize: '14px',
+  borderRadius: '3px', padding: '6px 10px', fontSize: '17px',
   fontFamily: "'EB Garamond', serif", width: '100%', outline: 'none', ...extra,
 });
 
 const LBL: React.CSSProperties = {
-  fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.14em',
+  fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.14em',
   color: T.textMuted, textTransform: 'uppercase', display: 'block', marginBottom: '4px',
 };
 
 const Btn = (color = T.gold, bg = 'transparent'): React.CSSProperties => ({
   background: bg, border: `1px solid ${color}`, color, borderRadius: '3px',
-  padding: '5px 14px', fontSize: '11px', fontFamily: "'Cinzel', serif",
+  padding: '5px 14px', fontSize: '14px', fontFamily: "'Cinzel', serif",
   letterSpacing: '0.1em', cursor: 'pointer',
 });
 
@@ -158,8 +158,8 @@ function PublicToggle({ value, onChange }: { value: boolean; onChange: (v: boole
         <span style={{ position: 'absolute', top: '3px', left: value ? '18px' : '3px', width: '14px', height: '14px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
       </button>
       <div>
-        <div style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', color: value ? T.gold : T.textMuted, letterSpacing: '0.1em' }}>PUBLIC</div>
-        <div style={{ fontSize: '12px', color: T.textDim }}>Visible to all players in the browser</div>
+        <div style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', color: value ? T.gold : T.textMuted, letterSpacing: '0.1em' }}>PUBLIC</div>
+        <div style={{ fontSize: '15px', color: T.textDim }}>Visible to all players in the browser</div>
       </div>
     </div>
   );
@@ -167,14 +167,14 @@ function PublicToggle({ value, onChange }: { value: boolean; onChange: (v: boole
 
 function VersionHistory({ type, id }: { type: HomebrewType; id: string }) {
   const { data: history, isLoading } = useVersionHistory(type, id);
-  if (isLoading) return <div style={{ fontSize: '12px', color: T.textMuted, padding: '8px' }}>Loading history…</div>;
-  if (!history?.length) return <div style={{ fontSize: '12px', color: T.textDim, padding: '8px' }}>No previous versions.</div>;
+  if (isLoading) return <div style={{ fontSize: '15px', color: T.textMuted, padding: '8px' }}>Loading history…</div>;
+  if (!history?.length) return <div style={{ fontSize: '15px', color: T.textDim, padding: '8px' }}>No previous versions.</div>;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '4px 0' }}>
       {[...history].reverse().map((v) => (
-        <div key={v.id} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '3px', padding: '8px 12px', fontSize: '12px' }}>
+        <div key={v.id} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '3px', padding: '8px 12px', fontSize: '15px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-            <span style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', color: T.gold }}>VERSION {v.version}</span>
+            <span style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', color: T.gold }}>VERSION {v.version}</span>
             <span style={{ color: T.textMuted }}>{new Date(v.saved_at).toLocaleString()}</span>
           </div>
           <div style={{ color: T.textDim, fontStyle: 'italic' }}>
@@ -223,7 +223,7 @@ function WeaponForm({ draft, setDraft }: { draft: typeof WEAPON_BLANK; setDraft:
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <label style={LBL}>Damage Channels <span style={{ color: T.textDim }}>— Total budget: {totalBudget} dice</span></label>
-          <button onClick={addChannel} style={{ ...Btn('#c8503a'), padding: '3px 10px', fontSize: '10px' }}>+ CHANNEL</button>
+          <button onClick={addChannel} style={{ ...Btn('#c8503a'), padding: '3px 10px', fontSize: '13px' }}>+ CHANNEL</button>
         </div>
         {draft.channels.map((ch, i) => (
           <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px', background: '#080a12', padding: '6px 8px', borderRadius: '3px' }}>
@@ -231,7 +231,7 @@ function WeaponForm({ draft, setDraft }: { draft: typeof WEAPON_BLANK; setDraft:
               {DAMAGE_TYPES.map(t => <option key={t} value={t}>{cap(t)}</option>)}
             </select>
             <input type="number" min={1} max={12} value={ch.num_dice} onChange={e => updChannel(i, 'num_dice', Number(e.target.value))} style={{ ...inp(), width: '60px', textAlign: 'center' }} />
-            <span style={{ color: T.textMuted, whiteSpace: 'nowrap', fontSize: '13px' }}>d{draft.base_die_type} × RP</span>
+            <span style={{ color: T.textMuted, whiteSpace: 'nowrap', fontSize: '16px' }}>d{draft.base_die_type} × RP</span>
             {draft.channels.length > 1 && <button onClick={() => delChannel(i)} style={{ ...Btn('#662020'), padding: '3px 8px' }}>✕</button>}
           </div>
         ))}
@@ -370,9 +370,9 @@ function EnemyForm({ draft, setDraft }: { draft: typeof ENEMY_BLANK; setDraft: R
           ))}
         </div>
         <div style={{ marginTop: '8px', padding: '8px 12px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: '3px', display: 'inline-flex', gap: '12px', alignItems: 'center' }}>
-          <span style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', color: T.textDim }}>BASE RP</span>
-          <span style={{ fontSize: '16px', fontWeight: '600', color: '#4a9de8' }}>{baseRP}</span>
-          <span style={{ fontSize: '12px', color: T.textDim }}>from highest attr mod at level 1</span>
+          <span style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', color: T.textDim }}>BASE RP</span>
+          <span style={{ fontSize: '19px', fontWeight: '600', color: '#4a9de8' }}>{baseRP}</span>
+          <span style={{ fontSize: '15px', color: T.textDim }}>from highest attr mod at level 1</span>
         </div>
       </div>
 
@@ -381,11 +381,11 @@ function EnemyForm({ draft, setDraft }: { draft: typeof ENEMY_BLANK; setDraft: R
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <label style={LBL}>Traits</label>
           <div style={{ display: 'flex', gap: '6px' }}>
-            <select value={traitPreset} onChange={e => addOfficialTrait(e.target.value)} style={{ ...inp(), width: 'auto', fontSize: '11px', padding: '3px 24px 3px 8px' }}>
+            <select value={traitPreset} onChange={e => addOfficialTrait(e.target.value)} style={{ ...inp(), width: 'auto', fontSize: '14px', padding: '3px 24px 3px 8px' }}>
               <option value="">+ Official Trait…</option>
               {OFFICIAL_TRAITS.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
             </select>
-            <button onClick={addCustomTrait} style={{ ...Btn(T.gold), padding: '3px 10px', fontSize: '10px' }}>+ CUSTOM</button>
+            <button onClick={addCustomTrait} style={{ ...Btn(T.gold), padding: '3px 10px', fontSize: '13px' }}>+ CUSTOM</button>
           </div>
         </div>
         {draft.traits.map((tr, i) => (
@@ -395,14 +395,14 @@ function EnemyForm({ draft, setDraft }: { draft: typeof ENEMY_BLANK; setDraft: R
             <button onClick={() => delTrait(i)} style={{ ...Btn('#662020'), padding: '4px 8px' }}>✕</button>
           </div>
         ))}
-        {!draft.traits.length && <div style={{ fontSize: '12px', color: T.textDim, fontStyle: 'italic' }}>No traits added.</div>}
+        {!draft.traits.length && <div style={{ fontSize: '15px', color: T.textDim, fontStyle: 'italic' }}>No traits added.</div>}
       </div>
 
       {/* Named Attacks */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <label style={LBL}>Attacks</label>
-          <button onClick={addAtk} style={{ ...Btn('#e05050'), padding: '3px 10px', fontSize: '10px' }}>+ ATTACK</button>
+          <button onClick={addAtk} style={{ ...Btn('#e05050'), padding: '3px 10px', fontSize: '13px' }}>+ ATTACK</button>
         </div>
         {draft.attacks.map((atk, i) => (
           <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1.5fr auto', gap: '6px', marginBottom: '6px', background: '#080a12', padding: '8px', borderRadius: '3px' }}>
@@ -414,7 +414,7 @@ function EnemyForm({ draft, setDraft }: { draft: typeof ENEMY_BLANK; setDraft: R
             <button onClick={() => delAtk(i)} style={{ ...Btn('#662020'), padding: '4px 8px' }}>✕</button>
           </div>
         ))}
-        {!draft.attacks.length && <div style={{ fontSize: '12px', color: T.textDim, fontStyle: 'italic' }}>No named attacks. Use Attack Tiers below for damage scaling.</div>}
+        {!draft.attacks.length && <div style={{ fontSize: '15px', color: T.textDim, fontStyle: 'italic' }}>No named attacks. Use Attack Tiers below for damage scaling.</div>}
       </div>
 
       {/* Attack Tiers */}
@@ -460,9 +460,9 @@ function PetForm({ draft, setDraft }: { draft: typeof PET_BLANK; setDraft: React
           ))}
         </div>
         <div style={{ marginTop: '8px', padding: '8px 12px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: '3px', display: 'inline-flex', gap: '12px', alignItems: 'center' }}>
-          <span style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', color: T.textDim }}>BASE RP</span>
-          <span style={{ fontSize: '16px', fontWeight: '600', color: '#4a9de8' }}>{1 + Math.floor((Math.max(draft.power, draft.agility, draft.focus, draft.presence) - 10) / 2)}</span>
-          <span style={{ fontSize: '12px', color: T.textDim }}>from highest attr mod at level 1</span>
+          <span style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', color: T.textDim }}>BASE RP</span>
+          <span style={{ fontSize: '19px', fontWeight: '600', color: '#4a9de8' }}>{1 + Math.floor((Math.max(draft.power, draft.agility, draft.focus, draft.presence) - 10) / 2)}</span>
+          <span style={{ fontSize: '15px', color: T.textDim }}>from highest attr mod at level 1</span>
         </div>
       </div>
       <Fld label="Movement (ft)" style={{ maxWidth: '120px' }}><input type="number" min={5} step={5} value={draft.movement} onChange={e => setDraft(p => ({ ...p, movement: Number(e.target.value) }))} style={inp()} /></Fld>
@@ -470,7 +470,7 @@ function PetForm({ draft, setDraft }: { draft: typeof PET_BLANK; setDraft: React
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <label style={LBL}>Attacks</label>
-          <button onClick={addAtk} style={{ ...Btn('#50c878'), padding: '3px 10px', fontSize: '10px' }}>+ ATTACK</button>
+          <button onClick={addAtk} style={{ ...Btn('#50c878'), padding: '3px 10px', fontSize: '13px' }}>+ ATTACK</button>
         </div>
         {draft.attacks.map((atk, i) => (
           <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1.5fr auto', gap: '6px', marginBottom: '6px', background: '#080a12', padding: '8px', borderRadius: '3px' }}>
@@ -482,7 +482,7 @@ function PetForm({ draft, setDraft }: { draft: typeof PET_BLANK; setDraft: React
             <button onClick={() => delAtk(i)} style={{ ...Btn('#662020'), padding: '4px 8px' }}>✕</button>
           </div>
         ))}
-        {!draft.attacks.length && <div style={{ fontSize: '12px', color: T.textDim, fontStyle: 'italic' }}>No attacks. Pets without attacks are passive companions.</div>}
+        {!draft.attacks.length && <div style={{ fontSize: '15px', color: T.textDim, fontStyle: 'italic' }}>No attacks. Pets without attacks are passive companions.</div>}
       </div>
 
       <Fld label="Description / Lore"><textarea value={draft.description} onChange={e => setDraft(p => ({ ...p, description: e.target.value }))} style={{ ...inp(), minHeight: '72px', resize: 'vertical' }} /></Fld>
@@ -512,30 +512,30 @@ function ItemCard({
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderLeft: `3px solid ${accentColor}44`, borderRadius: '4px', padding: '14px 16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
         <div>
-          <div style={{ fontWeight: '500', fontSize: '16px', color: rarity ? rarColor : T.text, marginBottom: '3px' }}>{item.name as string}</div>
+          <div style={{ fontWeight: '500', fontSize: '19px', color: rarity ? rarColor : T.text, marginBottom: '3px' }}>{item.name as string}</div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            {rarity && <span style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', padding: '1px 8px', borderRadius: '8px', background: `${rarColor}18`, border: `1px solid ${rarColor}44`, color: rarColor }}>{cap(rarity)}</span>}
-            {!!item.version && <span style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', color: T.textDim }}>v{item.version as number}</span>}
-            {!!item.is_public && <span style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', color: T.gold }}>◈ PUBLIC</span>}
+            {rarity && <span style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', padding: '1px 8px', borderRadius: '8px', background: `${rarColor}18`, border: `1px solid ${rarColor}44`, color: rarColor }}>{cap(rarity)}</span>}
+            {!!item.version && <span style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', color: T.textDim }}>v{item.version as number}</span>}
+            {!!item.is_public && <span style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', color: T.gold }}>◈ PUBLIC</span>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
-          <button onClick={onEdit} style={{ ...Btn(T.gold), padding: '4px 10px', fontSize: '10px' }}>✎ EDIT</button>
+          <button onClick={onEdit} style={{ ...Btn(T.gold), padding: '4px 10px', fontSize: '13px' }}>✎ EDIT</button>
           {!deleteConfirm
-            ? <button onClick={() => setDeleteConfirm(true)} style={{ ...Btn('#662020'), padding: '4px 10px', fontSize: '10px' }}>✕</button>
+            ? <button onClick={() => setDeleteConfirm(true)} style={{ ...Btn('#662020'), padding: '4px 10px', fontSize: '13px' }}>✕</button>
             : <div style={{ display: 'flex', gap: '4px' }}>
-                <button onClick={() => setDeleteConfirm(false)} style={{ ...Btn(T.textMuted), padding: '4px 8px', fontSize: '10px' }}>NO</button>
-                <button onClick={onDelete} style={{ ...Btn('#e05050'), padding: '4px 8px', fontSize: '10px', background: '#1a0808' }}>DELETE</button>
+                <button onClick={() => setDeleteConfirm(false)} style={{ ...Btn(T.textMuted), padding: '4px 8px', fontSize: '13px' }}>NO</button>
+                <button onClick={onDelete} style={{ ...Btn('#e05050'), padding: '4px 8px', fontSize: '13px', background: '#1a0808' }}>DELETE</button>
               </div>
           }
         </div>
       </div>
 
-      <div style={{ fontSize: '13px', color: T.textMuted, marginBottom: '10px', lineHeight: '1.6' }}>{summary}</div>
+      <div style={{ fontSize: '16px', color: T.textMuted, marginBottom: '10px', lineHeight: '1.6' }}>{summary}</div>
 
-      {!!item.description && <div style={{ fontSize: '13px', color: T.textDim, fontStyle: 'italic', marginBottom: '10px' }}>{item.description as string}</div>}
+      {!!item.description && <div style={{ fontSize: '16px', color: T.textDim, fontStyle: 'italic', marginBottom: '10px' }}>{item.description as string}</div>}
 
-      <button onClick={() => setShowHistory(p => !p)} style={{ ...Btn(T.textDim), padding: '3px 10px', fontSize: '10px', marginBottom: showHistory ? '10px' : 0 }}>
+      <button onClick={() => setShowHistory(p => !p)} style={{ ...Btn(T.textDim), padding: '3px 10px', fontSize: '13px', marginBottom: showHistory ? '10px' : 0 }}>
         {showHistory ? '▲ HIDE HISTORY' : '▾ VERSION HISTORY'}
       </button>
       {showHistory && <VersionHistory type={type} id={item.id as string} />}
@@ -590,13 +590,13 @@ function DupWarning({ matches, onConfirm, onCancel }: {
 }) {
   return (
     <ModalWrap accentColor="#e8a020">
-      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.2em', color: '#e8a020', marginBottom: '16px' }}>⚠ POSSIBLE DUPLICATE</div>
-      <p style={{ color: T.textMuted, fontSize: '14px', lineHeight: '1.7', marginBottom: '14px' }}>
+      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '16px', letterSpacing: '0.2em', color: '#e8a020', marginBottom: '16px' }}>⚠ POSSIBLE DUPLICATE</div>
+      <p style={{ color: T.textMuted, fontSize: '17px', lineHeight: '1.7', marginBottom: '14px' }}>
         The following existing items have similar stats. Are you sure you want to create another?
       </p>
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '3px', padding: '10px 14px', marginBottom: '18px' }}>
         {matches.map(m => (
-          <div key={m.id} style={{ fontSize: '14px', color: T.text, padding: '4px 0', borderBottom: `1px solid ${T.border}` }}>{m.name}</div>
+          <div key={m.id} style={{ fontSize: '17px', color: T.text, padding: '4px 0', borderBottom: `1px solid ${T.border}` }}>{m.name}</div>
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -709,8 +709,8 @@ function TabContent({
       {!isPaid && (
         <div style={{ background: '#0e0a04', border: `1px solid ${T.gold}44`, borderRadius: '4px', padding: '14px 18px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontFamily: "'Cinzel', serif", fontSize: '11px', color: T.gold, letterSpacing: '0.14em', marginBottom: '4px' }}>PLAYER OR DM SUBSCRIPTION REQUIRED</div>
-            <div style={{ fontSize: '13px', color: T.textMuted }}>Homebrew creation requires a paid plan. Browsing public homebrew is always free.</div>
+            <div style={{ fontFamily: "'Cinzel', serif", fontSize: '14px', color: T.gold, letterSpacing: '0.14em', marginBottom: '4px' }}>PLAYER OR DM SUBSCRIPTION REQUIRED</div>
+            <div style={{ fontSize: '16px', color: T.textMuted }}>Homebrew creation requires a paid plan. Browsing public homebrew is always free.</div>
           </div>
           <Link to="/account/subscription" style={{ ...Btn(T.gold, `${T.gold}15`), textDecoration: 'none', padding: '8px 18px', whiteSpace: 'nowrap' }}>UPGRADE</Link>
         </div>
@@ -719,18 +719,18 @@ function TabContent({
       {/* Create button */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
         <button onClick={openCreate} disabled={!isPaid}
-          style={{ ...Btn(accentColor, `${accentColor}12`), padding: '8px 20px', fontSize: '12px', opacity: isPaid ? 1 : 0.4 }}>
+          style={{ ...Btn(accentColor, `${accentColor}12`), padding: '8px 20px', fontSize: '15px', opacity: isPaid ? 1 : 0.4 }}>
           + CREATE NEW
         </button>
       </div>
 
       {/* Item list */}
-      {isLoading && <div style={{ textAlign: 'center', padding: '40px', color: T.textMuted, fontFamily: "'Cinzel', serif", fontSize: '11px', letterSpacing: '0.2em' }}>LOADING…</div>}
+      {isLoading && <div style={{ textAlign: 'center', padding: '40px', color: T.textMuted, fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.2em' }}>LOADING…</div>}
       {!isLoading && (!items || items.length === 0) && (
         <div style={{ textAlign: 'center', padding: '60px 20px', border: `1px dashed ${T.border}`, borderRadius: '4px' }}>
-          <div style={{ fontSize: '28px', marginBottom: '12px' }}>✦</div>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '11px', letterSpacing: '0.2em', color: T.textMuted, marginBottom: '8px' }}>NO HOMEBREW YET</div>
-          <div style={{ fontSize: '14px', color: T.textDim }}>Create your first homebrew item above.</div>
+          <div style={{ fontSize: '31px', marginBottom: '12px' }}>✦</div>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.2em', color: T.textMuted, marginBottom: '8px' }}>NO HOMEBREW YET</div>
+          <div style={{ fontSize: '17px', color: T.textDim }}>Create your first homebrew item above.</div>
         </div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -750,10 +750,10 @@ function TabContent({
       {/* Create / Edit modal */}
       {modal && (
         <ModalWrap accentColor={accentColor}>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '11px', letterSpacing: '0.22em', color: accentColor, marginBottom: '4px' }}>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.22em', color: accentColor, marginBottom: '4px' }}>
             {modal === 'create' ? 'CREATE' : 'EDIT'} HOMEBREW
           </div>
-          <div style={{ fontSize: '18px', fontWeight: '500', color: T.text, marginBottom: '16px' }}>
+          <div style={{ fontSize: '21px', fontWeight: '500', color: T.text, marginBottom: '16px' }}>
             {modal === 'edit' ? (editTarget?.name as string) : `New ${TABS.find(t => t.type === type)?.singular}`}
           </div>
           <div style={{ height: '1px', background: `${accentColor}33`, marginBottom: '18px' }} />
@@ -761,7 +761,7 @@ function TabContent({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '20px' }}>
             <button onClick={closeModal} style={{ ...Btn(T.textMuted), padding: '10px' }}>CANCEL</button>
             <button onClick={handleSave} disabled={isSaving}
-              style={{ ...Btn(accentColor, `${accentColor}15`), padding: '10px', fontSize: '12px', opacity: isSaving ? 0.5 : 1 }}>
+              style={{ ...Btn(accentColor, `${accentColor}15`), padding: '10px', fontSize: '15px', opacity: isSaving ? 0.5 : 1 }}>
               {isSaving ? 'SAVING…' : modal === 'edit' ? '✓ SAVE CHANGES' : '✦ CREATE'}
             </button>
           </div>
@@ -795,8 +795,8 @@ export default function Homebrew() {
 
       {/* Header */}
       <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: '26px', fontWeight: '700', color: T.gold, letterSpacing: '0.15em', margin: 0, marginBottom: '6px' }}>HOMEBREW WORKSHOP</h1>
-        <p style={{ color: T.textMuted, fontSize: '14px', margin: 0 }}>
+        <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: '29px', fontWeight: '700', color: T.gold, letterSpacing: '0.15em', margin: 0, marginBottom: '6px' }}>HOMEBREW WORKSHOP</h1>
+        <p style={{ color: T.textMuted, fontSize: '17px', margin: 0 }}>
           Create and manage custom weapons, armor, gems, enemies, and companions. Public items are visible in character sheet browsers.
         </p>
       </div>
@@ -807,12 +807,12 @@ export default function Homebrew() {
           const active = activeTab === tab.type;
           return (
             <button key={tab.type} onClick={() => setActiveTab(tab.type)}
-              style={{ flex: 1, padding: '8px 4px', border: 'none', borderRadius: '3px', fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.15s',
+              style={{ flex: 1, padding: '8px 4px', border: 'none', borderRadius: '3px', fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.15s',
                 background: active ? `${tab.color}18` : 'transparent',
                 color: active ? tab.color : T.textMuted,
                 borderBottom: active ? `2px solid ${tab.color}` : '2px solid transparent',
               }}>
-              <span style={{ display: 'block', fontSize: '16px', marginBottom: '3px' }}>{tab.icon}</span>
+              <span style={{ display: 'block', fontSize: '19px', marginBottom: '3px' }}>{tab.icon}</span>
               {tab.label}
             </button>
           );

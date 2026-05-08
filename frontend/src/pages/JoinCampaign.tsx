@@ -88,20 +88,20 @@ export default function JoinCampaign() {
           borderTop: `3px solid ${T.green}`, borderRadius: '4px',
           padding: '48px 40px', textAlign: 'center', maxWidth: '420px', width: '100%',
         }}>
-          <div style={{ fontSize: '40px', marginBottom: '20px' }}>⚔</div>
+          <div style={{ fontSize: '43px', marginBottom: '20px' }}>⚔</div>
           <div style={{
-            fontFamily: "'Cinzel',serif", fontSize: '11px',
+            fontFamily: "'Cinzel',serif", fontSize: '14px',
             letterSpacing: '0.3em', color: T.green, marginBottom: '8px',
           }}>CAMPAIGN JOINED</div>
           <h2 style={{
-            fontFamily: "'Cinzel',serif", fontSize: '20px',
+            fontFamily: "'Cinzel',serif", fontSize: '23px',
             color: T.text, margin: '0 0 12px', letterSpacing: '0.1em',
           }}>{joinedName}</h2>
-          <p style={{ fontSize: '13px', color: T.textMuted, lineHeight: '1.7', marginBottom: '28px' }}>
+          <p style={{ fontSize: '16px', color: T.textMuted, lineHeight: '1.7', marginBottom: '28px' }}>
             Your character has been enrolled. Your DM will let you know when the first session begins.
           </p>
           <button onClick={() => navigate('/campaigns')} style={{
-            fontFamily: "'Cinzel',serif", fontSize: '11px', letterSpacing: '0.14em',
+            fontFamily: "'Cinzel',serif", fontSize: '14px', letterSpacing: '0.14em',
             background: T.gold, border: `1px solid ${T.gold}`,
             borderRadius: '3px', padding: '11px 28px', cursor: 'pointer',
             color: '#080b10', fontWeight: '700',
@@ -117,7 +117,7 @@ export default function JoinCampaign() {
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         height: 'calc(100vh - 52px)', fontFamily: "'Cinzel',serif",
-        fontSize: '11px', letterSpacing: '0.2em', color: T.textDim,
+        fontSize: '14px', letterSpacing: '0.2em', color: T.textDim,
       }}>LOADING INVITE…</div>
     );
   }
@@ -134,16 +134,16 @@ export default function JoinCampaign() {
           borderTop: `3px solid ${T.hp}`, borderRadius: '4px',
           padding: '48px 40px', textAlign: 'center', maxWidth: '400px', width: '100%',
         }}>
-          <div style={{ fontSize: '36px', marginBottom: '16px', opacity: 0.4 }}>✕</div>
+          <div style={{ fontSize: '39px', marginBottom: '16px', opacity: 0.4 }}>✕</div>
           <div style={{
-            fontFamily: "'Cinzel',serif", fontSize: '11px',
+            fontFamily: "'Cinzel',serif", fontSize: '14px',
             letterSpacing: '0.26em', color: T.hp, marginBottom: '10px',
           }}>INVITE INVALID</div>
-          <p style={{ fontSize: '13px', color: T.textMuted, lineHeight: '1.7', marginBottom: '28px' }}>
+          <p style={{ fontSize: '16px', color: T.textMuted, lineHeight: '1.7', marginBottom: '28px' }}>
             {getPreviewError()}
           </p>
           <button onClick={() => navigate('/campaigns')} style={{
-            fontFamily: "'Cinzel',serif", fontSize: '10px', letterSpacing: '0.14em',
+            fontFamily: "'Cinzel',serif", fontSize: '13px', letterSpacing: '0.14em',
             background: 'transparent', border: `1px solid ${T.border}`,
             borderRadius: '3px', padding: '9px 20px', cursor: 'pointer', color: T.textMuted,
           }}>← BACK TO CAMPAIGNS</button>
@@ -167,26 +167,26 @@ export default function JoinCampaign() {
           padding: '28px 32px', marginBottom: '20px', textAlign: 'center',
         }}>
           <div style={{
-            fontFamily: "'Cinzel',serif", fontSize: '10px',
+            fontFamily: "'Cinzel',serif", fontSize: '13px',
             letterSpacing: '0.3em', color: T.textDim, marginBottom: '6px',
           }}>YOU'VE BEEN INVITED TO</div>
           <h1 style={{
-            fontFamily: "'Cinzel',serif", fontSize: '24px',
+            fontFamily: "'Cinzel',serif", fontSize: '27px',
             color: tc, margin: '0 0 12px', fontWeight: '700', letterSpacing: '0.1em',
           }}>{preview.campaign.name}</h1>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{
-              fontFamily: "'Cinzel',serif", fontSize: '9px', letterSpacing: '0.18em',
+              fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.18em',
               color: tc, background: tc + '18', border: `1px solid ${tc}44`,
               borderRadius: '2px', padding: '2px 8px',
             }}>{preview.campaign.world_tier_baseline.toUpperCase()}</span>
           </div>
-          <div style={{ fontSize: '12px', color: T.textDim }}>
+          <div style={{ fontSize: '15px', color: T.textDim }}>
             Run by <span style={{ color: T.textMuted }}>{preview.dm.email}</span>
           </div>
           {preview.invite.max_uses !== null && (
             <div style={{
-              fontSize: '11px', color: T.textDim,
+              fontSize: '14px', color: T.textDim,
               fontFamily: "'Cinzel',serif", letterSpacing: '0.1em', marginTop: '6px',
             }}>
               {preview.invite.max_uses - preview.invite.use_count} spots remaining
@@ -200,14 +200,14 @@ export default function JoinCampaign() {
           borderRadius: '4px', padding: '24px 28px',
         }}>
           <div style={{
-            fontFamily: "'Cinzel',serif", fontSize: '9px',
+            fontFamily: "'Cinzel',serif", fontSize: '12px',
             letterSpacing: '0.26em', color: T.textDim, marginBottom: '14px',
           }}>SELECT YOUR CHARACTER</div>
 
           {charsLoading && (
             <div style={{
               textAlign: 'center', padding: '24px', color: T.textDim,
-              fontFamily: "'Cinzel',serif", fontSize: '10px', letterSpacing: '0.16em',
+              fontFamily: "'Cinzel',serif", fontSize: '13px', letterSpacing: '0.16em',
             }}>LOADING CHARACTERS…</div>
           )}
 
@@ -215,7 +215,7 @@ export default function JoinCampaign() {
             <div style={{
               background: T.surface, border: `1px solid ${T.border}`,
               borderRadius: '3px', padding: '20px', textAlign: 'center',
-              fontSize: '13px', color: T.textMuted, marginBottom: '16px',
+              fontSize: '16px', color: T.textMuted, marginBottom: '16px',
             }}>
               You don't have any characters yet.{' '}
               <a href="/characters/new" style={{ color: T.gold }}>Create one first.</a>
@@ -244,19 +244,19 @@ export default function JoinCampaign() {
                     }}>
                       {char.portrait_url
                         ? <img src={char.portrait_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <span style={{ fontSize: '16px', color: ac, opacity: 0.5 }}>⚔</span>}
+                        : <span style={{ fontSize: '19px', color: ac, opacity: 0.5 }}>⚔</span>}
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: T.text, marginBottom: '2px' }}>
+                      <div style={{ fontSize: '17px', fontWeight: '600', color: T.text, marginBottom: '2px' }}>
                         {char.name}
                       </div>
-                      <div style={{ fontSize: '11px', color: T.textDim }}>
+                      <div style={{ fontSize: '14px', color: T.textDim }}>
                         Level {char.level} · {cap(char.chosen_attribute)}
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', fontSize: '12px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', gap: '10px', fontSize: '15px', flexShrink: 0 }}>
                       <span style={{ color: T.textDim }}>
                         RP <span style={{ color: T.rp, fontWeight: '600' }}>{char.base_rp}</span>
                       </span>
@@ -269,7 +269,7 @@ export default function JoinCampaign() {
                       <div style={{
                         width: '18px', height: '18px', borderRadius: '50%',
                         background: ac, display: 'flex', alignItems: 'center',
-                        justifyContent: 'center', fontSize: '11px', color: '#080b10',
+                        justifyContent: 'center', fontSize: '14px', color: '#080b10',
                         fontWeight: '700', flexShrink: 0,
                       }}>✓</div>
                     )}
@@ -281,7 +281,7 @@ export default function JoinCampaign() {
 
           {error && (
             <div style={{
-              fontSize: '12px', color: T.hp,
+              fontSize: '15px', color: T.hp,
               background: T.hp + '15', border: `1px solid ${T.hp}44`,
               borderRadius: '3px', padding: '10px 14px', marginBottom: '16px', lineHeight: '1.6',
             }}>{error}</div>
@@ -291,7 +291,7 @@ export default function JoinCampaign() {
             onClick={handleJoin}
             disabled={!selectedChar || join.isPending}
             style={{
-              width: '100%', fontFamily: "'Cinzel',serif", fontSize: '12px',
+              width: '100%', fontFamily: "'Cinzel',serif", fontSize: '15px',
               letterSpacing: '0.16em', background: !selectedChar ? T.goldDim : T.gold,
               border: `1px solid ${!selectedChar ? T.goldDim : T.gold}`,
               borderRadius: '3px', padding: '13px', cursor: !selectedChar ? 'not-allowed' : 'pointer',

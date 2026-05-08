@@ -91,7 +91,7 @@ const inputSt: React.CSSProperties = {
   borderRadius: '3px',
   padding: '12px 14px',
   color: T.text,
-  fontSize: '15px',
+  fontSize: '18px',
   fontFamily: "'EB Garamond', serif",
   width: '100%',
   boxSizing: 'border-box',
@@ -100,7 +100,7 @@ const inputSt: React.CSSProperties = {
 
 const sectionLabel: React.CSSProperties = {
   fontFamily: "'Cinzel', serif",
-  fontSize: '9px',
+  fontSize: '12px',
   letterSpacing: '0.35em',
   color: T.textMuted,
   marginBottom: '12px',
@@ -108,7 +108,7 @@ const sectionLabel: React.CSSProperties = {
 
 const sectionTitle: React.CSSProperties = {
   fontFamily: "'Cinzel', serif",
-  fontSize: 'clamp(20px, 3vw, 30px)',
+  fontSize: 'clamp(23px, 3vw, 33px)',
   letterSpacing: '0.1em',
   color: T.gold,
   margin: 0,
@@ -116,7 +116,7 @@ const sectionTitle: React.CSSProperties = {
 
 const bodyText: React.CSSProperties = {
   color: T.textMuted,
-  fontSize: '16px',
+  fontSize: '19px',
   lineHeight: 1.8,
   marginBottom: '18px',
 };
@@ -174,7 +174,7 @@ export default function Landing() {
 
         {/* Early access badge */}
         <div style={{
-          fontFamily: "'Cinzel', serif", fontSize: '9px', letterSpacing: '0.35em',
+          fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.35em',
           color: T.gold, border: `1px solid ${T.gold}55`, borderRadius: '2px',
           padding: '6px 18px', marginBottom: '40px', background: T.goldGlow,
           animation: 'pulse-badge 3s ease-in-out infinite',
@@ -199,14 +199,14 @@ export default function Landing() {
         }} />
 
         <p style={{
-          maxWidth: '560px', fontSize: 'clamp(16px, 2.3vw, 20px)',
+          maxWidth: '560px', fontSize: 'clamp(19px, 2.3vw, 23px)',
           lineHeight: 1.75, color: T.textMuted,
           margin: '0 auto 12px', fontStyle: 'italic',
         }}>
           A digital-first tabletop RPG where power has no ceiling,
           equipment defines identity, and the world bends around your choices.
         </p>
-        <p style={{ fontSize: '17px', color: T.text, fontWeight: 600, marginBottom: '52px' }}>
+        <p style={{ fontSize: '20px', color: T.text, fontWeight: 600, marginBottom: '52px' }}>
           Something new is being forged. Be first to enter.
         </p>
 
@@ -221,14 +221,14 @@ export default function Landing() {
         }}>
           {status === 'success' ? (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <div style={{ fontSize: '28px', color: T.gold, marginBottom: '14px' }}>✦</div>
+              <div style={{ fontSize: '31px', color: T.gold, marginBottom: '14px' }}>✦</div>
               <div style={{
-                fontFamily: "'Cinzel', serif", fontSize: '13px',
+                fontFamily: "'Cinzel', serif", fontSize: '16px',
                 letterSpacing: '0.16em', color: T.gold, marginBottom: '12px',
               }}>
                 YOUR NAME IS RECORDED
               </div>
-              <p style={{ color: T.textMuted, fontSize: '15px', lineHeight: 1.65, margin: 0 }}>
+              <p style={{ color: T.textMuted, fontSize: '18px', lineHeight: 1.65, margin: 0 }}>
                 We'll send word when Early Access opens.<br />
                 May your legend begin soon.
               </p>
@@ -236,7 +236,7 @@ export default function Landing() {
           ) : (
             <>
               <div style={{
-                fontFamily: "'Cinzel', serif", fontSize: '11px',
+                fontFamily: "'Cinzel', serif", fontSize: '14px',
                 letterSpacing: '0.2em', color: T.gold,
                 marginBottom: '20px', textAlign: 'center',
               }}>
@@ -259,13 +259,13 @@ export default function Landing() {
                   style={inputSt}
                 />
                 {status === 'error' && (
-                  <div style={{ fontSize: '13px', color: T.hp }}>{errMsg}</div>
+                  <div style={{ fontSize: '16px', color: T.hp }}>{errMsg}</div>
                 )}
                 <button
                   onClick={handleSubmit}
                   disabled={status === 'loading' || !email.trim()}
                   style={{
-                    fontFamily: "'Cinzel', serif", fontSize: '12px',
+                    fontFamily: "'Cinzel', serif", fontSize: '15px',
                     letterSpacing: '0.18em', fontWeight: 700,
                     padding: '14px', borderRadius: '3px', border: 'none',
                     cursor: email.trim() && status !== 'loading' ? 'pointer' : 'not-allowed',
@@ -279,7 +279,7 @@ export default function Landing() {
                 </button>
               </div>
               <p style={{
-                fontSize: '12px', color: T.textDim, textAlign: 'center',
+                fontSize: '15px', color: T.textDim, textAlign: 'center',
                 marginTop: '14px', marginBottom: 0,
               }}>
                 No account created · No spam · One email when doors open
@@ -291,10 +291,10 @@ export default function Landing() {
         {count > 0 && (
           <div style={{
             marginTop: '22px',
-            fontFamily: "'Cinzel', serif", fontSize: '11px',
+            fontFamily: "'Cinzel', serif", fontSize: '14px',
             letterSpacing: '0.16em', color: T.textMuted,
           }}>
-            <span style={{ color: T.gold, fontSize: '17px', fontWeight: 700, marginRight: '6px' }}>
+            <span style={{ color: T.gold, fontSize: '20px', fontWeight: 700, marginRight: '6px' }}>
               {displayCount}
             </span>
             adventurers already enlisted
@@ -308,7 +308,7 @@ export default function Landing() {
           animation: 'float-down 2.4s ease-in-out infinite',
         }}>
           <div style={{ width: '1px', height: '36px', background: `linear-gradient(to bottom, ${T.gold}66, transparent)` }} />
-          <span style={{ fontFamily: "'Cinzel', serif", fontSize: '7px', letterSpacing: '0.3em', color: T.textDim }}>SCROLL</span>
+          <span style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.3em', color: T.textDim }}>SCROLL</span>
         </div>
       </section>
 
@@ -377,14 +377,14 @@ export default function Landing() {
                   el.style.boxShadow = 'none';
                 }}
               >
-                <div style={{ fontSize: '20px', marginBottom: '10px' }}>{p.glyph}</div>
+                <div style={{ fontSize: '23px', marginBottom: '10px' }}>{p.glyph}</div>
                 <div style={{
-                  fontFamily: "'Cinzel', serif", fontSize: '11px',
+                  fontFamily: "'Cinzel', serif", fontSize: '14px',
                   letterSpacing: '0.14em', color: T.gold, marginBottom: '10px',
                 }}>
                   {p.title.toUpperCase()}
                 </div>
-                <p style={{ color: T.textMuted, fontSize: '15px', lineHeight: 1.65, margin: 0 }}>{p.body}</p>
+                <p style={{ color: T.textMuted, fontSize: '18px', lineHeight: 1.65, margin: 0 }}>{p.body}</p>
               </div>
             ))}
           </div>
@@ -414,13 +414,13 @@ export default function Landing() {
                   background: m.done ? T.goldDim : T.card,
                   border: `2px solid ${m.done ? T.gold : T.border}`,
                   boxShadow: m.done ? `0 0 14px ${T.gold}33` : 'none',
-                  fontSize: '12px', color: m.done ? T.gold : T.textDim,
+                  fontSize: '15px', color: m.done ? T.gold : T.textDim,
                 }}>
                   {m.done ? '✦' : '·'}
                 </div>
                 <div style={{
                   padding: '14px 0', flex: 1,
-                  fontFamily: "'Cinzel', serif", fontSize: '12px',
+                  fontFamily: "'Cinzel', serif", fontSize: '15px',
                   letterSpacing: '0.12em', textAlign: 'left',
                   color: m.done ? T.text : T.textDim,
                 }}>
@@ -428,7 +428,7 @@ export default function Landing() {
                 </div>
                 {!m.done && i === milestones.findIndex(x => !x.done) && (
                   <div style={{
-                    fontFamily: "'Cinzel', serif", fontSize: '8px',
+                    fontFamily: "'Cinzel', serif", fontSize: '12px',
                     letterSpacing: '0.2em', color: T.gold,
                     border: `1px solid ${T.gold}44`, padding: '3px 8px',
                     borderRadius: '2px', background: T.goldGlow, whiteSpace: 'nowrap',
@@ -459,7 +459,7 @@ export default function Landing() {
           <div style={{ ...sectionLabel, marginBottom: '16px' }}>THE CALL</div>
           <h2 style={{ ...sectionTitle, marginBottom: '18px' }}>Be First Through the Gate</h2>
           <p style={{
-            color: T.textMuted, fontSize: '16px',
+            color: T.textMuted, fontSize: '19px',
             maxWidth: '460px', margin: '0 auto 44px', lineHeight: 1.75,
           }}>
             Early access members will be first to create characters, run campaigns, and shape
@@ -481,7 +481,7 @@ export default function Landing() {
               onClick={handleSubmit}
               disabled={status === 'loading' || status === 'success' || !email.trim()}
               style={{
-                fontFamily: "'Cinzel', serif", fontSize: '11px',
+                fontFamily: "'Cinzel', serif", fontSize: '14px',
                 letterSpacing: '0.16em', fontWeight: 700,
                 padding: '12px 22px', borderRadius: '3px', border: 'none',
                 cursor: 'pointer', whiteSpace: 'nowrap',
@@ -503,10 +503,10 @@ export default function Landing() {
         display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px',
       }}>
-        <span style={{ fontFamily: "'Cinzel', serif", fontSize: '9px', letterSpacing: '0.2em', color: T.textDim }}>
+        <span style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.2em', color: T.textDim }}>
           © 2026 VELION MYTHERA
         </span>
-        <span style={{ fontFamily: "'Cinzel', serif", fontSize: '9px', letterSpacing: '0.2em', color: T.textDim }}>
+        <span style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.2em', color: T.textDim }}>
           IN DEVELOPMENT · EARLY ACCESS COMING SOON
         </span>
       </footer>

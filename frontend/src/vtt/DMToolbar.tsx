@@ -164,11 +164,11 @@ export default function DMToolbar(props: Props) {
                     if (isSelectBtn) { setTool(activeTool === 'select' ? 'pan' : 'select'); }
                     else { setTool(tool.id as ToolMode); }
                   }}
-                  style={{ width:'52px', height:'52px', display:'flex', alignItems:'center', justifyContent:'center', background: active ? T.gold+'22' : 'transparent', border:`1px solid ${active ? T.gold : T.border}`, borderRadius:'6px', cursor:'pointer', fontSize:'26px', color: active ? T.gold : T.textMuted, transition:'all 0.12s', position:'relative' }}
+                  style={{ width:'52px', height:'52px', display:'flex', alignItems:'center', justifyContent:'center', background: active ? T.gold+'22' : 'transparent', border:`1px solid ${active ? T.gold : T.border}`, borderRadius:'6px', cursor:'pointer', fontSize: '29px', color: active ? T.gold : T.textMuted, transition:'all 0.12s', position:'relative' }}
                 >
                   {displayIcon}
                   {isSelectBtn && isPanMode && (
-                    <span style={{ position:'absolute', bottom:'1px', right:'2px', fontSize:'6px', color:T.gold, fontFamily:"'Cinzel',serif" }}>PAN</span>
+                    <span style={{ position:'absolute', bottom:'1px', right:'2px', fontSize: '12px', color:T.gold, fontFamily:"'Cinzel',serif" }}>PAN</span>
                   )}
                 </button>
               );
@@ -182,7 +182,7 @@ export default function DMToolbar(props: Props) {
 
 
           <div style={{ width:'100%', display:'flex', flexDirection:'column', alignItems:'center', gap:'6px', padding:'0 0 8px' }}>
-            <button onClick={() => setShowMapModal(true)} title="Manage maps" style={{ width:'52px', height:'52px', display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:`1px solid ${T.border}`, borderRadius:'6px', cursor:'pointer', fontSize:'26px', color:T.gold }}>🗺</button>
+            <button onClick={() => setShowMapModal(true)} title="Manage maps" style={{ width:'52px', height:'52px', display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:`1px solid ${T.border}`, borderRadius:'6px', cursor:'pointer', fontSize: '29px', color:T.gold }}>🗺</button>
           </div>
         </div>
         {showDrawTools && (
@@ -332,9 +332,9 @@ function FogLayerNavigator({
     <div style={{ width: '220px', display: 'flex', flexDirection: 'column', background: T.surface, borderRight: `1px solid ${T.border}`, flexShrink: 0 }}>
 
       {/* Header */}
-      <div style={{ padding: '10px 12px 8px', fontFamily: "'Cinzel',serif", fontSize: '9px', letterSpacing: '0.2em', color: T.textMuted, borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ padding: '10px 12px 8px', fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.2em', color: T.textMuted, borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span>FOG LAYERS</span>
-        <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: T.textDim, cursor: 'pointer', fontSize: '13px', lineHeight: 1 }}>✕</button>
+        <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: T.textDim, cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}>✕</button>
       </div>
 
       {/* Brush controls — only when a layer is selected and editing */}
@@ -342,13 +342,13 @@ function FogLayerNavigator({
         <div style={{ padding: '8px 10px', borderBottom: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {/* Active layer label + stop editing button */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontFamily: "'Cinzel',serif", fontSize: '8px', letterSpacing: '0.12em', color: T.rp }}>
+            <span style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.12em', color: T.rp }}>
               ● {fogSections.find(s => s.id === activeFogLayerId)?.name ?? 'LAYER'}
             </span>
             <button
               onClick={() => { setActiveLayer(null); setTool('select'); }}
               title="Stop editing this layer"
-              style={{ fontFamily: "'Cinzel',serif", fontSize: '8px', letterSpacing: '0.1em', padding: '2px 8px', borderRadius: '2px', cursor: 'pointer', background: 'transparent', border: `1px solid ${T.border}`, color: T.textDim }}>
+              style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.1em', padding: '2px 8px', borderRadius: '2px', cursor: 'pointer', background: 'transparent', border: `1px solid ${T.border}`, color: T.textDim }}>
               DONE
             </button>
           </div>
@@ -356,7 +356,7 @@ function FogLayerNavigator({
           <div style={{ display: 'flex', gap: '4px' }}>
             {(['paint', 'erase'] as FogBrushMode[]).map(mode => (
               <button key={mode} onClick={() => setBrushMode(mode)}
-                style={{ flex: 1, fontFamily: "'Cinzel',serif", fontSize: '9px', letterSpacing: '0.1em', padding: '5px', borderRadius: '3px', cursor: 'pointer',
+                style={{ flex: 1, fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.1em', padding: '5px', borderRadius: '3px', cursor: 'pointer',
                   background: fogBrushMode === mode ? (mode === 'paint' ? T.hp + '22' : T.green + '22') : 'transparent',
                   border: `1px solid ${fogBrushMode === mode ? (mode === 'paint' ? T.hp : T.green) : T.border}`,
                   color: fogBrushMode === mode ? (mode === 'paint' ? T.hp : T.green) : T.textMuted,
@@ -368,13 +368,13 @@ function FogLayerNavigator({
 
           {/* Brush shape */}
           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-            <span style={{ fontFamily: "'Cinzel',serif", fontSize: '7px', letterSpacing: '0.14em', color: T.textDim, marginRight: '2px' }}>SHAPE</span>
+            <span style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.14em', color: T.textDim, marginRight: '2px' }}>SHAPE</span>
             {([['○', 'circle'], ['□', 'square'], ['⊕', 'fill']] as [string, FogBrushShape][]).map(([icon, shape]) => (
               <button key={shape} onClick={() => setBrushShape(shape)}
                 style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: fogBrushShape === shape ? T.rp + '22' : 'transparent',
                   border: `1px solid ${fogBrushShape === shape ? T.rp : T.border}`,
-                  borderRadius: '3px', cursor: 'pointer', color: fogBrushShape === shape ? T.rp : T.textMuted, fontSize: '13px' }}>
+                  borderRadius: '3px', cursor: 'pointer', color: fogBrushShape === shape ? T.rp : T.textMuted, fontSize: '16px' }}>
                 {icon}
               </button>
             ))}
@@ -383,14 +383,14 @@ function FogLayerNavigator({
           {/* Brush size — hidden for fill */}
           {fogBrushShape !== 'fill' && (
             <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: '7px', letterSpacing: '0.14em', color: T.textDim, marginRight: '2px' }}>SIZE</span>
+              <span style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.14em', color: T.textDim, marginRight: '2px' }}>SIZE</span>
               {[0, 1, 2, 3].map(size => (
                 <button key={size} onClick={() => setBrush(size)}
                   style={{ flex: 1, height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: fogBrushSize === size ? T.rp + '22' : 'transparent',
                     border: `1px solid ${fogBrushSize === size ? T.rp : T.border}`,
                     borderRadius: '3px', cursor: 'pointer', color: fogBrushSize === size ? T.rp : T.textMuted,
-                    fontFamily: "'Cinzel',serif", fontSize: '8px' }}>
+                    fontFamily: "'Cinzel',serif", fontSize: '12px' }}>
                   {size === 0 ? '1' : `${size * 2 + 1}`}
                 </button>
               ))}
@@ -402,7 +402,7 @@ function FogLayerNavigator({
       {/* Layer list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {fogSections.length === 0 && (
-          <div style={{ fontSize: '11px', color: T.textDim, textAlign: 'center', padding: '16px 4px', lineHeight: 1.6 }}>
+          <div style={{ fontSize: '14px', color: T.textDim, textAlign: 'center', padding: '16px 4px', lineHeight: 1.6 }}>
             No layers yet.<br />Create one below.
           </div>
         )}
@@ -419,16 +419,16 @@ function FogLayerNavigator({
               <button
                 onClick={e => { e.stopPropagation(); toggleSection(sec); }}
                 title={sec.is_hidden ? 'Hidden — click to show' : 'Visible — click to hide'}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '13px', lineHeight: 1, color: sec.is_hidden ? T.textDim : T.green, padding: 0, flexShrink: 0 }}>
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '16px', lineHeight: 1, color: sec.is_hidden ? T.textDim : T.green, padding: 0, flexShrink: 0 }}>
                 {sec.is_hidden ? '🌑' : '👁'}
               </button>
 
               {/* Name + status */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: '10px', letterSpacing: '0.06em', color: isActive ? T.rp : sec.is_hidden ? T.textDim : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: '13px', letterSpacing: '0.06em', color: isActive ? T.rp : sec.is_hidden ? T.textDim : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {sec.name}
                 </div>
-                <div style={{ fontSize: '9px', color: T.textDim }}>
+                <div style={{ fontSize: '12px', color: T.textDim }}>
                   {isActive && activeTool === 'fog' ? '● editing' : sec.is_hidden ? 'hidden' : 'visible'}
                 </div>
               </div>
@@ -437,7 +437,7 @@ function FogLayerNavigator({
               <button
                 onClick={e => { e.stopPropagation(); deleteSection(sec.id); if (isActive) { setActiveLayer(null); setTool('select'); } }}
                 title="Delete layer"
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '11px', color: T.textDim, flexShrink: 0, padding: '2px' }}>
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '14px', color: T.textDim, flexShrink: 0, padding: '2px' }}>
                 ✕
               </button>
             </div>
@@ -452,10 +452,10 @@ function FogLayerNavigator({
           onChange={e => setNewName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && createLayer()}
           placeholder="Layer name..."
-          style={{ flex: 1, background: T.card, border: `1px solid ${T.border}`, borderRadius: '3px', padding: '6px 8px', color: T.text, fontSize: '11px', fontFamily: "'EB Garamond', serif", outline: 'none' }}
+          style={{ flex: 1, background: T.card, border: `1px solid ${T.border}`, borderRadius: '3px', padding: '6px 8px', color: T.text, fontSize: '14px', fontFamily: "'EB Garamond', serif", outline: 'none' }}
         />
         <button onClick={createLayer} disabled={creating}
-          style={{ fontFamily: "'Cinzel',serif", fontSize: '9px', letterSpacing: '0.1em', padding: '6px 10px', borderRadius: '3px', cursor: creating ? 'not-allowed' : 'pointer', background: T.gold + '22', border: `1px solid ${T.gold}`, color: T.gold, flexShrink: 0 }}>
+          style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.1em', padding: '6px 10px', borderRadius: '3px', cursor: creating ? 'not-allowed' : 'pointer', background: T.gold + '22', border: `1px solid ${T.gold}`, color: T.gold, flexShrink: 0 }}>
           + NEW
         </button>
       </div>
@@ -585,15 +585,15 @@ function MapModal({ campaignId, campaignMaps, activeMapId, sessionId, fogSection
       <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:'6px', width:'500px', maxWidth:'92vw', maxHeight:'82vh', display:'flex', flexDirection:'column', overflow:'hidden' }} onClick={e => e.stopPropagation()}>
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px', borderBottom:`1px solid ${T.border}` }}>
-          <span style={{ fontFamily:"'Cinzel',serif", fontSize:'13px', letterSpacing:'0.14em', color:T.text }}>MAP MANAGER</span>
-          <button onClick={onClose} style={{ background:'transparent', border:'none', cursor:'pointer', color:T.textMuted, fontSize:'18px', lineHeight:1 }}>x</button>
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize: '16px', letterSpacing:'0.14em', color:T.text }}>MAP MANAGER</span>
+          <button onClick={onClose} style={{ background:'transparent', border:'none', cursor:'pointer', color:T.textMuted, fontSize: '21px', lineHeight:1 }}>x</button>
         </div>
 
         <div style={{ display:'flex', borderBottom:`1px solid ${T.border}` }}>
           {([['maps','MY MAPS'],['upload','UPLOAD'],['edit','EDIT MAP'],['sections','FOG SECTIONS']] as const).map(([t, label]) => (
             <button key={t} onClick={() => t === 'edit' ? openEdit() : setTab(t)}
               disabled={t === 'edit' && !activeMapId}
-              style={{ flex:1, padding:'10px', background:'transparent', border:'none', borderBottom: tab===t ? `2px solid ${T.gold}` : '2px solid transparent', cursor: (t === 'edit' && !activeMapId) ? 'not-allowed' : 'pointer', fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.16em', color: tab===t ? T.gold : (t === 'edit' && !activeMapId) ? T.textDim : T.textMuted }}
+              style={{ flex:1, padding:'10px', background:'transparent', border:'none', borderBottom: tab===t ? `2px solid ${T.gold}` : '2px solid transparent', cursor: (t === 'edit' && !activeMapId) ? 'not-allowed' : 'pointer', fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.16em', color: tab===t ? T.gold : (t === 'edit' && !activeMapId) ? T.textDim : T.textMuted }}
             >{label}</button>
           ))}
         </div>
@@ -601,18 +601,18 @@ function MapModal({ campaignId, campaignMaps, activeMapId, sessionId, fogSection
         <div style={{ flex:1, overflowY:'auto', padding:'16px 20px' }}>
           {tab === 'maps' && (
             <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-              {maps.length === 0 && <div style={{ textAlign:'center', padding:'28px 0', color:T.textDim, fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'0.14em' }}>NO MAPS YET</div>}
+              {maps.length === 0 && <div style={{ textAlign:'center', padding:'28px 0', color:T.textDim, fontFamily:"'Cinzel',serif", fontSize: '14px', letterSpacing:'0.14em' }}>NO MAPS YET</div>}
               {maps.map(m => (
                 <div key={m.id} style={{ display:'flex', alignItems:'center', gap:'12px', background:T.surface, border:`1px solid ${m.id===activeMapId ? T.gold+'55' : T.border}`, borderRadius:'4px', padding:'10px 14px' }}>
                   <div style={{ width:'48px', height:'36px', borderRadius:'3px', background:T.bg, border:`1px solid ${T.border}`, overflow:'hidden', flexShrink:0 }}>
                     <img src={m.image_url} alt={m.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:'12px', color: m.id===activeMapId ? T.gold : T.text, letterSpacing:'0.1em', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.id===activeMapId && '▶ '}{m.name}</div>
-                    <div style={{ fontSize:'10px', color:T.textDim, marginTop:'2px' }}>{m.width_cells}x{m.height_cells} cells</div>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize: '15px', color: m.id===activeMapId ? T.gold : T.text, letterSpacing:'0.1em', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.id===activeMapId && '▶ '}{m.name}</div>
+                    <div style={{ fontSize: '13px', color:T.textDim, marginTop:'2px' }}>{m.width_cells}x{m.height_cells} cells</div>
                   </div>
                   <button onClick={() => { socket.changeMap(m.id); onClose(); }} disabled={m.id===activeMapId}
-                    style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.12em', padding:'5px 12px', borderRadius:'2px', cursor: m.id===activeMapId ? 'default' : 'pointer', background: m.id===activeMapId ? 'transparent' : T.gold+'18', border:`1px solid ${m.id===activeMapId ? T.border : T.gold}`, color: m.id===activeMapId ? T.textDim : T.gold, flexShrink:0 }}>
+                    style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.12em', padding:'5px 12px', borderRadius:'2px', cursor: m.id===activeMapId ? 'default' : 'pointer', background: m.id===activeMapId ? 'transparent' : T.gold+'18', border:`1px solid ${m.id===activeMapId ? T.border : T.gold}`, color: m.id===activeMapId ? T.textDim : T.gold, flexShrink:0 }}>
                     {m.id===activeMapId ? 'ACTIVE' : 'SET ACTIVE'}
                   </button>
                 </div>
@@ -627,31 +627,31 @@ function MapModal({ campaignId, campaignMaps, activeMapId, sessionId, fogSection
                 <div onClick={() => fileRef.current?.click()} style={{ width:'100%', minHeight:'120px', background:T.surface, border:`2px dashed ${file ? T.gold+'66' : T.border}`, borderRadius:'4px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', overflow:'hidden' }}>
                   {preview ? <img src={preview} alt="preview" style={{ maxWidth:'100%', maxHeight:'180px', objectFit:'contain' }} /> : (
                     <div style={{ textAlign:'center', padding:'20px' }}>
-                      <div style={{ fontSize:'28px', marginBottom:'8px' }}>🗺</div>
-                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.14em', color:T.textMuted }}>CLICK TO SELECT IMAGE</div>
+                      <div style={{ fontSize: '31px', marginBottom:'8px' }}>🗺</div>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.14em', color:T.textMuted }}>CLICK TO SELECT IMAGE</div>
                     </div>
                   )}
                   <input ref={fileRef} type="file" accept="image/*" onChange={onFileChange} style={{ display:'none' }} />
                 </div>
-                {file && <div style={{ fontSize:'10px', color:T.textMuted, marginTop:'4px' }}>{file.name}</div>}
+                {file && <div style={{ fontSize: '13px', color:T.textMuted, marginTop:'4px' }}>{file.name}</div>}
               </FieldLabel>
               <FieldLabel label="DISPLAY SIZE (px)">
                 <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
                   <input type="number" value={gridSize} onChange={e => setGridSize(parseInt(e.target.value)||70)} min={20} max={200} style={{ ...inputSt, width:'70px', flex:'none' }} />
-                  <span style={{ fontSize:'10px', color:T.textDim }}>pixels per square</span>
+                  <span style={{ fontSize: '13px', color:T.textDim }}>pixels per square</span>
                 </div>
-                {imgDims && <div style={{ fontSize:'10px', color:T.green, marginTop:'4px' }}>Image: {Math.ceil(imgDims.w/gridSize)}x{Math.ceil(imgDims.h/gridSize)} cells</div>}
+                {imgDims && <div style={{ fontSize: '13px', color:T.green, marginTop:'4px' }}>Image: {Math.ceil(imgDims.w/gridSize)}x{Math.ceil(imgDims.h/gridSize)} cells</div>}
               </FieldLabel>
               <FieldLabel label="FEET PER SQUARE">
                 <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
                   <input type="number" value={feetPerCell} onChange={e => setFeetPerCell(parseInt(e.target.value)||5)} min={1} max={500} style={{ ...inputSt, width:'70px', flex:'none' }} />
-                  <span style={{ fontSize:'10px', color:T.textDim }}>ft — ruler + AoE use this</span>
+                  <span style={{ fontSize: '13px', color:T.textDim }}>ft — ruler + AoE use this</span>
                 </div>
               </FieldLabel>
-              {progress && <div style={{ fontSize:'11px', color:T.rp }}>{progress}</div>}
-              {error    && <div style={{ fontSize:'11px', color:T.hp }}>{error}</div>}
+              {progress && <div style={{ fontSize: '14px', color:T.rp }}>{progress}</div>}
+              {error    && <div style={{ fontSize: '14px', color:T.hp }}>{error}</div>}
               <button onClick={uploadMap} disabled={uploading || !file || !mapName.trim()}
-                style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'0.14em', padding:'11px', borderRadius:'3px', cursor: uploading || !file || !mapName.trim() ? 'not-allowed' : 'pointer', background: !uploading && file && mapName.trim() ? T.gold+'22' : 'transparent', border:`1px solid ${!uploading && file && mapName.trim() ? T.gold : T.border}`, color: !uploading && file && mapName.trim() ? T.gold : T.textDim }}>
+                style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', letterSpacing:'0.14em', padding:'11px', borderRadius:'3px', cursor: uploading || !file || !mapName.trim() ? 'not-allowed' : 'pointer', background: !uploading && file && mapName.trim() ? T.gold+'22' : 'transparent', border:`1px solid ${!uploading && file && mapName.trim() ? T.gold : T.border}`, color: !uploading && file && mapName.trim() ? T.gold : T.textDim }}>
                 {uploading ? progress || 'UPLOADING...' : 'UPLOAD MAP'}
               </button>
             </div>
@@ -659,7 +659,7 @@ function MapModal({ campaignId, campaignMaps, activeMapId, sessionId, fogSection
 
           {tab === 'edit' && activeMap && (
             <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
-              <div style={{ fontSize:'10px', color:T.textMuted, background:T.surface, borderRadius:'3px', padding:'8px 12px', border:`1px solid ${T.border}` }}>
+              <div style={{ fontSize: '13px', color:T.textMuted, background:T.surface, borderRadius:'3px', padding:'8px 12px', border:`1px solid ${T.border}` }}>
                 Editing: <span style={{ color:T.gold, fontFamily:"'Cinzel',serif" }}>{activeMap.name}</span>
               </div>
               <FieldLabel label="MAP NAME"><input value={editName} onChange={e => setEditName(e.target.value)} style={inputSt} /></FieldLabel>
@@ -668,25 +668,25 @@ function MapModal({ campaignId, campaignMaps, activeMapId, sessionId, fogSection
                   <input type="number" value={editWidthCells} onChange={e => setEditWidthCells(parseInt(e.target.value)||1)} min={1} max={200} style={{ ...inputSt, width:'60px', flex:'none' }} placeholder="W" />
                   <span style={{ color:T.textDim }}>x</span>
                   <input type="number" value={editHeightCells} onChange={e => setEditHeightCells(parseInt(e.target.value)||1)} min={1} max={200} style={{ ...inputSt, width:'60px', flex:'none' }} placeholder="H" />
-                  <span style={{ fontSize:'10px', color:T.textDim }}>squares</span>
+                  <span style={{ fontSize: '13px', color:T.textDim }}>squares</span>
                 </div>
               </FieldLabel>
               <FieldLabel label="FEET PER SQUARE">
                 <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
                   <input type="number" value={editFeetPerCell} onChange={e => setEditFeetPerCell(parseInt(e.target.value)||5)} min={1} max={500} style={{ ...inputSt, width:'70px', flex:'none' }} />
-                  <span style={{ fontSize:'10px', color:T.textDim }}>ft / square</span>
+                  <span style={{ fontSize: '13px', color:T.textDim }}>ft / square</span>
                 </div>
               </FieldLabel>
               <FieldLabel label="DISPLAY SIZE (px)">
                 <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
                   <input type="number" value={editGridSize} onChange={e => setEditGridSize(parseInt(e.target.value)||70)} min={20} max={200} style={{ ...inputSt, width:'70px', flex:'none' }} />
-                  <span style={{ fontSize:'10px', color:T.textDim }}>pixels per square</span>
+                  <span style={{ fontSize: '13px', color:T.textDim }}>pixels per square</span>
                 </div>
               </FieldLabel>
-              {error && <div style={{ fontSize:'11px', color:T.hp }}>{error}</div>}
+              {error && <div style={{ fontSize: '14px', color:T.hp }}>{error}</div>}
               <div style={{ display:'flex', gap:'8px' }}>
-                <button onClick={saveEdit} disabled={editSaving} style={{ flex:2, fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'0.14em', padding:'11px', borderRadius:'3px', cursor: editSaving ? 'not-allowed' : 'pointer', background:T.gold+'22', border:`1px solid ${T.gold}`, color:T.gold }}>{editSaving ? 'SAVING...' : 'SAVE CHANGES'}</button>
-                <button onClick={() => setTab('maps')} style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'0.14em', padding:'11px', borderRadius:'3px', cursor:'pointer', background:'transparent', border:`1px solid ${T.border}`, color:T.textMuted }}>CANCEL</button>
+                <button onClick={saveEdit} disabled={editSaving} style={{ flex:2, fontFamily:"'Cinzel',serif", fontSize: '14px', letterSpacing:'0.14em', padding:'11px', borderRadius:'3px', cursor: editSaving ? 'not-allowed' : 'pointer', background:T.gold+'22', border:`1px solid ${T.gold}`, color:T.gold }}>{editSaving ? 'SAVING...' : 'SAVE CHANGES'}</button>
+                <button onClick={() => setTab('maps')} style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize: '14px', letterSpacing:'0.14em', padding:'11px', borderRadius:'3px', cursor:'pointer', background:'transparent', border:`1px solid ${T.border}`, color:T.textMuted }}>CANCEL</button>
               </div>
             </div>
           )}
@@ -711,20 +711,20 @@ function FogSectionsPanel({ sections, sessionId, dispatch, toggleSection, delete
 }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-      <div style={{ fontSize:'10px', color:T.textMuted, lineHeight:'1.5' }}>
+      <div style={{ fontSize: '13px', color:T.textMuted, lineHeight:'1.5' }}>
         Manage fog layers here. Use the <span style={{ color:T.rp }}>FOG</span> toolbar button to paint on a layer in the session.
       </div>
-      {sections.length === 0 && <div style={{ fontSize:'10px', color:T.textDim, textAlign:'center', padding:'12px 0' }}>No layers defined yet.</div>}
+      {sections.length === 0 && <div style={{ fontSize: '13px', color:T.textDim, textAlign:'center', padding:'12px 0' }}>No layers defined yet.</div>}
       {sections.map(sec => (
         <div key={sec.id} style={{ display:'flex', alignItems:'center', gap:'8px', background:T.surface, borderRadius:'4px', padding:'8px 10px', border:`1px solid ${sec.is_hidden ? T.hp+'44' : T.border}` }}>
-          <button onClick={() => toggleSection(sec)} title={sec.is_hidden ? 'Click to reveal' : 'Click to hide'} style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:'14px', lineHeight:1, color: sec.is_hidden ? T.hp : T.green }}>
+          <button onClick={() => toggleSection(sec)} title={sec.is_hidden ? 'Click to reveal' : 'Click to hide'} style={{ background:'transparent', border:'none', cursor:'pointer', fontSize: '17px', lineHeight:1, color: sec.is_hidden ? T.hp : T.green }}>
             {sec.is_hidden ? '🌑' : '👁'}
           </button>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', color: sec.is_hidden ? T.hp : T.text, letterSpacing:'0.08em' }}>{sec.name}</div>
-            <div style={{ fontSize:'9px', color:T.textDim }}>{sec.is_hidden ? 'HIDDEN' : 'VISIBLE'}</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', color: sec.is_hidden ? T.hp : T.text, letterSpacing:'0.08em' }}>{sec.name}</div>
+            <div style={{ fontSize: '12px', color:T.textDim }}>{sec.is_hidden ? 'HIDDEN' : 'VISIBLE'}</div>
           </div>
-          <button onClick={() => deleteSection(sec.id)} title="Delete layer" style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:'12px', color:T.textDim }}>x</button>
+          <button onClick={() => deleteSection(sec.id)} title="Delete layer" style={{ background:'transparent', border:'none', cursor:'pointer', fontSize: '15px', color:T.textDim }}>x</button>
         </div>
       ))}
     </div>
@@ -798,7 +798,7 @@ function TokenPlaceModal({ sessionId, socket, dispatch, onClose }: {
 
   const sortBtn = (key: SortKey, lbl: string) => (
     <button onClick={() => toggleSort(key)}
-      style={{ background: sortKey===key ? T.gold+'18' : 'transparent', border:`1px solid ${sortKey===key ? T.gold : T.border}`, borderRadius:'2px', padding:'3px 8px', cursor:'pointer', color: sortKey===key ? T.gold : T.textMuted, fontFamily:"'Cinzel',serif", fontSize:'8px', letterSpacing:'0.12em', display:'flex', alignItems:'center', gap:'3px' }}>
+      style={{ background: sortKey===key ? T.gold+'18' : 'transparent', border:`1px solid ${sortKey===key ? T.gold : T.border}`, borderRadius:'2px', padding:'3px 8px', cursor:'pointer', color: sortKey===key ? T.gold : T.textMuted, fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.12em', display:'flex', alignItems:'center', gap:'3px' }}>
       {lbl} {sortKey===key ? (sortDir==='asc' ? 'up' : 'dn') : ''}
     </button>
   );
@@ -808,23 +808,23 @@ function TokenPlaceModal({ sessionId, socket, dispatch, onClose }: {
       <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:'6px', width:'520px', maxWidth:'92vw', height:'78vh', display:'flex', flexDirection:'column', overflow:'hidden' }} onClick={e => e.stopPropagation()}>
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', borderBottom:`1px solid ${T.border}`, flexShrink:0 }}>
-          <span style={{ fontFamily:"'Cinzel',serif", fontSize:'13px', letterSpacing:'0.14em', color:T.text }}>PLACE TOKEN</span>
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize: '16px', letterSpacing:'0.14em', color:T.text }}>PLACE TOKEN</span>
           <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-            <span style={{ fontSize:'10px', color:T.textDim }}>Roll visibility:</span>
+            <span style={{ fontSize: '13px', color:T.textDim }}>Roll visibility:</span>
             {(['public','dm'] as const).map(v => (
               <button key={v} onClick={() => setRollVis(v)}
-                style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', letterSpacing:'0.1em', padding:'2px 8px', borderRadius:'2px', cursor:'pointer', background: rollVis===v ? T.gold+'18' : 'transparent', border:`1px solid ${rollVis===v ? T.gold : T.border}`, color: rollVis===v ? T.gold : T.textDim }}>
+                style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.1em', padding:'2px 8px', borderRadius:'2px', cursor:'pointer', background: rollVis===v ? T.gold+'18' : 'transparent', border:`1px solid ${rollVis===v ? T.gold : T.border}`, color: rollVis===v ? T.gold : T.textDim }}>
                 {v.toUpperCase()}
               </button>
             ))}
-            <button onClick={onClose} style={{ background:'transparent', border:'none', cursor:'pointer', color:T.textMuted, fontSize:'18px', lineHeight:1, marginLeft:'4px' }}>x</button>
+            <button onClick={onClose} style={{ background:'transparent', border:'none', cursor:'pointer', color:T.textMuted, fontSize: '21px', lineHeight:1, marginLeft:'4px' }}>x</button>
           </div>
         </div>
 
         <div style={{ padding:'10px 16px', borderBottom:`1px solid ${T.border}`, flexShrink:0, display:'flex', flexDirection:'column', gap:'8px' }}>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search enemies..." autoFocus style={inputSt} />
           <div style={{ display:'flex', gap:'4px', alignItems:'center' }}>
-            <span style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', letterSpacing:'0.14em', color:T.textDim, marginRight:'4px' }}>SORT:</span>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em', color:T.textDim, marginRight:'4px' }}>SORT:</span>
             {sortBtn('name', 'NAME')}
             {sortBtn('classification', 'CLASS')}
             {sortBtn('hp', 'HP')}
@@ -832,7 +832,7 @@ function TokenPlaceModal({ sessionId, socket, dispatch, onClose }: {
         </div>
 
         <div style={{ flex:1, overflowY:'auto', padding:'8px 12px', display:'flex', flexDirection:'column', gap:'4px' }}>
-          {enemies.length === 0 && <div style={{ textAlign:'center', padding:'24px 0', color:T.textDim, fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'0.14em' }}>NO ENEMIES FOUND</div>}
+          {enemies.length === 0 && <div style={{ textAlign:'center', padding:'24px 0', color:T.textDim, fontFamily:"'Cinzel',serif", fontSize: '14px', letterSpacing:'0.14em' }}>NO ENEMIES FOUND</div>}
           {enemies.map(enemy => {
             const isExpanded = expanded === enemy.id;
             const isPlacing  = placing?.id === enemy.id;
@@ -841,14 +841,14 @@ function TokenPlaceModal({ sessionId, socket, dispatch, onClose }: {
                 <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 12px' }}>
                   <div style={{ flex:1, cursor:'pointer', minWidth:0 }} onClick={() => setExpanded(isExpanded ? null : enemy.id)}>
                     <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                      <span style={{ fontFamily:"'Cinzel',serif", fontSize:'12px', color:T.text, letterSpacing:'0.08em' }}>{enemy.name}</span>
-                      <span style={{ fontSize:'9px', color: CLASS_COLOR[enemy.classification]??T.textMuted, textTransform:'uppercase', letterSpacing:'0.12em' }}>{enemy.classification}</span>
-                      <span style={{ fontSize:'9px', color:T.textDim, marginLeft:'auto' }}>HP {enemy.hp}</span>
+                      <span style={{ fontFamily:"'Cinzel',serif", fontSize: '15px', color:T.text, letterSpacing:'0.08em' }}>{enemy.name}</span>
+                      <span style={{ fontSize: '12px', color: CLASS_COLOR[enemy.classification]??T.textMuted, textTransform:'uppercase', letterSpacing:'0.12em' }}>{enemy.classification}</span>
+                      <span style={{ fontSize: '12px', color:T.textDim, marginLeft:'auto' }}>HP {enemy.hp}</span>
                     </div>
                   </div>
-                  <span style={{ fontSize:'10px', color:T.textDim, cursor:'pointer', flexShrink:0 }} onClick={() => setExpanded(isExpanded ? null : enemy.id)}>{isExpanded ? 'v' : '>'}</span>
+                  <span style={{ fontSize: '13px', color:T.textDim, cursor:'pointer', flexShrink:0 }} onClick={() => setExpanded(isExpanded ? null : enemy.id)}>{isExpanded ? 'v' : '>'}</span>
                   <button onClick={e => { e.stopPropagation(); setPlacing(enemy); setLabel(enemy.name); }}
-                    style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.1em', padding:'4px 10px', borderRadius:'2px', cursor:'pointer', background:T.gold+'18', border:`1px solid ${T.gold}44`, color:T.gold, flexShrink:0 }}>
+                    style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.1em', padding:'4px 10px', borderRadius:'2px', cursor:'pointer', background:T.gold+'18', border:`1px solid ${T.gold}44`, color:T.gold, flexShrink:0 }}>
                     + ADD
                   </button>
                 </div>
@@ -858,31 +858,31 @@ function TokenPlaceModal({ sessionId, socket, dispatch, onClose }: {
                     <div style={{ display:'flex', gap:'12px', padding:'8px 0 6px', flexWrap:'wrap' }}>
                       {([['POW',enemy.power],['AGI',enemy.agility],['FOC',enemy.focus],['PRE',enemy.presence]] as [string,number][]).map(([k,v]) => (
                         <div key={k} style={{ textAlign:'center' }}>
-                          <div style={{ fontSize:'8px', color:T.textDim, fontFamily:"'Cinzel',serif", letterSpacing:'0.1em' }}>{k}</div>
-                          <div style={{ fontSize:'13px', color:T.text, fontWeight:700 }}>{v}</div>
-                          <div style={{ fontSize:'9px', color:T.textMuted }}>{v>=10?'+':''}{Math.floor((v-10)/2)}</div>
+                          <div style={{ fontSize: '12px', color:T.textDim, fontFamily:"'Cinzel',serif", letterSpacing:'0.1em' }}>{k}</div>
+                          <div style={{ fontSize: '16px', color:T.text, fontWeight:700 }}>{v}</div>
+                          <div style={{ fontSize: '12px', color:T.textMuted }}>{v>=10?'+':''}{Math.floor((v-10)/2)}</div>
                         </div>
                       ))}
                       <div style={{ textAlign:'center' }}>
-                        <div style={{ fontSize:'8px', color:T.textDim, fontFamily:"'Cinzel',serif", letterSpacing:'0.1em' }}>HP</div>
-                        <div style={{ fontSize:'13px', color:T.hp, fontWeight:700 }}>{enemy.hp}</div>
+                        <div style={{ fontSize: '12px', color:T.textDim, fontFamily:"'Cinzel',serif", letterSpacing:'0.1em' }}>HP</div>
+                        <div style={{ fontSize: '16px', color:T.hp, fontWeight:700 }}>{enemy.hp}</div>
                       </div>
                       <div style={{ textAlign:'center' }}>
-                        <div style={{ fontSize:'8px', color:T.textDim, fontFamily:"'Cinzel',serif", letterSpacing:'0.1em' }}>BASE RP</div>
-                        <div style={{ fontSize:'13px', color:T.rp, fontWeight:700 }}>{enemy.base_rp}</div>
+                        <div style={{ fontSize: '12px', color:T.textDim, fontFamily:"'Cinzel',serif", letterSpacing:'0.1em' }}>BASE RP</div>
+                        <div style={{ fontSize: '16px', color:T.rp, fontWeight:700 }}>{enemy.base_rp}</div>
                       </div>
                     </div>
                     {enemy.attacks.length > 0 && (
                       <>
-                        <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', letterSpacing:'0.14em', color:T.textDim, margin:'6px 0 4px' }}>ATTACKS</div>
+                        <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em', color:T.textDim, margin:'6px 0 4px' }}>ATTACKS</div>
                         {enemy.attacks.map((atk, i) => (
                           <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:T.card, borderRadius:'2px', padding:'5px 8px', marginBottom:'3px' }}>
                             <div>
-                              <span style={{ fontSize:'11px', color:T.text }}>{atk.name}</span>
-                              <span style={{ fontSize:'9px', color:T.textMuted, marginLeft:'8px' }}>{atk.damage_dice} {atk.damage_type}</span>
+                              <span style={{ fontSize: '14px', color:T.text }}>{atk.name}</span>
+                              <span style={{ fontSize: '12px', color:T.textMuted, marginLeft:'8px' }}>{atk.damage_dice} {atk.damage_type}</span>
                             </div>
                             <button onClick={() => rollAttack(enemy, atk.name, atk.damage_dice, atk.damage_type)}
-                              style={{ background:T.hp+'18', border:`1px solid ${T.hp}44`, borderRadius:'2px', padding:'2px 8px', cursor:'pointer', color:T.hp, fontFamily:"'Cinzel',serif", fontSize:'8px', letterSpacing:'0.1em' }}>
+                              style={{ background:T.hp+'18', border:`1px solid ${T.hp}44`, borderRadius:'2px', padding:'2px 8px', cursor:'pointer', color:T.hp, fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.1em' }}>
                               ROLL
                             </button>
                           </div>
@@ -891,23 +891,23 @@ function TokenPlaceModal({ sessionId, socket, dispatch, onClose }: {
                     )}
                     {enemy.traits.length > 0 && (
                       <>
-                        <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', letterSpacing:'0.14em', color:T.textDim, margin:'8px 0 4px' }}>TRAITS</div>
+                        <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em', color:T.textDim, margin:'8px 0 4px' }}>TRAITS</div>
                         {enemy.traits.map((trait, i) => (
-                          <div key={i} style={{ fontSize:'10px', color:T.textMuted, marginBottom:'4px', lineHeight:'1.5' }}>
+                          <div key={i} style={{ fontSize: '13px', color:T.textMuted, marginBottom:'4px', lineHeight:'1.5' }}>
                             <span style={{ color:T.text, fontFamily:"'Cinzel',serif" }}>{trait.name}:</span> {trait.description}
                           </div>
                         ))}
                       </>
                     )}
-                    {enemy.description && <div style={{ fontSize:'10px', color:T.textDim, marginTop:'8px', lineHeight:'1.6', fontStyle:'italic' }}>{enemy.description}</div>}
+                    {enemy.description && <div style={{ fontSize: '13px', color:T.textDim, marginTop:'8px', lineHeight:'1.6', fontStyle:'italic' }}>{enemy.description}</div>}
                   </div>
                 )}
 
                 {isPlacing && (
                   <div style={{ padding:'8px 12px', background:T.card, borderTop:`1px solid ${T.border}`, display:'flex', gap:'8px', alignItems:'center' }}>
                     <input value={label} onChange={e => setLabel(e.target.value)} autoFocus onKeyDown={e => e.key==='Enter' && placeToken(enemy)} placeholder="Label (e.g. Goblin A)" style={{ ...inputSt, flex:1 }} />
-                    <button onClick={() => { setPlacing(null); setLabel(''); }} style={{ background:'transparent', border:`1px solid ${T.border}`, borderRadius:'2px', padding:'6px 10px', cursor:'pointer', color:T.textMuted, fontFamily:"'Cinzel',serif", fontSize:'9px' }}>CANCEL</button>
-                    <button onClick={() => placeToken(enemy)} disabled={submitting} style={{ background:T.gold+'22', border:`1px solid ${T.gold}`, borderRadius:'2px', padding:'6px 14px', cursor: submitting ? 'not-allowed' : 'pointer', color:T.gold, fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.1em' }}>{submitting ? 'PLACING...' : 'PLACE'}</button>
+                    <button onClick={() => { setPlacing(null); setLabel(''); }} style={{ background:'transparent', border:`1px solid ${T.border}`, borderRadius:'2px', padding:'6px 10px', cursor:'pointer', color:T.textMuted, fontFamily:"'Cinzel',serif", fontSize: '12px' }}>CANCEL</button>
+                    <button onClick={() => placeToken(enemy)} disabled={submitting} style={{ background:T.gold+'22', border:`1px solid ${T.gold}`, borderRadius:'2px', padding:'6px 14px', cursor: submitting ? 'not-allowed' : 'pointer', color:T.gold, fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.1em' }}>{submitting ? 'PLACING...' : 'PLACE'}</button>
                   </div>
                 )}
               </div>
@@ -924,7 +924,7 @@ function TokenPlaceModal({ sessionId, socket, dispatch, onClose }: {
 function FieldLabel({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', letterSpacing:'0.18em', color:T.textDim, marginBottom:'6px' }}>{label}</div>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.18em', color:T.textDim, marginBottom:'6px' }}>{label}</div>
       {children}
     </div>
   );
@@ -932,6 +932,6 @@ function FieldLabel({ label, children }: { label: string; children: React.ReactN
 
 const inputSt: React.CSSProperties = {
   background: T.surface, border: `1px solid ${T.border}`, borderRadius: '2px',
-  padding: '7px 10px', color: T.text, fontSize: '12px', outline: 'none',
+  padding: '7px 10px', color: T.text, fontSize: '15px', outline: 'none',
   width: '100%', boxSizing: 'border-box',
 };

@@ -53,7 +53,7 @@ export default function Login() {
 
   const inp = {
     background: T.surface, border: `1px solid ${T.border}`, color: T.text,
-    borderRadius: '3px', padding: '10px 14px', fontSize: '15px',
+    borderRadius: '3px', padding: '10px 14px', fontSize: '18px',
     fontFamily: "'EB Garamond', serif", width: '100%', outline: 'none',
   };
 
@@ -76,10 +76,10 @@ export default function Login() {
       }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.3em', color: T.textMuted, marginBottom: '10px' }}>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.3em', color: T.textMuted, marginBottom: '10px' }}>
             VELION MYTHERA
           </div>
-          <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: '22px', color: T.gold, letterSpacing: '0.14em', fontWeight: '600' }}>
+          <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: '25px', color: T.gold, letterSpacing: '0.14em', fontWeight: '600' }}>
             ENTER THE WORLD
           </h1>
           <SocialAuthIconRow disabled={loading} />
@@ -89,7 +89,7 @@ export default function Login() {
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '18px' }}>
-            <label style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.14em', color: T.textMuted, display: 'block', marginBottom: '6px' }}>
+            <label style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.14em', color: T.textMuted, display: 'block', marginBottom: '6px' }}>
               EMAIL
             </label>
             <input
@@ -103,7 +103,7 @@ export default function Login() {
           </div>
 
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.14em', color: T.textMuted, display: 'block', marginBottom: '6px' }}>
+            <label style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.14em', color: T.textMuted, display: 'block', marginBottom: '6px' }}>
               PASSWORD
             </label>
             <input
@@ -119,7 +119,7 @@ export default function Login() {
           {error && (
             <div style={{
               color: T.danger, background: '#1a0604', border: `1px solid ${T.danger}44`,
-              borderRadius: '3px', padding: '10px 14px', fontSize: '13px',
+              borderRadius: '3px', padding: '10px 14px', fontSize: '16px',
               fontFamily: "'EB Garamond', serif", marginBottom: '16px',
             }}>
               {error}
@@ -135,7 +135,7 @@ export default function Login() {
               border:        'none',
               color:         '#06070c',
               fontFamily:    "'Cinzel', serif",
-              fontSize:      '12px',
+              fontSize: '15px',
               letterSpacing: '0.18em',
               padding:       '13px',
               borderRadius:  '3px',
@@ -149,12 +149,12 @@ export default function Login() {
         </form>
 
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
-          <span style={{ color: T.textMuted, fontSize: '14px', fontFamily: "'EB Garamond', serif" }}>
+          <span style={{ color: T.textMuted, fontSize: '17px', fontFamily: "'EB Garamond', serif" }}>
             No account?{' '}
           </span>
           <Link to="/register" style={{
             color: T.gold, fontFamily: "'Cinzel', serif",
-            fontSize: '11px', letterSpacing: '0.1em', textDecoration: 'none',
+            fontSize: '14px', letterSpacing: '0.1em', textDecoration: 'none',
           }}>
             REGISTER
           </Link>

@@ -27,7 +27,7 @@ export default function ProtectedRoute({ children, requireDM = false }: Props) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         height: '100vh', background: '#06070c',
         fontFamily: "'Cinzel', serif", color: '#c4922a',
-        fontSize: '13px', letterSpacing: '0.2em',
+        fontSize: '16px', letterSpacing: '0.2em',
       }}>
         VELION MYTHERA
       </div>

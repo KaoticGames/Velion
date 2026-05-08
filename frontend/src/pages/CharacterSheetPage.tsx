@@ -79,7 +79,7 @@ export default function CharacterSheetPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         height: 'calc(100vh - 52px)', background: '#06070c',
         fontFamily: "'Cinzel', serif", color: '#c4922a',
-        fontSize: '11px', letterSpacing: '0.2em',
+        fontSize: '14px', letterSpacing: '0.2em',
       }}>
         LOADING CHARACTER...
       </div>
@@ -110,14 +110,14 @@ export default function CharacterSheetPage() {
           border:     '1px solid #1c2030',
           borderRadius: '4px',
           padding:    '10px 14px',
-          fontSize:   '11px',
+          fontSize: '14px',
           fontFamily: "'Cinzel', serif",
           color:      '#706858',
           letterSpacing: '0.08em',
           zIndex:     9999,
           maxWidth:   '240px',
         }}>
-          <div style={{ color: '#c4922a', marginBottom: '6px', fontSize: '10px' }}>DEV · SHEET STATUS</div>
+          <div style={{ color: '#c4922a', marginBottom: '6px', fontSize: '13px' }}>DEV · SHEET STATUS</div>
           <div>Character ID: <span style={{ color: '#e4d8c0' }}>{id ?? 'none (local)'}</span></div>
           <div>Session: <span style={{ color: '#e4d8c0' }}>{sessionId ?? 'standalone'}</span></div>
           <div>API data: <span style={{ color: character ? '#3dba6a' : '#e05050' }}>{character ? 'loaded' : 'not connected'}</span></div>

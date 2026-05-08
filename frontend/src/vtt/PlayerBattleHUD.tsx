@@ -110,7 +110,7 @@ const hudBtn: React.CSSProperties = {
   background: `${T.gold}14`,
   color: T.gold,
   fontFamily: "'Cinzel',serif",
-  fontSize: '11px',
+  fontSize: '14px',
   letterSpacing: '0.12em',
   cursor: 'pointer',
   fontWeight: 600,
@@ -119,7 +119,7 @@ const hudBtn: React.CSSProperties = {
 const subBtn: React.CSSProperties = {
   ...hudBtn,
   padding: '8px 6px',
-  fontSize: '10px',
+  fontSize: '13px',
 };
 
 const quickInputStyle: React.CSSProperties = {
@@ -129,7 +129,7 @@ const quickInputStyle: React.CSSProperties = {
   borderRadius: '4px',
   padding: '6px 8px',
   color: T.text,
-  fontSize: '12px',
+  fontSize: '15px',
   outline: 'none',
 };
 
@@ -508,7 +508,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '12px',
+              fontSize: '15px',
               color: T.rp,
               fontWeight: 700,
               flexShrink: 0,
@@ -520,7 +520,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
             <div
               style={{
                 fontFamily: "'Cinzel',serif",
-                fontSize: '13px',
+                fontSize: '16px',
                 letterSpacing: '0.1em',
                 color: T.text,
                 overflow: 'hidden',
@@ -530,19 +530,19 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
             >
               {token.label ?? character?.name ?? 'Hero'}
             </div>
-            <div style={{ fontSize: '9px', color: T.textDim, letterSpacing: '0.14em', marginTop: '2px' }}>
+            <div style={{ fontSize: '12px', color: T.textDim, letterSpacing: '0.14em', marginTop: '2px' }}>
               BATTLE · {visLabel}
             </div>
           </div>
           {rpReady && character && (
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontSize: '10px', color: T.textMuted }}>RP</div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: T.rp, lineHeight: 1.1 }}>
+              <div style={{ fontSize: '13px', color: T.textMuted }}>RP</div>
+              <div style={{ fontSize: '21px', fontWeight: 700, color: T.rp, lineHeight: 1.1 }}>
                 {curRP}
-                <span style={{ fontSize: '12px', color: `${T.rp}66`, fontWeight: 500 }}> / {effBaseRP}</span>
+                <span style={{ fontSize: '15px', color: `${T.rp}66`, fontWeight: 500 }}> / {effBaseRP}</span>
               </div>
               {bankRP > 0 && (
-                <div style={{ fontSize: '9px', color: banking ? T.rp : T.textDim, marginTop: '2px' }}>
+                <div style={{ fontSize: '12px', color: banking ? T.rp : T.textDim, marginTop: '2px' }}>
                   Bank {bankRP}
                   {banking ? ' · locked' : ''}
                 </div>
@@ -552,7 +552,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
         </div>
 
         {characterLoading && (
-          <div style={{ padding: '16px', fontSize: '12px', color: T.textDim, textAlign: 'center' }}>Loading…</div>
+          <div style={{ padding: '16px', fontSize: '15px', color: T.textDim, textAlign: 'center' }}>Loading…</div>
         )}
 
         {!characterLoading && character && (
@@ -586,7 +586,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                     border: 'none',
                     color: T.textMuted,
                     cursor: 'pointer',
-                    fontSize: '11px',
+                    fontSize: '14px',
                     marginBottom: '8px',
                     fontFamily: "'Cinzel',serif",
                     letterSpacing: '0.1em',
@@ -594,9 +594,9 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                 >
                   ← BACK
                 </button>
-                <div style={{ fontSize: '9px', color: T.textMuted, letterSpacing: '0.1em', marginBottom: '6px' }}>WEAPONS</div>
+                <div style={{ fontSize: '12px', color: T.textMuted, letterSpacing: '0.1em', marginBottom: '6px' }}>WEAPONS</div>
                 {weaponAttacks.length === 0 ? (
-                  <div style={{ fontSize: '11px', color: T.textDim, marginBottom: '10px' }}>No equipped weapons</div>
+                  <div style={{ fontSize: '14px', color: T.textDim, marginBottom: '10px' }}>No equipped weapons</div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
                     {weaponAttacks.map((w) => (
@@ -606,9 +606,9 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                     ))}
                   </div>
                 )}
-                <div style={{ fontSize: '9px', color: T.textMuted, letterSpacing: '0.1em', marginBottom: '6px' }}>SPELL GEMS</div>
+                <div style={{ fontSize: '12px', color: T.textMuted, letterSpacing: '0.1em', marginBottom: '6px' }}>SPELL GEMS</div>
                 {spellAttacks.length === 0 ? (
-                  <div style={{ fontSize: '11px', color: T.textDim }}>No equipped gems</div>
+                  <div style={{ fontSize: '14px', color: T.textDim }}>No equipped gems</div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {spellAttacks.map((s) => (
@@ -632,7 +632,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                     border: 'none',
                     color: T.textMuted,
                     cursor: 'pointer',
-                    fontSize: '11px',
+                    fontSize: '14px',
                     marginBottom: '8px',
                     fontFamily: "'Cinzel',serif",
                     letterSpacing: '0.1em',
@@ -677,7 +677,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                     border: 'none',
                     color: T.textMuted,
                     cursor: 'pointer',
-                    fontSize: '11px',
+                    fontSize: '14px',
                     marginBottom: '8px',
                     fontFamily: "'Cinzel',serif",
                     letterSpacing: '0.1em',
@@ -685,11 +685,11 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                 >
                   ← BACK
                 </button>
-                <div style={{ fontSize: '9px', color: T.textMuted, letterSpacing: '0.1em', marginBottom: '8px' }}>
+                <div style={{ fontSize: '12px', color: T.textMuted, letterSpacing: '0.1em', marginBottom: '8px' }}>
                   GEAR & CONSUMABLES
                 </div>
                 {generalInventory.length === 0 ? (
-                  <div style={{ fontSize: '11px', color: T.textDim }}>No general items in inventory</div>
+                  <div style={{ fontSize: '14px', color: T.textDim }}>No general items in inventory</div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {generalInventory.map((row) => {
@@ -713,13 +713,13 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                           }}
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '12px', color: T.text, fontWeight: 600 }}>{name}</div>
-                            <div style={{ fontSize: '10px', color: T.textDim }}>
+                            <div style={{ fontSize: '15px', color: T.text, fontWeight: 600 }}>{name}</div>
+                            <div style={{ fontSize: '13px', color: T.textDim }}>
                               ×{Number(row.quantity) || 1}
                               {cat !== 'misc' ? ` · ${cat}` : ''}
                             </div>
                             {effect ? (
-                              <div style={{ fontSize: '10px', color: T.textMuted, marginTop: '4px', lineHeight: 1.35 }}>
+                              <div style={{ fontSize: '13px', color: T.textMuted, marginTop: '4px', lineHeight: 1.35 }}>
                                 {effect}
                               </div>
                             ) : null}
@@ -750,7 +750,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                     border: 'none',
                     color: T.textMuted,
                     cursor: 'pointer',
-                    fontSize: '11px',
+                    fontSize: '14px',
                     marginBottom: '8px',
                     fontFamily: "'Cinzel',serif",
                     letterSpacing: '0.1em',
@@ -803,7 +803,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                     END TURN
                   </button>
                 </div>
-                <p style={{ margin: 0, fontSize: '10px', color: T.textDim, lineHeight: 1.45 }}>
+                <p style={{ margin: 0, fontSize: '13px', color: T.textDim, lineHeight: 1.45 }}>
                   <strong style={{ color: T.text }}>End Turn</strong> adds banked RP to your pool. <strong style={{ color: T.text }}>Start Turn</strong> then locks Bank until that round ends; any of that bonus RP still above your base at the next <strong style={{ color: T.text }}>End Turn</strong> is removed, and Bank unlocks for the following round.
                 </p>
               </div>
@@ -812,14 +812,14 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
             {/* Active attack / spell flow */}
             {activeFlow && (
               <div style={{ padding: '12px 14px 14px', borderTop: `1px solid ${T.border}` }}>
-                <div style={{ fontSize: '11px', color: T.gold, fontFamily: "'Cinzel',serif", letterSpacing: '0.12em', marginBottom: '8px' }}>
+                <div style={{ fontSize: '14px', color: T.gold, fontFamily: "'Cinzel',serif", letterSpacing: '0.12em', marginBottom: '8px' }}>
                   {activeFlow.name.toUpperCase()}
                 </div>
-                <div style={{ fontSize: '10px', color: T.textDim, marginBottom: '10px' }}>Stake RP → crit roll → damage</div>
+                <div style={{ fontSize: '13px', color: T.textDim, marginBottom: '10px' }}>Stake RP → crit roll → damage</div>
 
                 {activeFlow.stake <= 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '11px', color: T.textMuted }}>Stake</span>
+                    <span style={{ fontSize: '14px', color: T.textMuted }}>Stake</span>
                     <input
                       type="number"
                       min={0}
@@ -831,7 +831,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                     <button type="button" onClick={confirmStake} disabled={stakeRP <= 0 || curRP <= 0} style={{ ...subBtn, flex: '0 0 auto' }}>
                       CONFIRM
                     </button>
-                    <span style={{ marginLeft: 'auto', fontSize: '11px', color: T.rp }}>Pool {curRP}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '14px', color: T.rp }}>Pool {curRP}</span>
                   </div>
                 )}
 
@@ -844,7 +844,7 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                     marginBottom: '10px',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: T.textMuted }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: T.textMuted }}>
                     <span>Pressure</span>
                     <span style={{ color: T.gold }}>
                       {pressureSteps(rpForPressure, poolAtStake)}/5 · DC {10 + pressureSteps(rpForPressure, poolAtStake) * 2}
@@ -878,14 +878,14 @@ export default function PlayerBattleHUD({ token, characterId, diceVisibility }: 
                     DAMAGE
                   </button>
                 </div>
-                <div style={{ fontSize: '11px', color: T.textMuted, marginBottom: '8px' }}>
+                <div style={{ fontSize: '14px', color: T.textMuted, marginBottom: '8px' }}>
                   Crit:{' '}
                   {activeFlow.critRoll == null ? '—' : `${activeFlow.critRoll}${activeFlow.isCrit ? ' (CRIT!)' : ''}`}
                 </div>
                 {activeFlow.damageRows.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '10px' }}>
                     {activeFlow.damageRows.map((row) => (
-                      <div key={row.idx} style={{ fontSize: '11px', color: T.textMuted }}>
+                      <div key={row.idx} style={{ fontSize: '14px', color: T.textMuted }}>
                         {row.label}: <span style={{ color: T.text }}>{row.total}</span>
                       </div>
                     ))}

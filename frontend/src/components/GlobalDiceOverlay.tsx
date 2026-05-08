@@ -571,7 +571,7 @@ export default function GlobalDiceOverlay() {
           border: `1px solid ${open ? T.gold : T.border}`,
           background: open ? `${T.gold}22` : T.card,
           color: open ? T.gold : T.textMuted,
-          fontSize: '28px',
+          fontSize: '31px',
           cursor: 'pointer',
           boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
         }}
@@ -599,10 +599,10 @@ export default function GlobalDiceOverlay() {
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: "'Cinzel',serif", letterSpacing: '0.12em', fontSize: '11px', color: T.text }}>
+            <span style={{ fontFamily: "'Cinzel',serif", letterSpacing: '0.12em', fontSize: '14px', color: T.text }}>
               GLOBAL DICE
             </span>
-            <span style={{ fontSize: '9px', color: status === 'ready' ? T.green : status === 'error' ? T.hp : T.textDim }}>
+            <span style={{ fontSize: '12px', color: status === 'ready' ? T.green : status === 'error' ? T.hp : T.textDim }}>
               {status === 'ready' ? 'READY' : status === 'error' ? 'ERROR' : 'LOADING'}
             </span>
           </div>
@@ -621,7 +621,7 @@ export default function GlobalDiceOverlay() {
                     background: count > 0 ? `${T.gold}1e` : 'transparent',
                     borderRadius: '4px',
                     color: count > 0 ? T.gold : T.textMuted,
-                    fontSize: '11px',
+                    fontSize: '14px',
                     letterSpacing: '0.06em',
                     padding: '8px 0',
                     cursor: 'pointer',
@@ -630,7 +630,7 @@ export default function GlobalDiceOverlay() {
                 >
                   {die.label}
                   {count > 0 && (
-                    <span style={{ position: 'absolute', right: '4px', top: '2px', fontSize: '9px' }}>x{count}</span>
+                    <span style={{ position: 'absolute', right: '4px', top: '2px', fontSize: '12px' }}>x{count}</span>
                   )}
                 </button>
               );
@@ -649,7 +649,7 @@ export default function GlobalDiceOverlay() {
               border: `1px solid ${T.border}`,
               borderRadius: '4px',
               color: T.text,
-              fontSize: '12px',
+              fontSize: '15px',
               outline: 'none',
             }}
           />
@@ -666,7 +666,7 @@ export default function GlobalDiceOverlay() {
                   border: `1px solid ${visibility === mode ? VIS_CFG[mode].color : T.border}`,
                   background: visibility === mode ? `${VIS_CFG[mode].color}1e` : 'transparent',
                   color: visibility === mode ? VIS_CFG[mode].color : T.textDim,
-                  fontSize: '9px',
+                  fontSize: '12px',
                   letterSpacing: '0.08em',
                   padding: '6px 0',
                   cursor: 'pointer',
@@ -678,7 +678,7 @@ export default function GlobalDiceOverlay() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '22px' }}>
-            <span style={{ fontSize: '11px', color: T.textMuted }}>{pending.length ? summarise(pending) : '\u00A0'}</span>
+            <span style={{ fontSize: '14px', color: T.textMuted }}>{pending.length ? summarise(pending) : '\u00A0'}</span>
           </div>
 
           <div style={{ display: 'flex', gap: '6px' }}>
@@ -697,7 +697,7 @@ export default function GlobalDiceOverlay() {
                 color: T.textDim,
                 padding: '7px 0',
                 cursor: 'pointer',
-                fontSize: '10px',
+                fontSize: '13px',
                 letterSpacing: '0.08em',
               }}
             >
@@ -715,7 +715,7 @@ export default function GlobalDiceOverlay() {
                 color: canRoll ? T.gold : T.textDim,
                 padding: '7px 0',
                 cursor: canRoll ? 'pointer' : 'not-allowed',
-                fontSize: '10px',
+                fontSize: '13px',
                 letterSpacing: '0.1em',
               }}
             >
@@ -723,7 +723,7 @@ export default function GlobalDiceOverlay() {
             </button>
           </div>
 
-          {errorMsg && <div style={{ fontSize: '9px', color: T.hp }}>{errorMsg}</div>}
+          {errorMsg && <div style={{ fontSize: '12px', color: T.hp }}>{errorMsg}</div>}
         </div>
       )}
       </>

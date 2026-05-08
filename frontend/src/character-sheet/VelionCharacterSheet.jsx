@@ -95,16 +95,16 @@ const crd = (accent=T.gold, xtra={}) => ({
 });
 const inp = (xtra={}) => ({
   background:T.surface, border:`1px solid ${T.border}`, color:T.text,
-  borderRadius:'3px', padding:'5px 10px', fontSize:'15px',
+  borderRadius:'3px', padding:'5px 10px', fontSize: '18px',
   fontFamily:"'EB Garamond',serif", width:'100%', outline:'none', ...xtra
 });
 const LBL = {
-  fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.14em',
+  fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.14em',
   color:T.textMuted, textTransform:'uppercase', display:'block', marginBottom:'4px'
 };
 const Btn = (c=T.gold, xtra={}) => ({
   background:'transparent', border:`1px solid ${c}`, color:c,
-  borderRadius:'3px', padding:'5px 14px', fontSize:'11px',
+  borderRadius:'3px', padding:'5px 14px', fontSize: '14px',
   fontFamily:"'Cinzel',serif", letterSpacing:'0.1em', cursor:'pointer', ...xtra
 });
 
@@ -114,7 +114,7 @@ function SecTitle({ children, color = T.gold, right }) {
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span style={{ width: '14px', height: '1px', background: color, display: 'inline-block' }} />
-        <span style={{ fontFamily: "'Cinzel',serif", fontSize: '11px', letterSpacing: '0.2em', color, textTransform: 'uppercase', fontWeight: '600' }}>{children}</span>
+        <span style={{ fontFamily: "'Cinzel',serif", fontSize: '14px', letterSpacing: '0.2em', color, textTransform: 'uppercase', fontWeight: '600' }}>{children}</span>
         <span style={{ width: '14px', height: '1px', background: color, display: 'inline-block' }} />
       </div>
       {right}
@@ -138,7 +138,7 @@ function Badge({ rarity }) {
         display: 'inline-block',
         padding: '1px 8px',
         borderRadius: '10px',
-        fontSize: '11px',
+        fontSize: '14px',
         fontFamily: "'Cinzel',serif",
         background: `${RARITY_COLOR[rarity]}22`,
         border: `1px solid ${RARITY_COLOR[rarity]}55`,
@@ -1657,7 +1657,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{fontFamily:"'EB Garamond',serif",fontSize:'15px',color:T.text,background:T.bg,minHeight:'100vh',padding:'20px',maxWidth:'1160px',margin:'0 auto'}}>
+    <div style={{fontFamily:"'EB Garamond',serif",fontSize: '18px',color:T.text,background:T.bg,minHeight:'100vh',padding:'20px',maxWidth:'1350px',margin:'0 auto'}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
@@ -1682,7 +1682,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           alt="Velion Mythera"
           style={{display:'block',height:'50px',width:'auto',margin:'0 auto 4px'}}
         />
-        <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.4em',color:T.textMuted,marginTop:'3px'}}>CHARACTER SHEET</div>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.4em',color:T.textMuted,marginTop:'3px'}}>CHARACTER SHEET</div>
       </div>
 
       {/* ══ ACTION BAR ═══════════════════════════════════════════════════ */}
@@ -1690,23 +1690,23 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         <button
           onClick={handleTurnStart}
           disabled={inActiveTurn}
-          style={{...Btn('#50a0e8'),padding:'8px 20px',fontSize:'12px',background:'#060e1a',letterSpacing:'0.14em',fontWeight:'600'}}
+          style={{...Btn('#50a0e8'),padding:'8px 20px',fontSize: '15px',background:'#060e1a',letterSpacing:'0.14em',fontWeight:'600'}}
         >▶ START TURN</button>
         <button
           onClick={handleEndTurn}
           disabled={!inActiveTurn}
-          style={{...Btn('#c8503a'),padding:'8px 20px',fontSize:'12px',background:'#1a0806',letterSpacing:'0.12em',fontWeight:'600'}}
+          style={{...Btn('#c8503a'),padding:'8px 20px',fontSize: '15px',background:'#1a0806',letterSpacing:'0.12em',fontWeight:'600'}}
         >■ END TURN</button>
         {inActiveTurn && (
-          <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,letterSpacing:'0.08em'}}>End turn when your round is over — then you can start the next.</span>
+          <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,letterSpacing:'0.08em'}}>End turn when your round is over — then you can start the next.</span>
         )}
-        {banking&&bankRP>0&&<span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:'#4a8dcc'}}>+{bankRP} banked RP ready</span>}
+        {banking&&bankRP>0&&<span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:'#4a8dcc'}}>+{bankRP} banked RP ready</span>}
         <div style={{flex:1}}/>
-        <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,letterSpacing:'0.1em'}}>REST:</span>
-        <button onClick={handleShortRest} style={{...Btn('#c89830'),padding:'8px 16px',fontSize:'11px'}}>⏱ SHORT</button>
-        <button onClick={handleLongRest}  style={{...Btn('#7060a8'),padding:'8px 16px',fontSize:'11px'}}>🌙 LONG</button>
+        <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,letterSpacing:'0.1em'}}>REST:</span>
+        <button onClick={handleShortRest} style={{...Btn('#c89830'),padding:'8px 16px',fontSize: '14px'}}>⏱ SHORT</button>
+        <button onClick={handleLongRest}  style={{...Btn('#7060a8'),padding:'8px 16px',fontSize: '14px'}}>🌙 LONG</button>
         {saveStatus&&(
-          <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.1em',
+          <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.1em',
             color:saveStatus==='saved'?'#3dba6a':saveStatus==='error'?'#e05050':'#706858'}}>
             {saveStatus==='saving'?'● SAVING…':saveStatus==='saved'?'✓ SAVED':saveStatus==='error'?'✕ SAVE ERROR':''}
           </span>
@@ -1736,17 +1736,17 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           >
             {portrait?<img src={portrait} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="portrait"/>
               :<><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#2a2e3a" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-              <span style={{fontFamily:"'Cinzel',serif",fontSize:'9px',letterSpacing:'0.12em',color:'#2a2e3a',marginTop:'8px'}}>PORTRAIT</span>
-              <span style={{fontFamily:"'Cinzel',serif",fontSize:'8px',color:'#1a1c28',marginTop:'3px'}}>{characterId ? 'CLICK TO UPLOAD' : 'LOCAL PREVIEW'}</span></>}
+              <span style={{fontFamily:"'Cinzel',serif",fontSize: '12px',letterSpacing:'0.12em',color:'#2a2e3a',marginTop:'8px'}}>PORTRAIT</span>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize: '12px',color:'#1a1c28',marginTop:'3px'}}>{characterId ? 'CLICK TO UPLOAD' : 'LOCAL PREVIEW'}</span></>}
             {portraitUploading && (
-              <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(6,8,12,0.75)',fontFamily:"'Cinzel',serif",fontSize:'9px',letterSpacing:'0.14em',color:T.gold}}>
+              <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(6,8,12,0.75)',fontFamily:"'Cinzel',serif",fontSize: '12px',letterSpacing:'0.14em',color:T.gold}}>
                 UPLOADING…
               </div>
             )}
           </div>
           <input ref={portRef} type="file" accept="image/png,image/jpeg,image/webp,image/*" onChange={onPort} style={{display:'none'}}/>
           {(portraitErr || (!characterId && portrait)) && (
-            <div style={{ fontSize: '9px', color: portraitErr ? '#e05050' : T.textDim, marginTop: '6px', maxWidth: '130px', lineHeight: 1.35 }}>
+            <div style={{ fontSize: '12px', color: portraitErr ? '#e05050' : T.textDim, marginTop: '6px', maxWidth: '130px', lineHeight: 1.35 }}>
               {portraitErr || (!characterId && portrait ? 'Save character to cloud to persist portrait.' : '')}
             </div>
           )}
@@ -1754,20 +1754,20 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
           <Fld label="Character Name">
             <input value={charName} onChange={e=>setCharName(e.target.value)} placeholder="Enter character name…"
-              style={{...inp(),fontSize:'21px',fontWeight:'500',padding:'7px 12px',borderColor:`${T.gold}44`}}/>
+              style={{...inp(),fontSize: '24px',fontWeight:'500',padding:'7px 12px',borderColor:`${T.gold}44`}}/>
           </Fld>
           <div style={{display:'grid',gridTemplateColumns:'auto 1fr 1fr 1fr',gap:'10px',alignItems:'end'}}>
             <div>
               <label style={LBL}>Level</label>
               <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
-                <div style={{background:T.surface,border:`1px solid ${T.gold}55`,borderRadius:'3px',padding:'5px 14px',fontSize:'22px',fontWeight:'700',color:T.gold,minWidth:'60px',textAlign:'center'}}>{level}</div>
-                <button onClick={openLevelUp} style={{...Btn(T.gold),padding:'5px 10px',fontSize:'10px',whiteSpace:'nowrap',background:`${T.gold}11`}}>▲ LEVEL UP</button>
+                <div style={{background:T.surface,border:`1px solid ${T.gold}55`,borderRadius:'3px',padding:'5px 14px',fontSize: '25px',fontWeight:'700',color:T.gold,minWidth:'60px',textAlign:'center'}}>{level}</div>
+                <button onClick={openLevelUp} style={{...Btn(T.gold),padding:'5px 10px',fontSize: '13px',whiteSpace:'nowrap',background:`${T.gold}11`}}>▲ LEVEL UP</button>
               </div>
             </div>
             {/* Chosen attribute — read-only reference, only settable in level-up */}
             <div>
               <label style={LBL}>Chosen Attribute</label>
-              <div style={{background:T.surface,border:`1px solid ${ATTR_COLOR[chosenAttr]}44`,borderRadius:'3px',padding:'6px 12px',fontSize:'16px',fontWeight:'600',color:ATTR_COLOR[chosenAttr]}}>{chosenAttr}</div>
+              <div style={{background:T.surface,border:`1px solid ${ATTR_COLOR[chosenAttr]}44`,borderRadius:'3px',padding:'6px 12px',fontSize: '19px',fontWeight:'600',color:ATTR_COLOR[chosenAttr]}}>{chosenAttr}</div>
             </div>
             <Fld label="Gold (G)">
               <input value={gold} onChange={e=>setGold(Number(e.target.value.replace(/\D/g,''))||0)} style={{...inp(),color:T.gold}}/>
@@ -1793,11 +1793,11 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   onClick={()=>rollSave(attr)}
                   onContextMenu={e=>{e.preventDefault();setCtxMenu({attr,x:e.clientX,y:e.clientY});}}
                   style={{background:chosen?`${ATTR_COLOR[attr]}14`:T.surface,border:`1px solid ${chosen?ATTR_COLOR[attr]+'66':T.border}`,borderRadius:'3px',padding:'10px',textAlign:'center',position:'relative',cursor:'pointer',transition:'all 0.15s',outline:'none',fontFamily:'inherit'}}>
-                  {chosen&&<span style={{position:'absolute',top:'5px',right:'6px',fontSize:'10px',color:ATTR_COLOR[attr]}}>★</span>}
-                  <span style={{position:'absolute',top:'5px',left:'6px',fontSize:'9px',color:ATTR_COLOR[attr],opacity:0.45,fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>SAVE</span>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.14em',color:ATTR_COLOR[attr],marginBottom:'4px',fontWeight:'600',marginTop:'6px'}}>{attr.toUpperCase()}</div>
-                  <div style={{fontSize:'32px',fontWeight:'700',color:ATTR_COLOR[attr],lineHeight:'1'}}>{val}</div>
-                  <div style={{fontSize:'20px',color:T.gold,fontWeight:'600',marginTop:'5px'}}>{mStr(mod)}</div>
+                  {chosen&&<span style={{position:'absolute',top:'5px',right:'6px',fontSize: '13px',color:ATTR_COLOR[attr]}}>★</span>}
+                  <span style={{position:'absolute',top:'5px',left:'6px',fontSize: '12px',color:ATTR_COLOR[attr],opacity:0.45,fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>SAVE</span>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.14em',color:ATTR_COLOR[attr],marginBottom:'4px',fontWeight:'600',marginTop:'6px'}}>{attr.toUpperCase()}</div>
+                  <div style={{fontSize: '35px',fontWeight:'700',color:ATTR_COLOR[attr],lineHeight:'1'}}>{val}</div>
+                  <div style={{fontSize: '23px',color:T.gold,fontWeight:'600',marginTop:'5px'}}>{mStr(mod)}</div>
                 </button>
               );
             })}
@@ -1805,8 +1805,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           {/* Growth Pool — name left, number right */}
           <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'10px 12px'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.14em',color:T.textMuted,fontWeight:'600'}}>GROWTH POOL</span>
-              <div style={{background:T.card,border:`1px solid ${T.gold}44`,borderRadius:'3px',fontSize:'26px',fontWeight:'700',color:T.gold,padding:'2px 18px',minWidth:'60px',textAlign:'center'}}>{growthPool}</div>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.14em',color:T.textMuted,fontWeight:'600'}}>GROWTH POOL</span>
+              <div style={{background:T.card,border:`1px solid ${T.gold}44`,borderRadius:'3px',fontSize: '29px',fontWeight:'700',color:T.gold,padding:'2px 18px',minWidth:'60px',textAlign:'center'}}>{growthPool}</div>
             </div>
           </div>
         </div>
@@ -1815,7 +1815,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         <div style={crd(T.rp)}>
           <SecTitle color={T.rp}>Resource Points</SecTitle>
           {(S.overextended||S.exhausted)&&(
-            <div style={{background:'#1a0a06',border:`1px solid ${S.overextended?'#ff202055':'#cc902055'}`,borderRadius:'3px',padding:'6px 10px',marginBottom:'10px',fontSize:'12px',color:S.overextended?'#ff5030':'#cc9020',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>
+            <div style={{background:'#1a0a06',border:`1px solid ${S.overextended?'#ff202055':'#cc902055'}`,borderRadius:'3px',padding:'6px 10px',marginBottom:'10px',fontSize: '15px',color:S.overextended?'#ff5030':'#cc9020',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>
               {S.overextended?'⚠ OVEREXTENDED — Base RP ×0.5':'⚠ EXHAUSTED — Base RP ×0.75'}
               {effBaseRP!==baseRP&&<span style={{color:T.textMuted}}> ({baseRP}→{effBaseRP})</span>}
             </div>
@@ -1824,9 +1824,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             <label style={{...LBL,textAlign:'center',display:'block',marginBottom:'6px'}}>Current / Maximum</label>
             <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:'5px'}}>
               <input type="number" value={curRP} min={0} onChange={e=>setCurRP(Math.max(0,Number(e.target.value)))}
-                style={{...inp(),width:'90px',textAlign:'right',fontSize:'28px',fontWeight:'700',color:T.rp,background:'transparent',border:'none',padding:'0'}}/>
-              <span style={{color:`${T.rp}55`,fontSize:'22px'}}>/</span>
-              <span style={{color:`${T.rp}88`,fontSize:'20px',fontWeight:'500'}}>{effBaseRP}</span>
+                style={{...inp(),width:'90px',textAlign:'right',fontSize: '31px',fontWeight:'700',color:T.rp,background:'transparent',border:'none',padding:'0'}}/>
+              <span style={{color:`${T.rp}55`,fontSize: '25px'}}>/</span>
+              <span style={{color:`${T.rp}88`,fontSize: '23px',fontWeight:'500'}}>{effBaseRP}</span>
             </div>
           </div>
           <div style={{height:'5px',background:'#0a1020',borderRadius:'3px',overflow:'hidden',marginBottom:'10px'}}>
@@ -1834,24 +1834,24 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           </div>
           {/* Movement */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px',background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'7px 12px'}}>
-            <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,letterSpacing:'0.1em'}}>MOVEMENT</span>
+            <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,letterSpacing:'0.1em'}}>MOVEMENT</span>
             <div style={{textAlign:'right'}}>
-              <span style={{fontSize:'20px',fontWeight:'600',color:'#88aad8'}}>30<span style={{fontSize:'13px',color:T.textMuted,marginLeft:'3px'}}>ft</span></span>
-              <div style={{fontSize:'11px',color:T.textDim}}>+1 ft per RP spent</div>
+              <span style={{fontSize: '23px',fontWeight:'600',color:'#88aad8'}}>30<span style={{fontSize: '16px',color:T.textMuted,marginLeft:'3px'}}>ft</span></span>
+              <div style={{fontSize: '14px',color:T.textDim}}>+1 ft per RP spent</div>
             </div>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:'8px',alignItems:'center'}}>
             <div>
               <label style={LBL}>Banked RP</label>
-              <div style={{background:T.surface,border:`1px solid ${banking?'#2a6daa55':T.border}`,borderRadius:'3px',padding:'6px 12px',fontSize:'20px',color:banking?'#4a8dcc':T.textDim,fontWeight:'600',textAlign:'center'}}>{bankRP}</div>
+              <div style={{background:T.surface,border:`1px solid ${banking?'#2a6daa55':T.border}`,borderRadius:'3px',padding:'6px 12px',fontSize: '23px',color:banking?'#4a8dcc':T.textDim,fontWeight:'600',textAlign:'center'}}>{bankRP}</div>
             </div>
             <button onClick={handleBank} disabled={bankBlocked || bankNeedsActiveTurn || (!canCommitBank && !banking)}
               style={{...Btn(banking?T.rp:T.textMuted),padding:'8px 14px',marginTop:'18px',background:banking?`${T.rp}15`:'transparent'}}>
               {banking?'● BANKED':'○ BANK'}
             </button>
           </div>
-          {bankBlocked&&<div style={{fontSize:'10px',color:'#803020',marginTop:'4px',fontFamily:"'Cinzel',serif"}}>Banking blocked by active state</div>}
-          {bankNeedsActiveTurn&&!bankBlocked&&<div style={{fontSize:'10px',color:T.textMuted,marginTop:'4px',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>Start your turn to bank RP</div>}
+          {bankBlocked&&<div style={{fontSize: '13px',color:'#803020',marginTop:'4px',fontFamily:"'Cinzel',serif"}}>Banking blocked by active state</div>}
+          {bankNeedsActiveTurn&&!bankBlocked&&<div style={{fontSize: '13px',color:T.textMuted,marginTop:'4px',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>Start your turn to bank RP</div>}
         </div>
 
         {/* ── Hit Points ── */}
@@ -1862,18 +1862,18 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:'5px'}}>
               <input type="number" value={curHP} min={0} max={maxHP}
                 onChange={e=>setCurHP(Math.max(0,Math.min(maxHP,Number(e.target.value))))}
-                style={{...inp(),width:'115px',textAlign:'right',fontSize:'28px',fontWeight:'700',
+                style={{...inp(),width:'115px',textAlign:'right',fontSize: '31px',fontWeight:'700',
                   color:curHP<=0?'#c01818':curHP<maxHP*0.25?'#e87030':T.hp,background:'transparent',border:'none',padding:'0'}}/>
-              <span style={{color:`${T.hp}55`,fontSize:'22px'}}>/</span>
-              <span style={{color:`${T.hp}66`,fontSize:'18px',fontWeight:'500'}}>{fmtNum(maxHP)}</span>
+              <span style={{color:`${T.hp}55`,fontSize: '25px'}}>/</span>
+              <span style={{color:`${T.hp}66`,fontSize: '21px',fontWeight:'500'}}>{fmtNum(maxHP)}</span>
             </div>
           </div>
           <div style={{height:'5px',background:'#1a0808',borderRadius:'3px',overflow:'hidden',marginBottom:'12px'}}>
             <div style={{height:'100%',width:`${hpPct}%`,background:`linear-gradient(90deg,#701010,${T.hp})`,borderRadius:'3px',transition:'width 0.3s'}}/>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
-            <button type="button" onClick={openDmg}  style={{...Btn('#e05050'),padding:'10px',fontSize:'12px',background:'#2a0808'}}>⚔ DAMAGE</button>
-            <button type="button" onClick={openHeal} style={{...Btn('#50a050'),padding:'10px',fontSize:'12px',background:'#062006'}}>✦ HEAL</button>
+            <button type="button" onClick={openDmg}  style={{...Btn('#e05050'),padding:'10px',fontSize: '15px',background:'#2a0808'}}>⚔ DAMAGE</button>
+            <button type="button" onClick={openHeal} style={{...Btn('#50a050'),padding:'10px',fontSize: '15px',background:'#062006'}}>✦ HEAL</button>
           </div>
           <button
             type="button"
@@ -1881,11 +1881,11 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               setDefRpInput(0);
               setDefModal({ attr: 'Agility' });
             }}
-            style={{...Btn('#4a7ab8'),padding:'10px',fontSize:'11px',width:'100%',marginTop:'10px',background:'#080c18',letterSpacing:'0.06em'}}
+            style={{...Btn('#4a7ab8'),padding:'10px',fontSize: '14px',width:'100%',marginTop:'10px',background:'#080c18',letterSpacing:'0.06em'}}
           >
             🛡 DEFENSIVE SAVE
           </button>
-          <div style={{fontSize:'10px',color:T.textMuted,marginTop:'6px',lineHeight:1.45,textAlign:'center',fontFamily:"'Cinzel',serif",letterSpacing:'0.04em'}}>
+          <div style={{fontSize: '13px',color:T.textMuted,marginTop:'6px',lineHeight:1.45,textAlign:'center',fontFamily:"'Cinzel',serif",letterSpacing:'0.04em'}}>
             d20 + Power or Agility mod + defensive bonus (RP spent ÷ Base RP). RP committed is spent.
           </div>
         </div>
@@ -1895,16 +1895,16 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       <div style={{...crd('#8a7040'),marginBottom:'14px'}}>
         <SecTitle color="#8a7040">Armor</SecTitle>
         {(S.vulnerable||S.fortified)&&(
-          <div style={{background:S.vulnerable?'#1a0800':'#041020',border:`1px solid ${S.vulnerable?'#e0503055':'#50a0e055'}`,borderRadius:'3px',padding:'6px 10px',marginBottom:'10px',fontSize:'12px',color:S.vulnerable?'#e05030':'#50a0e0',fontFamily:"'Cinzel',serif"}}>
+          <div style={{background:S.vulnerable?'#1a0800':'#041020',border:`1px solid ${S.vulnerable?'#e0503055':'#50a0e055'}`,borderRadius:'3px',padding:'6px 10px',marginBottom:'10px',fontSize: '15px',color:S.vulnerable?'#e05030':'#50a0e0',fontFamily:"'Cinzel',serif"}}>
             {S.vulnerable&&'⚠ VULNERABLE — Mitigation and resistances halved'}
             {S.fortified&&!S.vulnerable&&'✦ FORTIFIED — Armor mitigation +10%'}
           </div>
         )}
-        <table style={{width:'100%',borderCollapse:'collapse',fontSize:'14px'}}>
+        <table style={{width:'100%',borderCollapse:'collapse',fontSize: '17px'}}>
           <thead>
             <tr style={{borderBottom:`1px solid ${T.border}`}}>
               {['Slot','Name','Type','Rarity','Mitigation','Resistances',''].map((h,i)=>(
-                <th key={i} style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.1em',color:T.textMuted,padding:'5px 8px',textAlign:'left',fontWeight:'400',whiteSpace:'nowrap'}}>{h}</th>
+                <th key={i} style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.1em',color:T.textMuted,padding:'5px 8px',textAlign:'left',fontWeight:'400',whiteSpace:'nowrap'}}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -1916,22 +1916,22 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               const canEquipFromInv = armorCandidates.length > 0;
               return(
                 <tr key={slot} className="tr-hover" style={{borderBottom:`1px solid ${T.border}`}}>
-                  <td style={{padding:'7px 8px',fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,whiteSpace:'nowrap'}}>{slot}</td>
+                  <td style={{padding:'7px 8px',fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,whiteSpace:'nowrap'}}>{slot}</td>
                   <td style={{padding:'7px 8px',fontWeight:'500',color:has?T.text:T.textDim,fontStyle:has?'normal':'italic'}}>{p.name||'Empty'}</td>
-                  <td style={{padding:'7px 8px',fontFamily:"'Cinzel',serif",fontSize:'11px',color:T.textMuted}}>{has?p.category:'—'}</td>
+                  <td style={{padding:'7px 8px',fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.textMuted}}>{has?p.category:'—'}</td>
                   <td style={{padding:'7px 8px'}}>{has?<Badge rarity={p.rarity}/>:<span style={{color:T.textDim}}>—</span>}</td>
                   <td style={{padding:'7px 8px',fontWeight:'500',color:has?T.text:T.textDim}}>{has?`${p.mitigation}%`:'—'}</td>
-                  <td style={{padding:'7px 8px'}}>{pRes.length>0?<div style={{display:'flex',flexWrap:'wrap',gap:'4px'}}>{pRes.map(el=><span key={el} style={{fontSize:'11px',padding:'1px 6px',borderRadius:'8px',background:`${ELEM_COLOR[el]}18`,color:ELEM_COLOR[el],border:`1px solid ${ELEM_COLOR[el]}44`}}>{el.slice(0,3)} {p.resistances[el]}%</span>)}</div>:<span style={{color:T.textDim,fontSize:'12px'}}>—</span>}</td>
+                  <td style={{padding:'7px 8px'}}>{pRes.length>0?<div style={{display:'flex',flexWrap:'wrap',gap:'4px'}}>{pRes.map(el=><span key={el} style={{fontSize: '14px',padding:'1px 6px',borderRadius:'8px',background:`${ELEM_COLOR[el]}18`,color:ELEM_COLOR[el],border:`1px solid ${ELEM_COLOR[el]}44`}}>{el.slice(0,3)} {p.resistances[el]}%</span>)}</div>:<span style={{color:T.textDim,fontSize: '15px'}}>—</span>}</td>
                   <td style={{padding:'7px 8px',textAlign:'right'}}>
                     <div style={{display:'inline-flex',flexWrap:'wrap',gap:'6px',justifyContent:'flex-end',alignItems:'center'}}>
                       {characterId && (
                         equippedInv ? (
-                          <button type="button" onClick={()=>unequipInventoryItem(equippedInv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize:'10px'}}>UNEQUIP</button>
+                          <button type="button" onClick={()=>unequipInventoryItem(equippedInv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize: '13px'}}>UNEQUIP</button>
                         ) : (
-                          <button type="button" onClick={()=>handleArmorSlotEquipPress(slot)} disabled={!canEquipFromInv} title={!canEquipFromInv ? 'No matching armor in inventory for this slot' : ''} style={{...Btn('#8a7040'),padding:'3px 10px',fontSize:'10px',opacity:canEquipFromInv?1:0.35}}>EQUIP</button>
+                          <button type="button" onClick={()=>handleArmorSlotEquipPress(slot)} disabled={!canEquipFromInv} title={!canEquipFromInv ? 'No matching armor in inventory for this slot' : ''} style={{...Btn('#8a7040'),padding:'3px 10px',fontSize: '13px',opacity:canEquipFromInv?1:0.35}}>EQUIP</button>
                         )
                       )}
-                      <button type="button" onClick={()=>openArmorEdit(slot)} style={{...Btn(T.goldDim),padding:'3px 10px',fontSize:'10px'}}>✎ EDIT</button>
+                      <button type="button" onClick={()=>openArmorEdit(slot)} style={{...Btn(T.goldDim),padding:'3px 10px',fontSize: '13px'}}>✎ EDIT</button>
                     </div>
                   </td>
                 </tr>
@@ -1941,23 +1941,23 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         </table>
         <div style={{marginTop:'12px',background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'10px 14px',display:'flex',flexWrap:'wrap',gap:'16px',alignItems:'center'}}>
           <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-            <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,letterSpacing:'0.1em'}}>PHYSICAL MIT.</span>
-            {S.vulnerable&&totalMit>0?<><span style={{fontSize:'16px',color:T.textDim,textDecoration:'line-through'}}>{totalMit}%</span><span style={{fontSize:'20px',fontWeight:'700',color:'#e05030'}}>{effMit}%</span></>
-              :S.fortified&&totalMit>0?<><span style={{fontSize:'16px',color:T.textDim}}>{totalMit}%</span><span style={{fontSize:'20px',fontWeight:'700',color:'#50a0e0'}}>{effMit}%</span></>
-              :<span style={{fontSize:'20px',fontWeight:'700',color:effMit>60?'#e08030':T.text}}>{effMit}%</span>}
-            {effMit>60&&<span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:'#e08030'}}>⚠ SOFT CAP</span>}
+            <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,letterSpacing:'0.1em'}}>PHYSICAL MIT.</span>
+            {S.vulnerable&&totalMit>0?<><span style={{fontSize: '19px',color:T.textDim,textDecoration:'line-through'}}>{totalMit}%</span><span style={{fontSize: '23px',fontWeight:'700',color:'#e05030'}}>{effMit}%</span></>
+              :S.fortified&&totalMit>0?<><span style={{fontSize: '19px',color:T.textDim}}>{totalMit}%</span><span style={{fontSize: '23px',fontWeight:'700',color:'#50a0e0'}}>{effMit}%</span></>
+              :<span style={{fontSize: '23px',fontWeight:'700',color:effMit>60?'#e08030':T.text}}>{effMit}%</span>}
+            {effMit>60&&<span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:'#e08030'}}>⚠ SOFT CAP</span>}
           </div>
           <div style={{width:'1px',height:'20px',background:T.border}}/>
           <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
             {ELEMENTS.filter(el=>totalRes[el]>0).map(el=>{
               const raw=totalRes[el],eff2=effRes[el],abs=eff2>=100;
               return(<div key={el} style={{padding:'2px 9px',borderRadius:'10px',background:`${ELEM_COLOR[el]}15`,border:`1px solid ${ELEM_COLOR[el]}${abs?'88':'33'}`,display:'flex',gap:'4px',alignItems:'center'}}>
-                <span style={{fontSize:'12px',color:ELEM_COLOR[el]}}>{el}</span>
-                {S.vulnerable&&raw!==eff2?<><span style={{fontSize:'12px',color:T.textDim,textDecoration:'line-through'}}>{raw}%</span><span style={{fontSize:'14px',fontWeight:'600',color:ELEM_COLOR[el]}}>{eff2}%</span></>:<span style={{fontSize:'14px',fontWeight:'600',color:ELEM_COLOR[el]}}>{eff2}%</span>}
-                {abs&&<span style={{fontFamily:"'Cinzel',serif",fontSize:'8px',color:ELEM_COLOR[el]}}>ABSORB</span>}
+                <span style={{fontSize: '15px',color:ELEM_COLOR[el]}}>{el}</span>
+                {S.vulnerable&&raw!==eff2?<><span style={{fontSize: '15px',color:T.textDim,textDecoration:'line-through'}}>{raw}%</span><span style={{fontSize: '17px',fontWeight:'600',color:ELEM_COLOR[el]}}>{eff2}%</span></>:<span style={{fontSize: '17px',fontWeight:'600',color:ELEM_COLOR[el]}}>{eff2}%</span>}
+                {abs&&<span style={{fontFamily:"'Cinzel',serif",fontSize: '12px',color:ELEM_COLOR[el]}}>ABSORB</span>}
               </div>);
             })}
-            {ELEMENTS.every(el=>totalRes[el]===0)&&<span style={{color:T.textDim,fontSize:'13px'}}>No elemental resistances</span>}
+            {ELEMENTS.every(el=>totalRes[el]===0)&&<span style={{color:T.textDim,fontSize: '16px'}}>No elemental resistances</span>}
           </div>
         </div>
       </div>
@@ -1967,26 +1967,26 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         {/* Weapons */}
         <div style={crd('#c8503a')}>
           <SecTitle color="#c8503a">Weapons</SecTitle>
-          {weapons.length===0&&<div style={{color:T.textDim,textAlign:'center',padding:'28px 0',fontSize:'13px',border:`1px dashed #1c2030`,borderRadius:'3px'}}>No weapons equipped</div>}
+          {weapons.length===0&&<div style={{color:T.textDim,textAlign:'center',padding:'28px 0',fontSize: '16px',border:`1px dashed #1c2030`,borderRadius:'3px'}}>No weapons equipped</div>}
           {weapons.map(w=>(
             <div key={w.id} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'12px',marginBottom:'8px'}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'8px'}}>
                 <div>
-                  <div style={{fontSize:'17px',fontWeight:'500',marginBottom:'4px'}}>{w.name}</div>
+                  <div style={{fontSize: '20px',fontWeight:'500',marginBottom:'4px'}}>{w.name}</div>
                   <div style={{display:'flex',gap:'6px',alignItems:'center',flexWrap:'wrap'}}>
                     <Badge rarity={w.rarity}/>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:T.textMuted}}>{RARITY_DICE[w.rarity]}× {w.dieType}</span>
-                    {w.attrReq&&<span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:T.textMuted}}>REQ: {w.attrReq}</span>}
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.textMuted}}>{RARITY_DICE[w.rarity]}× {w.dieType}</span>
+                    {w.attrReq&&<span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.textMuted}}>REQ: {w.attrReq}</span>}
                   </div>
                 </div>
-                <button onClick={()=>delWeapon(w.id)} style={{...Btn('#662020'),padding:'3px 8px',fontSize:'11px'}}>✕</button>
+                <button onClick={()=>delWeapon(w.id)} style={{...Btn('#662020'),padding:'3px 8px',fontSize: '14px'}}>✕</button>
               </div>
-              <div style={{background:'#080a12',border:`1px solid ${T.border}`,borderRadius:'3px',padding:'6px 10px',marginBottom:'8px',fontSize:'14px'}}>
+              <div style={{background:'#080a12',border:`1px solid ${T.border}`,borderRadius:'3px',padding:'6px 10px',marginBottom:'8px',fontSize: '17px'}}>
                 {w.channels.map((ch,ci)=>(
                   <span key={ci}>{ci>0&&<span style={{color:T.textDim}}> + </span>}<span style={{color:ch.element==='Physical'?T.text:ELEM_COLOR[ch.element]}}>{ch.dice}{w.dieType}</span><span style={{color:T.textMuted}}> {ch.element}</span></span>
                 ))}<span style={{color:T.textDim}}> × RP</span>
               </div>
-              {w.notes&&<div style={{fontSize:'12px',color:T.textMuted,marginBottom:'8px',fontStyle:'italic'}}>{w.notes}</div>}
+              {w.notes&&<div style={{fontSize: '15px',color:T.textMuted,marginBottom:'8px',fontStyle:'italic'}}>{w.notes}</div>}
               <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:'6px'}}>
                 <button
                   type="button"
@@ -1995,7 +1995,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   style={{
                     ...Btn(inActiveTurn ? '#c8503a' : '#e8a020'),
                     padding: '8px',
-                    fontSize: '11px',
+                    fontSize: '14px',
                     background: inActiveTurn ? '#1e0806' : '#1a1200',
                     letterSpacing: '0.08em',
                     opacity: (S.stunned || S.asleep || (!inActiveTurn && curRP < 1)) ? 0.35 : 1,
@@ -2003,7 +2003,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                 >
                   {inActiveTurn ? '⚔ ROLL ATTACK' : '⚔ OPPORTUNITY ATTACK'}
                 </button>
-                <button type="button" onClick={()=>openWepEdit(w)} style={{...Btn(T.goldDim),padding:'8px 12px',fontSize:'11px'}}>✎</button>
+                <button type="button" onClick={()=>openWepEdit(w)} style={{...Btn(T.goldDim),padding:'8px 12px',fontSize: '14px'}}>✎</button>
               </div>
             </div>
           ))}
@@ -2013,36 +2013,36 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         <div style={{...crd(T.magic),position:'relative'}}>
           {S.silenced&&(
             <div style={{position:'absolute',inset:0,background:'rgba(6,7,12,0.82)',borderRadius:'4px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:5}}>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:'14px',letterSpacing:'0.3em',color:'#cc5050',marginBottom:'8px'}}>SILENCED</div>
-              <div style={{fontSize:'13px',color:T.textMuted,textAlign:'center',padding:'0 24px'}}>Spell gems unavailable.</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize: '17px',letterSpacing:'0.3em',color:'#cc5050',marginBottom:'8px'}}>SILENCED</div>
+              <div style={{fontSize: '16px',color:T.textMuted,textAlign:'center',padding:'0 24px'}}>Spell gems unavailable.</div>
             </div>
           )}
           <SecTitle color={T.magic}>Spell Gems</SecTitle>
           {bracerGrade!=='None'&&(
-            <div style={{background:'#080810',border:`1px solid #2a2240`,borderRadius:'3px',padding:'7px 12px',marginBottom:'10px',fontSize:'13px',display:'flex',gap:'16px',flexWrap:'wrap',alignItems:'center'}}>
-              <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted}}>BRACER:</span> <span style={{color:T.magic}}>{bracerGrade}</span></span>
-              <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted}}>SLOTS:</span> {BRACER_SLOTS[bracerGrade]}</span>
-              <span style={{color:'#383060',fontSize:'12px'}}>⚡ Auto-hit · No save</span>
+            <div style={{background:'#080810',border:`1px solid #2a2240`,borderRadius:'3px',padding:'7px 12px',marginBottom:'10px',fontSize: '16px',display:'flex',gap:'16px',flexWrap:'wrap',alignItems:'center'}}>
+              <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted}}>BRACER:</span> <span style={{color:T.magic}}>{bracerGrade}</span></span>
+              <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted}}>SLOTS:</span> {BRACER_SLOTS[bracerGrade]}</span>
+              <span style={{color:'#383060',fontSize: '15px'}}>⚡ Auto-hit · No save</span>
             </div>
           )}
-          {gems.length===0&&<div style={{color:T.textDim,textAlign:'center',padding:'28px 0',fontSize:'13px',border:`1px dashed #1c2030`,borderRadius:'3px'}}>Equip a Focus Bracer from inventory to unlock gem slots</div>}
+          {gems.length===0&&<div style={{color:T.textDim,textAlign:'center',padding:'28px 0',fontSize: '16px',border:`1px dashed #1c2030`,borderRadius:'3px'}}>Equip a Focus Bracer from inventory to unlock gem slots</div>}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
             {gems.map((gem,gi)=>{
               const isEmpty=!gem||!gem.element;
               const eCol=isEmpty?T.textDim:(ELEM_COLOR[gem.element]||T.text);
               return(
                 <div key={gi} style={{background:T.surface,border:`1px solid ${isEmpty?T.border:eCol+'33'}`,borderRadius:'3px',padding:'10px'}}>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'6px'}}>SLOT {gi+1}</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,marginBottom:'6px'}}>SLOT {gi+1}</div>
                   {isEmpty?(
-                    <div style={{color:T.textDim,fontSize:'12px',textAlign:'center',padding:'12px 0',fontStyle:'italic'}}>Empty — equip from inventory</div>
+                    <div style={{color:T.textDim,fontSize: '15px',textAlign:'center',padding:'12px 0',fontStyle:'italic'}}>Empty — equip from inventory</div>
                   ):(
                     <>
                       <div style={{display:'flex',alignItems:'center',gap:'7px',marginBottom:'5px'}}>
                         <div style={{width:'11px',height:'11px',borderRadius:'50%',background:eCol,boxShadow:`0 0 8px ${eCol}66`,flexShrink:0}}/>
-                        <span style={{fontSize:'15px',fontWeight:'500',color:eCol}}>{gem.element}</span>
+                        <span style={{fontSize: '18px',fontWeight:'500',color:eCol}}>{gem.element}</span>
                       </div>
                       <Badge rarity={gem.rarity}/>
-                      <div style={{fontSize:'13px',color:T.textMuted,margin:'6px 0'}}>
+                      <div style={{fontSize: '16px',color:T.textMuted,margin:'6px 0'}}>
                         <span style={{color:eCol,fontWeight:'500'}}>{gem.num_dice||1}d{gem.die_type||6}</span> × RP <span style={{color:'#302050'}}>⚡</span>
                       </div>
                       <button
@@ -2052,7 +2052,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                         style={{
                           ...Btn(inActiveTurn ? eCol : '#e8a020'),
                           padding: '5px',
-                          fontSize: '10px',
+                          fontSize: '13px',
                           width: '100%',
                           background: inActiveTurn ? `${eCol}10` : '#1a1200',
                           opacity: (S.stunned || S.asleep || S.silenced || (!inActiveTurn && curRP < 1)) ? 0.35 : 1,
@@ -2075,11 +2075,11 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'12px'}}>
           {['Control','Capacity','Damage','Altered','Structural'].map(cat=>(
             <div key={cat}>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.12em',color:CAT_COLOR[cat],marginBottom:'7px',fontWeight:'600'}}>{cat}</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.12em',color:CAT_COLOR[cat],marginBottom:'7px',fontWeight:'600'}}>{cat}</div>
               <div style={{display:'flex',flexDirection:'column',gap:'5px'}}>
                 {STATES_DATA.filter(s=>s.cat===cat).map(s=>{const on=active.has(s.name);return(
                   <button key={s.name} onClick={()=>toggleState(s.name)}
-                    style={{border:`1px solid ${on?s.color:s.color+'44'}`,background:on?`${s.color}22`:'transparent',color:on?s.color:'#504050',borderRadius:'3px',padding:'4px 7px',fontSize:'12px',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em',textAlign:'left',boxShadow:on?`0 0 8px ${s.color}33`:'none',transition:'all 0.15s'}}>
+                    style={{border:`1px solid ${on?s.color:s.color+'44'}`,background:on?`${s.color}22`:'transparent',color:on?s.color:'#504050',borderRadius:'3px',padding:'4px 7px',fontSize: '15px',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em',textAlign:'left',boxShadow:on?`0 0 8px ${s.color}33`:'none',transition:'all 0.15s'}}>
                     {on?'● ':'○ '}{s.name}
                   </button>
                 );})}
@@ -2088,8 +2088,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           ))}
         </div>
         {active.size>0&&(
-          <div style={{marginTop:'12px',background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'8px 12px',fontSize:'13px',color:T.textMuted,display:'flex',flexWrap:'wrap',gap:'8px',alignItems:'center'}}>
-            <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.1em'}}>ACTIVE: </span>
+          <div style={{marginTop:'12px',background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'8px 12px',fontSize: '16px',color:T.textMuted,display:'flex',flexWrap:'wrap',gap:'8px',alignItems:'center'}}>
+            <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.1em'}}>ACTIVE: </span>
             {[...active].map(s=>{const sd=STATES_DATA.find(x=>x.name===s);return sd?<span key={s} style={{color:sd.color}}>● {s}</span>:null;})}
           </div>
         )}
@@ -2105,11 +2105,11 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             return(
               <div key={f.id} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'10px',marginBottom:'8px'}}>
                 <div style={{display:'flex',gap:'7px',marginBottom:'10px',alignItems:'center'}}>
-                  <input value={f.name} onChange={e=>updFaction(f.id,'name',e.target.value)} placeholder="Faction name…" style={{...inp(),flex:1,fontSize:'15px'}}/>
+                  <input value={f.name} onChange={e=>updFaction(f.id,'name',e.target.value)} placeholder="Faction name…" style={{...inp(),flex:1,fontSize: '18px'}}/>
                   <button onClick={()=>delFaction(f.id)} style={{...Btn('#662020'),padding:'4px 9px'}}>✕</button>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:'7px'}}>
-                  <button onClick={()=>adjFavor(f.id,-1)} style={{...Btn('#4a7040'),padding:'4px 9px',fontSize:'14px',flexShrink:0}}>◀</button>
+                  <button onClick={()=>adjFavor(f.id,-1)} style={{...Btn('#4a7040'),padding:'4px 9px',fontSize: '17px',flexShrink:0}}>◀</button>
                   <div style={{flex:1,position:'relative',padding:'8px 0'}}>
                     <div style={{height:'5px',background:'#1a2a22',borderRadius:'3px',position:'relative'}}>
                       <div style={{position:'absolute',left:'50%',top:0,width:'1px',height:'100%',background:'#304838'}}/>
@@ -2117,32 +2117,32 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                     </div>
                     <input type="range" min={-100} max={100} value={f.favor} onChange={e=>updFaction(f.id,'favor',Number(e.target.value))} style={{position:'absolute',inset:0,opacity:0,cursor:'pointer',height:'100%'}}/>
                   </div>
-                  <button onClick={()=>adjFavor(f.id,1)} style={{...Btn('#4a7040'),padding:'4px 9px',fontSize:'14px',flexShrink:0}}>▶</button>
+                  <button onClick={()=>adjFavor(f.id,1)} style={{...Btn('#4a7040'),padding:'4px 9px',fontSize: '17px',flexShrink:0}}>▶</button>
                 </div>
                 <div style={{display:'flex',justifyContent:'space-between',marginTop:'5px'}}>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:T.textMuted}}>{f.favor>0?'+':''}{f.favor} favor</span>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:'12px',color:info.color,fontWeight:'600'}}>{info.label}</span>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.textMuted}}>{f.favor>0?'+':''}{f.favor} favor</span>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize: '15px',color:info.color,fontWeight:'600'}}>{info.label}</span>
                 </div>
               </div>
             );
           })}
-          {factions.length===0&&<div style={{color:T.textDim,textAlign:'center',padding:'16px 0',fontSize:'13px'}}>No factions tracked</div>}
+          {factions.length===0&&<div style={{color:T.textDim,textAlign:'center',padding:'16px 0',fontSize: '16px'}}>No factions tracked</div>}
           </div>
         </div>
         <div style={crd(T.gold)}>
           <SecTitle color={T.gold} right={
             <div style={{display:'flex',gap:'6px'}}>
-              <button onClick={()=>{setLibCatFilter('');setLibSearch('');setLibExpanded(null);setLibLoading(true);api.get('/inventory/general-items').then(r=>{setLibGenItems(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));setWepModal('browseGeneral');}} style={{...Btn(T.gold),padding:'4px 10px',fontSize:'10px'}}>+ ITEM</button>
-              <button onClick={()=>{setLibSearch('');setLibRarityFilter('');setLibExpanded(null);setLibShowMine(false);setLibLoading(true);api.get('/library/weapons').then(r=>{setLibWeapons(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));setWepModal('browseWeapon');}} style={{...Btn('#c8503a'),padding:'4px 10px',fontSize:'10px'}}>+ WEAPON</button>
-              <button onClick={()=>{setLibSlotFilter('');setLibRarityFilter('');setLibSearch('');setLibExpanded(null);setLibShowMine(false);setLibLoading(true);api.get('/library/armor').then(r=>{setLibArmor(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));setWepModal('browseArmor');}} style={{...Btn('#8a7040'),padding:'4px 10px',fontSize:'10px'}}>+ ARMOR</button>
-              <button onClick={()=>{setLibElemFilter('');setLibRarityFilter('');setLibExpanded(null);setLibShowMine(false);setLibLoading(true);api.get('/library/spell-gems').then(r=>{setLibGems(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));setWepModal('browseGem');}} style={{...Btn(T.magic),padding:'4px 10px',fontSize:'10px'}}>+ GEM</button>
-              <button onClick={()=>{setLibSearch('');setLibExpanded(null);setLibShowMine(false);setLibLoading(true);api.get('/library/focus-bracers').then(r=>{setLibBracers(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));setWepModal('browseBracer');}} style={{...Btn(T.magic),padding:'4px 10px',fontSize:'10px'}}>+ BRACER</button>
+              <button onClick={()=>{setLibCatFilter('');setLibSearch('');setLibExpanded(null);setLibLoading(true);api.get('/inventory/general-items').then(r=>{setLibGenItems(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));setWepModal('browseGeneral');}} style={{...Btn(T.gold),padding:'4px 10px',fontSize: '13px'}}>+ ITEM</button>
+              <button onClick={()=>{setLibSearch('');setLibRarityFilter('');setLibExpanded(null);setLibShowMine(false);setLibLoading(true);api.get('/library/weapons').then(r=>{setLibWeapons(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));setWepModal('browseWeapon');}} style={{...Btn('#c8503a'),padding:'4px 10px',fontSize: '13px'}}>+ WEAPON</button>
+              <button onClick={()=>{setLibSlotFilter('');setLibRarityFilter('');setLibSearch('');setLibExpanded(null);setLibShowMine(false);setLibLoading(true);api.get('/library/armor').then(r=>{setLibArmor(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));setWepModal('browseArmor');}} style={{...Btn('#8a7040'),padding:'4px 10px',fontSize: '13px'}}>+ ARMOR</button>
+              <button onClick={()=>{setLibElemFilter('');setLibRarityFilter('');setLibExpanded(null);setLibShowMine(false);setLibLoading(true);api.get('/library/spell-gems').then(r=>{setLibGems(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));setWepModal('browseGem');}} style={{...Btn(T.magic),padding:'4px 10px',fontSize: '13px'}}>+ GEM</button>
+              <button onClick={()=>{setLibSearch('');setLibExpanded(null);setLibShowMine(false);setLibLoading(true);api.get('/library/focus-bracers').then(r=>{setLibBracers(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));setWepModal('browseBracer');}} style={{...Btn(T.magic),padding:'4px 10px',fontSize: '13px'}}>+ BRACER</button>
             </div>
           }>Inventory</SecTitle>
           <div style={{maxHeight:'420px',overflowY:'auto',paddingRight:'2px'}}>
-          {invLoading&&<div style={{textAlign:'center',padding:'20px',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize:'11px'}}>LOADING…</div>}
+          {invLoading&&<div style={{textAlign:'center',padding:'20px',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize: '14px'}}>LOADING…</div>}
           {!invLoading&&inventory.length===0&&(
-            <div style={{textAlign:'center',padding:'24px',border:`1px dashed ${T.border}`,borderRadius:'3px',color:T.textDim,fontSize:'13px'}}>
+            <div style={{textAlign:'center',padding:'24px',border:`1px dashed ${T.border}`,borderRadius:'3px',color:T.textDim,fontSize: '16px'}}>
               No items in inventory. Use the buttons above to add weapons, armor, gems, or gear.
             </div>
           )}
@@ -2159,7 +2159,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               if(!items.length) return null;
               return(
                 <div key={grp.key} style={{marginBottom:'12px'}}>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.18em',color:grp.color,marginBottom:'6px',paddingBottom:'4px',borderBottom:`1px solid ${grp.color}22`}}>{grp.label.toUpperCase()}</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.18em',color:grp.color,marginBottom:'6px',paddingBottom:'4px',borderBottom:`1px solid ${grp.color}22`}}>{grp.label.toUpperCase()}</div>
                   {items.map(inv=>{
                     const det=inv.item_details;
                     const name=det?.name||'Unknown Item';
@@ -2172,18 +2172,18 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                     return(
                       <div key={inv.id} style={{display:'flex',alignItems:'center',gap:'8px',padding:'7px 10px',marginBottom:'4px',background:isEq?`${grp.color}10`:'transparent',border:`1px solid ${isEq?grp.color+'44':T.border}`,borderRadius:'3px'}}>
                         <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:'13px',fontWeight:'500',color:isEq?grp.color:T.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{name}</div>
-                          {det&&grp.key==='weapon'&&<div style={{fontSize:'11px',color:T.textMuted}}>{det.rarity} · d{det.base_die_type}</div>}
-                          {det&&grp.key==='armor'&&<div style={{fontSize:'11px',color:T.textMuted}}>{cap(det.slot||'')} · {parseFloat(det.mitigation_percent||'0')}% mit</div>}
-                          {det&&grp.key==='focus_bracer'&&<div style={{fontSize:'11px',color:T.magic}}>{cap(det.grade||'')} · {det.gem_slots} gem slots{det.req_focus>0?` · FOC ${det.req_focus}+`:''}</div>}
-                          {det&&grp.key==='spell_gem'&&<div style={{fontSize:'11px',color:T.textMuted}}>{det.rarity} · {det.num_dice}d{det.die_type} {libGemElement(det.element_type)}</div>}
-                          {grp.key==='general'&&<div style={{fontSize:'11px',color:T.textMuted}}>×{inv.quantity}</div>}
+                          <div style={{fontSize: '16px',fontWeight:'500',color:isEq?grp.color:T.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{name}</div>
+                          {det&&grp.key==='weapon'&&<div style={{fontSize: '14px',color:T.textMuted}}>{det.rarity} · d{det.base_die_type}</div>}
+                          {det&&grp.key==='armor'&&<div style={{fontSize: '14px',color:T.textMuted}}>{cap(det.slot||'')} · {parseFloat(det.mitigation_percent||'0')}% mit</div>}
+                          {det&&grp.key==='focus_bracer'&&<div style={{fontSize: '14px',color:T.magic}}>{cap(det.grade||'')} · {det.gem_slots} gem slots{det.req_focus>0?` · FOC ${det.req_focus}+`:''}</div>}
+                          {det&&grp.key==='spell_gem'&&<div style={{fontSize: '14px',color:T.textMuted}}>{det.rarity} · {det.num_dice}d{det.die_type} {libGemElement(det.element_type)}</div>}
+                          {grp.key==='general'&&<div style={{fontSize: '14px',color:T.textMuted}}>×{inv.quantity}</div>}
                         </div>
 
                         {/* Equip controls for weapons, armor, gems */}
                         {grp.key==='weapon'&&!isEq&&(
                           <div style={{display:'flex',gap:'4px',alignItems:'center'}}>
-                            <select value={slotPick} onChange={e=>setInvEquipSlot(p=>({...p,[inv.id]:e.target.value}))} style={{...inp(),width:'100px',fontSize:'11px',padding:'2px 6px'}}>
+                            <select value={slotPick} onChange={e=>setInvEquipSlot(p=>({...p,[inv.id]:e.target.value}))} style={{...inp(),width:'100px',fontSize: '14px',padding:'2px 6px'}}>
                               <option value="main_hand">Main Hand</option>
                               <option value="off_hand">Off Hand</option>
                             </select>
@@ -2192,14 +2192,14 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                               onClick={()=>equipInventoryItem(inv, slotPick)}
                               disabled={!meetsEquipStatRequirements('weapon', det)}
                               title={equipStatRequirementMessage('weapon', det) || undefined}
-                              style={{...Btn('#c8503a'),padding:'3px 10px',fontSize:'10px',opacity:!meetsEquipStatRequirements('weapon', det)?0.35:1}}
+                              style={{...Btn('#c8503a'),padding:'3px 10px',fontSize: '13px',opacity:!meetsEquipStatRequirements('weapon', det)?0.35:1}}
                             >
                               EQUIP
                             </button>
                           </div>
                         )}
                         {grp.key==='weapon'&&isEq&&(
-                          <button onClick={()=>unequipInventoryItem(inv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize:'10px'}}>UNEQUIP</button>
+                          <button onClick={()=>unequipInventoryItem(inv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize: '13px'}}>UNEQUIP</button>
                         )}
                         {grp.key==='armor'&&!isEq&&det&&(
                           <button
@@ -2207,13 +2207,13 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                             onClick={()=>equipInventoryItem(inv, det.slot)}
                             disabled={!meetsEquipStatRequirements('armor', det)}
                             title={equipStatRequirementMessage('armor', det) || undefined}
-                            style={{...Btn('#8a7040'),padding:'3px 10px',fontSize:'10px',opacity:!meetsEquipStatRequirements('armor', det)?0.35:1}}
+                            style={{...Btn('#8a7040'),padding:'3px 10px',fontSize: '13px',opacity:!meetsEquipStatRequirements('armor', det)?0.35:1}}
                           >
                             EQUIP
                           </button>
                         )}
                         {grp.key==='armor'&&isEq&&(
-                          <button onClick={()=>unequipInventoryItem(inv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize:'10px'}}>UNEQUIP</button>
+                          <button onClick={()=>unequipInventoryItem(inv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize: '13px'}}>UNEQUIP</button>
                         )}
                         {grp.key==='focus_bracer'&&!isEq&&(
                           <button
@@ -2221,38 +2221,38 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                             onClick={()=>equipInventoryItem(inv,'bracer')}
                             disabled={!meetsEquipStatRequirements('focus_bracer', det)}
                             title={equipStatRequirementMessage('focus_bracer', det) || undefined}
-                            style={{...Btn(T.magic),padding:'3px 10px',fontSize:'10px',opacity:!meetsEquipStatRequirements('focus_bracer', det)?0.35:1}}
+                            style={{...Btn(T.magic),padding:'3px 10px',fontSize: '13px',opacity:!meetsEquipStatRequirements('focus_bracer', det)?0.35:1}}
                           >
                             EQUIP
                           </button>
                         )}
                         {grp.key==='focus_bracer'&&isEq&&(
-                          <button onClick={()=>unequipInventoryItem(inv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize:'10px'}}>UNEQUIP</button>
+                          <button onClick={()=>unequipInventoryItem(inv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize: '13px'}}>UNEQUIP</button>
                         )}
                         {grp.key==='spell_gem'&&!isEq&&(
                           <div style={{display:'flex',gap:'4px',alignItems:'center'}}>
-                            <select value={slotPick} onChange={e=>setInvEquipSlot(p=>({...p,[inv.id]:e.target.value}))} style={{...inp(),width:'90px',fontSize:'11px',padding:'2px 6px'}}>
+                            <select value={slotPick} onChange={e=>setInvEquipSlot(p=>({...p,[inv.id]:e.target.value}))} style={{...inp(),width:'90px',fontSize: '14px',padding:'2px 6px'}}>
                               {bracerGrade==='None'
                                 ? <option value="">No bracer</option>
                                 : Array.from({length:BRACER_SLOTS[bracerGrade]},(_,i)=><option key={i} value={`bracer_gem_${i}`}>Slot {i+1}</option>)
                               }
                             </select>
-                            <button onClick={()=>bracerGrade!=='None'&&equipInventoryItem(inv, slotPick)} disabled={bracerGrade==='None'} style={{...Btn(T.magic),padding:'3px 10px',fontSize:'10px',opacity:bracerGrade==='None'?0.4:1}}>EQUIP</button>
+                            <button onClick={()=>bracerGrade!=='None'&&equipInventoryItem(inv, slotPick)} disabled={bracerGrade==='None'} style={{...Btn(T.magic),padding:'3px 10px',fontSize: '13px',opacity:bracerGrade==='None'?0.4:1}}>EQUIP</button>
                           </div>
                         )}
                         {grp.key==='spell_gem'&&isEq&&(
-                          <button onClick={()=>unequipInventoryItem(inv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize:'10px'}}>UNEQUIP</button>
+                          <button onClick={()=>unequipInventoryItem(inv)} style={{...Btn(T.textMuted),padding:'3px 10px',fontSize: '13px'}}>UNEQUIP</button>
                         )}
 
                         {/* Qty controls for general items */}
                         {grp.key==='general'&&(
                           <div style={{display:'flex',gap:'4px',alignItems:'center'}}>
-                            <button onClick={()=>updateInvQty(inv,-1)} style={{...Btn(T.textMuted),padding:'2px 8px',fontSize:'13px'}}>−</button>
-                            <button onClick={()=>updateInvQty(inv,+1)} style={{...Btn(T.textMuted),padding:'2px 8px',fontSize:'13px'}}>+</button>
+                            <button onClick={()=>updateInvQty(inv,-1)} style={{...Btn(T.textMuted),padding:'2px 8px',fontSize: '16px'}}>−</button>
+                            <button onClick={()=>updateInvQty(inv,+1)} style={{...Btn(T.textMuted),padding:'2px 8px',fontSize: '16px'}}>+</button>
                           </div>
                         )}
 
-                        <button onClick={()=>removeFromInventory(inv)} style={{...Btn('#662020'),padding:'3px 8px',fontSize:'11px',flexShrink:0}}>✕</button>
+                        <button onClick={()=>removeFromInventory(inv)} style={{...Btn('#662020'),padding:'3px 8px',fontSize: '14px',flexShrink:0}}>✕</button>
                       </div>
                     );
                   })}
@@ -2275,13 +2275,13 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               setLibPetSearch(''); setLibPetLoading(true); setLibPetItems([]);
               api.get('/library/pets').then(r=>{setLibPetItems(r.data.data||r.data||[]);setLibPetLoading(false);}).catch(()=>setLibPetLoading(false));
               setWepModal('browsePet');
-            }} style={{...Btn('#9b6fe8'),padding:'4px 10px',fontSize:'10px'}}>+ BOND PET</button>
+            }} style={{...Btn('#9b6fe8'),padding:'4px 10px',fontSize: '13px'}}>+ BOND PET</button>
           }>Pets & Companions</SecTitle>
 
           <div style={{maxHeight:'420px',overflowY:'auto',paddingRight:'2px'}}>
-            {petLoading&&<div style={{textAlign:'center',padding:'20px',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize:'11px'}}>LOADING…</div>}
+            {petLoading&&<div style={{textAlign:'center',padding:'20px',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize: '14px'}}>LOADING…</div>}
             {!petLoading&&charPets.length===0&&(
-              <div style={{textAlign:'center',padding:'24px',border:`1px dashed ${T.border}`,borderRadius:'3px',color:T.textDim,fontSize:'13px'}}>
+              <div style={{textAlign:'center',padding:'24px',border:`1px dashed ${T.border}`,borderRadius:'3px',color:T.textDim,fontSize: '16px'}}>
                 No companions bonded. Press + BOND PET to add one.
               </div>
             )}
@@ -2301,24 +2301,24 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                       value={bond.nickname||''}
                       onChange={e=>updatePetNickname(bond.id, e.target.value||null)}
                       placeholder={pet.name}
-                      style={{...inp(),flex:1,fontSize:'14px',fontWeight:'600'}}
+                      style={{...inp(),flex:1,fontSize: '17px',fontWeight:'600'}}
                     />
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:'#9b6fe8',background:'#9b6fe811',border:`1px solid #9b6fe833`,borderRadius:'3px',padding:'2px 7px',whiteSpace:'nowrap'}}>{pet.species}</span>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:'#9b6fe8',background:'#9b6fe811',border:`1px solid #9b6fe833`,borderRadius:'3px',padding:'2px 7px',whiteSpace:'nowrap'}}>{pet.species}</span>
                     <button onClick={()=>removePet(bond.id)} style={{...Btn('#662020'),padding:'4px 9px',flexShrink:0}}>✕</button>
                   </div>
 
                   {/* HP tracker */}
                   <div style={{marginBottom:'8px'}}>
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'}}>
-                      <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted}}>HIT POINTS</span>
-                      <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:hpColor,fontWeight:'700'}}>{curHP} / {maxHP}</span>
+                      <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted}}>HIT POINTS</span>
+                      <span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:hpColor,fontWeight:'700'}}>{curHP} / {maxHP}</span>
                     </div>
                     <div style={{height:'5px',background:T.border,borderRadius:'3px',marginBottom:'6px'}}>
                       <div style={{height:'100%',width:`${hpPct}%`,background:hpColor,borderRadius:'3px',transition:'width 0.15s'}}/>
                     </div>
                     <div style={{display:'flex',gap:'6px'}}>
-                      <button onClick={()=>updatePetHP(bond.id,-1)} style={{...Btn('#662020'),flex:1,padding:'3px',fontSize:'14px'}}>−</button>
-                      <button onClick={()=>updatePetHP(bond.id,+1)} style={{...Btn('#50a060'),flex:1,padding:'3px',fontSize:'14px'}}>+</button>
+                      <button onClick={()=>updatePetHP(bond.id,-1)} style={{...Btn('#662020'),flex:1,padding:'3px',fontSize: '17px'}}>−</button>
+                      <button onClick={()=>updatePetHP(bond.id,+1)} style={{...Btn('#50a060'),flex:1,padding:'3px',fontSize: '17px'}}>+</button>
                     </div>
                   </div>
 
@@ -2326,8 +2326,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'4px',marginBottom:'8px'}}>
                     {[['PWR',pet.power,'#c8503a'],['AGI',pet.agility,'#50a060'],['FOC',pet.focus,'#9b6fe8'],['PRE',pet.presence,'#c4922a']].map(([lbl,val,col])=>(
                       <div key={lbl} style={{background:T.bg,borderRadius:'3px',padding:'4px',textAlign:'center',border:`1px solid ${col}22`}}>
-                        <div style={{fontFamily:"'Cinzel',serif",fontSize:'9px',color:T.textMuted}}>{lbl}</div>
-                        <div style={{fontWeight:'700',color:col,fontSize:'14px'}}>{val}</div>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize: '12px',color:T.textMuted}}>{lbl}</div>
+                        <div style={{fontWeight:'700',color:col,fontSize: '17px'}}>{val}</div>
                       </div>
                     ))}
                   </div>
@@ -2335,11 +2335,11 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   {/* Attacks */}
                   {pet.attacks?.length>0&&(
                     <div>
-                      <div style={{fontFamily:"'Cinzel',serif",fontSize:'9px',letterSpacing:'0.14em',color:T.textMuted,marginBottom:'4px'}}>ATTACKS</div>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize: '12px',letterSpacing:'0.14em',color:T.textMuted,marginBottom:'4px'}}>ATTACKS</div>
                       {pet.attacks.map(atk=>(
-                        <div key={atk.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'3px 6px',background:T.bg,borderRadius:'3px',marginBottom:'3px',fontSize:'12px'}}>
+                        <div key={atk.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'3px 6px',background:T.bg,borderRadius:'3px',marginBottom:'3px',fontSize: '15px'}}>
                           <span style={{color:T.text}}>{atk.name}</span>
-                          <span style={{color:'#9b6fe8',fontFamily:"'Cinzel',serif",fontSize:'11px'}}>{atk.damage_dice} <span style={{color:T.textMuted}}>{atk.damage_type}</span></span>
+                          <span style={{color:'#9b6fe8',fontFamily:"'Cinzel',serif",fontSize: '14px'}}>{atk.damage_dice} <span style={{color:T.textMuted}}>{atk.damage_type}</span></span>
                         </div>
                       ))}
                     </div>
@@ -2347,8 +2347,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
                   {/* Movement & RP */}
                   <div style={{display:'flex',gap:'8px',marginTop:'6px'}}>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted}}>MOV: <span style={{color:T.text}}>{pet.movement}ft</span></span>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted}}>RP: <span style={{color:T.rp}}>{pet.base_rp}</span></span>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted}}>MOV: <span style={{color:T.text}}>{pet.movement}ft</span></span>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted}}>RP: <span style={{color:T.rp}}>{pet.base_rp}</span></span>
                   </div>
                 </div>
               );
@@ -2364,7 +2364,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       </div>
 
       <div style={{textAlign:'center',marginTop:'24px',paddingTop:'14px',borderTop:`1px solid ${T.border}`}}>
-        <div style={{fontFamily:"'Cinzel',serif",fontSize:'9px',letterSpacing:'0.25em',color:T.textDim}}>VELION MYTHERA COMPENDIUM — CHARACTER SHEET</div>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize: '12px',letterSpacing:'0.25em',color:T.textDim}}>VELION MYTHERA COMPENDIUM — CHARACTER SHEET</div>
       </div>
 
       {/* ══════════════════════ MODALS ═══════════════════════════════════ */}
@@ -2372,12 +2372,12 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* Level Up */}
       {luOpen&&(
         <ModalWrap accentColor={T.gold} minW="480px">
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:'13px',letterSpacing:'0.22em',color:T.gold,marginBottom:'2px'}}>LEVEL UP</div>
-          <div style={{fontSize:'20px',fontWeight:'500',marginBottom:'4px'}}>Level {level} <span style={{color:T.gold}}>→ {luNewLvl}</span></div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize: '16px',letterSpacing:'0.22em',color:T.gold,marginBottom:'2px'}}>LEVEL UP</div>
+          <div style={{fontSize: '23px',fontWeight:'500',marginBottom:'4px'}}>Level {level} <span style={{color:T.gold}}>→ {luNewLvl}</span></div>
           <div style={{height:'1px',background:T.goldDim,marginBottom:'18px'}}/>
 
           <Fld label="Chosen Attribute (used in RP formula)" style={{marginBottom:'16px'}}>
-            <select value={luChosen} onChange={e=>setLuChosen(e.target.value)} style={{...inp(),color:ATTR_COLOR[luChosen],fontSize:'16px'}}>
+            <select value={luChosen} onChange={e=>setLuChosen(e.target.value)} style={{...inp(),color:ATTR_COLOR[luChosen],fontSize: '19px'}}>
               {ATTRS.map(a=><option key={a} style={{color:ATTR_COLOR[a]}}>{a}</option>)}
             </select>
           </Fld>
@@ -2385,18 +2385,18 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           <div style={{marginBottom:'18px'}}>
             <div style={{display:'flex',justifyContent:'space-between',marginBottom:'10px'}}>
               <label style={LBL}>Distribute 2 Attribute Points <span style={{color:T.textDim}}>(max +1 each)</span></label>
-              <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:luTotal===2?T.gold:T.textMuted}}>{luTotal}/2</span>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:luTotal===2?T.gold:T.textMuted}}>{luTotal}/2</span>
             </div>
             {ATTRS.map(attr=>{
               const cur=attrs[attr],added=luDist[attr],nv=cur+added,canAdd=luDist[attr]<1&&luTotal<2;
               return(
                 <div key={attr} style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'8px',background:T.surface,border:`1px solid ${added>0?ATTR_COLOR[attr]+'55':T.border}`,borderRadius:'3px',padding:'8px 12px'}}>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:ATTR_COLOR[attr],minWidth:'75px',fontWeight:'600'}}>{attr}</span>
-                  <span style={{fontSize:'18px',color:T.textMuted}}>{cur}</span>
-                  {added>0&&<><span style={{color:T.textDim}}>→</span><span style={{fontSize:'18px',fontWeight:'700',color:ATTR_COLOR[attr]}}>{nv}</span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:ATTR_COLOR[attr]}}>(+1)</span></>}
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:ATTR_COLOR[attr],minWidth:'75px',fontWeight:'600'}}>{attr}</span>
+                  <span style={{fontSize: '21px',color:T.textMuted}}>{cur}</span>
+                  {added>0&&<><span style={{color:T.textDim}}>→</span><span style={{fontSize: '21px',fontWeight:'700',color:ATTR_COLOR[attr]}}>{nv}</span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:ATTR_COLOR[attr]}}>(+1)</span></>}
                   <div style={{flex:1}}/>
-                  <button onClick={()=>luSub(attr)} disabled={luDist[attr]<=0} style={{...Btn(ATTR_COLOR[attr]),padding:'3px 12px',fontSize:'16px',lineHeight:'1'}}>−</button>
-                  <button onClick={()=>luAdd(attr)} disabled={!canAdd}        style={{...Btn(ATTR_COLOR[attr]),padding:'3px 12px',fontSize:'16px',lineHeight:'1',background:canAdd?`${ATTR_COLOR[attr]}15`:'transparent'}}>+</button>
+                  <button onClick={()=>luSub(attr)} disabled={luDist[attr]<=0} style={{...Btn(ATTR_COLOR[attr]),padding:'3px 12px',fontSize: '19px',lineHeight:'1'}}>−</button>
+                  <button onClick={()=>luAdd(attr)} disabled={!canAdd}        style={{...Btn(ATTR_COLOR[attr]),padding:'3px 12px',fontSize: '19px',lineHeight:'1',background:canAdd?`${ATTR_COLOR[attr]}15`:'transparent'}}>+</button>
                 </div>
               );
             })}
@@ -2405,19 +2405,19 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           <div style={{marginBottom:'18px',background:T.surface,border:`1px solid ${luGRoll?T.gold+'55':T.border}`,borderRadius:'3px',padding:'12px'}}>
             <label style={LBL}>Growth Pool — Roll 1d6</label>
             {characterId ? (
-              <div style={{fontSize:'14px',color:T.textMuted,marginTop:'6px'}}>
+              <div style={{fontSize: '17px',color:T.textMuted,marginTop:'6px'}}>
                 {luGRoll
-                  ? <span>Server rolled <strong style={{color:T.gold,fontSize:'18px'}}>{luGRoll}</strong> → New pool: <strong style={{color:T.gold}}>{luNewPool}</strong></span>
+                  ? <span>Server rolled <strong style={{color:T.gold,fontSize: '21px'}}>{luGRoll}</strong> → New pool: <strong style={{color:T.gold}}>{luNewPool}</strong></span>
                   : <span style={{fontStyle:'italic'}}>The server will roll your 1d6 on confirmation.</span>
                 }
               </div>
             ) : (
               <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:'15px',color:T.textMuted}}>Current: <strong style={{color:T.gold}}>{growthPool}</strong></div>
-                  {luGRoll&&<div style={{fontSize:'15px',marginTop:'3px'}}>Rolled <strong style={{color:T.gold,fontSize:'18px'}}>{luGRoll}</strong> → New: <strong style={{color:T.gold}}>{luNewPool}</strong></div>}
+                  <div style={{fontSize: '18px',color:T.textMuted}}>Current: <strong style={{color:T.gold}}>{growthPool}</strong></div>
+                  {luGRoll&&<div style={{fontSize: '18px',marginTop:'3px'}}>Rolled <strong style={{color:T.gold,fontSize: '21px'}}>{luGRoll}</strong> → New: <strong style={{color:T.gold}}>{luNewPool}</strong></div>}
                 </div>
-                <button onClick={()=>setLuGRoll(rollD(6))} style={{...Btn(T.gold),padding:'9px 20px',fontSize:'12px',background:`${T.gold}12`,flexShrink:0}}>
+                <button onClick={()=>setLuGRoll(rollD(6))} style={{...Btn(T.gold),padding:'9px 20px',fontSize: '15px',background:`${T.gold}12`,flexShrink:0}}>
                   ⬡ ROLL {luGRoll?'(reroll)':''}
                 </button>
               </div>
@@ -2427,14 +2427,14 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           {(luTotal===2||luGRoll)&&(
             <div style={{marginBottom:'18px',background:'#080c0a',border:`1px solid ${T.gold}33`,borderRadius:'3px',padding:'12px'}}>
               <label style={{...LBL,color:T.gold,marginBottom:'8px'}}>Preview at Level {luNewLvl}</label>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',fontSize:'14px'}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',fontSize: '17px'}}>
                 <div style={{background:T.surface,borderRadius:'3px',padding:'7px 10px'}}>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.rp,marginBottom:'3px'}}>BASE RP</div>
-                  <span style={{color:T.textMuted}}>{baseRP}</span> → <span style={{color:T.rp,fontWeight:'700',fontSize:'18px'}}>{luNewBase}</span>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.rp,marginBottom:'3px'}}>BASE RP</div>
+                  <span style={{color:T.textMuted}}>{baseRP}</span> → <span style={{color:T.rp,fontWeight:'700',fontSize: '21px'}}>{luNewBase}</span>
                 </div>
                 <div style={{background:T.surface,borderRadius:'3px',padding:'7px 10px'}}>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.hp,marginBottom:'3px'}}>MAX HP</div>
-                  <span style={{color:T.textMuted}}>{fmtNum(maxHP)}</span> → <span style={{color:T.hp,fontWeight:'700',fontSize:'18px'}}>{fmtNum(luNewHP)}</span>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.hp,marginBottom:'3px'}}>MAX HP</div>
+                  <span style={{color:T.textMuted}}>{fmtNum(maxHP)}</span> → <span style={{color:T.hp,fontWeight:'700',fontSize: '21px'}}>{fmtNum(luNewHP)}</span>
                 </div>
               </div>
             </div>
@@ -2442,7 +2442,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
             <button onClick={()=>setLuOpen(false)} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
-            <button onClick={confirmLU} disabled={!luReady} style={{...Btn(T.gold),padding:'10px',background:luReady?`${T.gold}15`:'transparent',fontSize:'12px',letterSpacing:'0.12em'}}>✦ CONFIRM LEVEL UP</button>
+            <button onClick={confirmLU} disabled={!luReady} style={{...Btn(T.gold),padding:'10px',background:luReady?`${T.gold}15`:'transparent',fontSize: '15px',letterSpacing:'0.12em'}}>✦ CONFIRM LEVEL UP</button>
           </div>
         </ModalWrap>
       )}
@@ -2450,8 +2450,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* Armor equip — pick inventory row when multiple match slot */}
       {armorEquipPicker && (
         <ModalWrap accentColor="#8a7040" minW="440px">
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.22em', color: '#8a7040', marginBottom: '2px' }}>EQUIP ARMOR</div>
-          <div style={{ fontSize: '17px', fontWeight: '500', marginBottom: '4px' }}>{armorEquipPicker.slot}</div>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: '15px', letterSpacing: '0.22em', color: '#8a7040', marginBottom: '2px' }}>EQUIP ARMOR</div>
+          <div style={{ fontSize: '20px', fontWeight: '500', marginBottom: '4px' }}>{armorEquipPicker.slot}</div>
           <div style={{ height: '1px', background: '#3a2f10', marginBottom: '14px' }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', maxHeight: 'min(60vh, 360px)', overflowY: 'auto' }}>
             {armorEquipPicker.items.map((inv) => {
@@ -2471,8 +2471,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>{nm}</div>
-                    <div style={{ fontSize: '11px', color: T.textMuted }}>
+                    <div style={{ fontSize: '17px', fontWeight: '500', marginBottom: '4px' }}>{nm}</div>
+                    <div style={{ fontSize: '14px', color: T.textMuted }}>
                       {det ? <><Badge rarity={cap(det.rarity || 'None')} /> · {parseFloat(det.mitigation_percent || '0')}% mit · {cap(det.category || '')}</> : null}
                     </div>
                   </div>
@@ -2483,7 +2483,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                       equipInventoryItem(inv, det.slot);
                       setArmorEquipPicker(null);
                     }}
-                    style={{ ...Btn('#8a7040'), padding: '8px 14px', fontSize: '11px', flexShrink: 0 }}
+                    style={{ ...Btn('#8a7040'), padding: '8px 14px', fontSize: '14px', flexShrink: 0 }}
                   >
                     EQUIP
                   </button>
@@ -2500,8 +2500,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* Armor Edit */}
       {armorModal&&armorDraft&&(
         <ModalWrap accentColor="#8a7040" minW="480px">
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:'#8a7040',marginBottom:'2px'}}>EDIT ARMOR SLOT</div>
-          <div style={{fontSize:'19px',fontWeight:'500',marginBottom:'4px'}}>{armorModal}</div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.22em',color:'#8a7040',marginBottom:'2px'}}>EDIT ARMOR SLOT</div>
+          <div style={{fontSize: '22px',fontWeight:'500',marginBottom:'4px'}}>{armorModal}</div>
           <div style={{height:'1px',background:'#3a2f10',marginBottom:'16px'}}/>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginBottom:'12px'}}>
             <Fld label="Name"><input value={armorDraft.name} onChange={e=>setArmorDraft(p=>({...p,name:e.target.value}))} placeholder={`${armorModal} name…`} style={inp()}/></Fld>
@@ -2514,15 +2514,15 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'6px'}}>
               {ELEMENTS.map(el=>(
                 <div key={el}>
-                  <label style={{...LBL,color:ELEM_COLOR[el],fontSize:'9px',marginBottom:'2px'}}>{el}</label>
-                  <input type="number" value={armorDraft.resistances[el]} min={0} max={200} onChange={e=>updDraftRes(el,e.target.value)} style={{...inp(),textAlign:'center',fontSize:'13px',padding:'3px 5px'}}/>
+                  <label style={{...LBL,color:ELEM_COLOR[el],fontSize: '12px',marginBottom:'2px'}}>{el}</label>
+                  <input type="number" value={armorDraft.resistances[el]} min={0} max={200} onChange={e=>updDraftRes(el,e.target.value)} style={{...inp(),textAlign:'center',fontSize: '16px',padding:'3px 5px'}}/>
                 </div>
               ))}
             </div>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
             <button onClick={()=>{setArmorModal(null);setArmorDraft(null);}} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
-            <button onClick={applyArmor} style={{...Btn('#8a7040'),padding:'10px',background:'#181005',fontSize:'12px'}}>✓ APPLY CHANGES</button>
+            <button onClick={applyArmor} style={{...Btn('#8a7040'),padding:'10px',background:'#181005',fontSize: '15px'}}>✓ APPLY CHANGES</button>
           </div>
         </ModalWrap>
       )}
@@ -2530,7 +2530,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* Weapon Edit */}
       {wepModal==='edit'&&wepDraft&&(
         <ModalWrap accentColor="#c8503a" minW="480px">
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:'#c8503a',marginBottom:'16px'}}>WEAPON CONFIGURATION</div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.22em',color:'#c8503a',marginBottom:'16px'}}>WEAPON CONFIGURATION</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginBottom:'12px'}}>
             <Fld label="Weapon Name"><input value={wepDraft.name} onChange={e=>setWepDraft(p=>({...p,name:e.target.value}))} style={inp()}/></Fld>
             <Fld label="Attribute Req."><input value={wepDraft.attrReq} onChange={e=>setWepDraft(p=>({...p,attrReq:e.target.value}))} placeholder="e.g. PWR 14" style={inp()}/></Fld>
@@ -2540,7 +2540,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           <div style={{marginBottom:'12px'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
               <label style={LBL}>Damage Channels</label>
-              <button onClick={draftAddCh} style={{...Btn('#c8503a'),padding:'3px 10px',fontSize:'10px'}}>+ CHANNEL</button>
+              <button onClick={draftAddCh} style={{...Btn('#c8503a'),padding:'3px 10px',fontSize: '13px'}}>+ CHANNEL</button>
             </div>
             {wepDraft.channels.map((ch,ci)=>(
               <div key={ci} style={{display:'flex',gap:'7px',alignItems:'center',marginBottom:'5px',background:'#080a12',padding:'6px 8px',borderRadius:'3px'}}>
@@ -2549,7 +2549,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   {ELEMENTS.map(el=><option key={el} style={{color:ELEM_COLOR[el]}}>{el}</option>)}
                 </select>
                 <input type="number" value={ch.dice} min={1} max={12} onChange={e=>draftUpdCh(ci,'dice',Number(e.target.value))} style={{...inp(),width:'55px',textAlign:'center'}}/>
-                <span style={{color:T.textMuted,fontSize:'14px',whiteSpace:'nowrap'}}>{wepDraft.dieType} × RP</span>
+                <span style={{color:T.textMuted,fontSize: '17px',whiteSpace:'nowrap'}}>{wepDraft.dieType} × RP</span>
                 {wepDraft.channels.length>1&&<button onClick={()=>draftDelCh(ci)} style={{...Btn('#662020'),padding:'3px 7px'}}>✕</button>}
               </div>
             ))}
@@ -2557,7 +2557,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           <Fld label="Notes / Special Properties" style={{marginBottom:'16px'}}><input value={wepDraft.notes} onChange={e=>setWepDraft(p=>({...p,notes:e.target.value}))} placeholder="Enchantments, special rules…" style={inp()}/></Fld>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
             <button onClick={()=>{setWepModal(null);setWepDraft(null);}} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
-            <button onClick={applyWepEdit} style={{...Btn('#c8503a'),padding:'10px',background:'#1a0604',fontSize:'12px'}}>✓ APPLY WEAPON</button>
+            <button onClick={applyWepEdit} style={{...Btn('#c8503a'),padding:'10px',background:'#1a0604',fontSize: '15px'}}>✓ APPLY WEAPON</button>
           </div>
         </ModalWrap>
       )}
@@ -2565,15 +2565,15 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* Attack Modal */}
       {wepModal==='attack'&&atkWeapon&&(
         <ModalWrap accentColor="#c8503a" minW="480px">
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:atkOppFlow?'#a87850':'#c8503a',marginBottom:'2px'}}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.22em',color:atkOppFlow?'#a87850':'#c8503a',marginBottom:'2px'}}>
             {atkOppFlow
               ? (atkStage === 'stake' ? 'OPPORTUNITY ATTACK' : 'RESOLVE OPPORTUNITY')
               : atkStage==='stake'?'STAKE RESOURCE POINTS':atkStage==='roll'?'RESOLVE ATTACK':'ATTACK RESULT'}
           </div>
-          <div style={{fontSize:'19px',fontWeight:'500',marginBottom:'4px'}}>{atkWeapon.name}</div>
+          <div style={{fontSize: '22px',fontWeight:'500',marginBottom:'4px'}}>{atkWeapon.name}</div>
           <div style={{display:'flex',gap:'7px',alignItems:'center',marginBottom:'16px'}}>
             <Badge rarity={atkWeapon.rarity}/>
-            <span style={{fontSize:'13px',color:T.textMuted}}>
+            <span style={{fontSize: '16px',color:T.textMuted}}>
               {atkWeapon.channels.map((ch,ci)=>(
                 <span key={ci}>{ci>0?' + ':''}{ch.dice}{atkWeapon.dieType} <span style={{color:ch.element==='Physical'?T.textMuted:ELEM_COLOR[ch.element]}}>{ch.element}</span></span>
               ))}{atkOppFlow ? ' × 1 (no RP multiplier)' : ' × RP'}
@@ -2583,12 +2583,12 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           {/* Stage 1: Stake — opportunity (1 RP, no overextend) */}
           {atkStage==='stake'&&!oxOpen&&atkOppFlow&&(
             <div style={{marginBottom:'16px'}}>
-              <div style={{fontSize:'13px',color:T.textMuted,lineHeight:1.65,marginBottom:'14px',background:'#0c0a08',border:`1px solid ${T.border}`,borderRadius:'3px',padding:'12px'}}>
+              <div style={{fontSize: '16px',color:T.textMuted,lineHeight:1.65,marginBottom:'14px',background:'#0c0a08',border:`1px solid ${T.border}`,borderRadius:'3px',padding:'12px'}}>
                 Costs <strong style={{color:T.rp}}>1 RP</strong> from your pool. Damage uses weapon dice <strong>×1</strong> (not × staked RP). Pressure steps / offensive overextend do not apply.
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
                 <button type="button" onClick={cancelPreStake} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
-                <button type="button" onClick={doStake} disabled={curRP < 1} style={{...Btn('#c8503a'),padding:'10px',background:'#1a0604',fontSize:'12px',opacity:curRP<1?0.35:1}}>SPEND 1 RP — CONTINUE</button>
+                <button type="button" onClick={doStake} disabled={curRP < 1} style={{...Btn('#c8503a'),padding:'10px',background:'#1a0604',fontSize: '15px',opacity:curRP<1?0.35:1}}>SPEND 1 RP — CONTINUE</button>
               </div>
             </div>
           )}
@@ -2599,21 +2599,21 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               <div style={{marginBottom:'14px'}}>
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
                   <label style={LBL}>RP to Stake</label>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:T.rp}}>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.rp}}>
                     Available: <strong>{curRP}</strong>
                     {tempRP>0&&<span style={{color:'#ff7040'}}> +{tempRP} OX temp</span>}
                   </span>
                 </div>
                 <div style={{display:'flex',gap:'12px',alignItems:'center',marginBottom:'8px'}}>
                   <div style={{display:'flex',alignItems:'stretch',flexShrink:0}}>
-                    <button onClick={()=>setAtkRP(p=>Math.max(0,p-1))} style={{...Btn('#c8503a'),padding:'0 12px',fontSize:'22px',fontWeight:'300',borderRight:'none',borderRadius:'3px 0 0 3px',lineHeight:1}}>−</button>
+                    <button onClick={()=>setAtkRP(p=>Math.max(0,p-1))} style={{...Btn('#c8503a'),padding:'0 12px',fontSize: '25px',fontWeight:'300',borderRight:'none',borderRadius:'3px 0 0 3px',lineHeight:1}}>−</button>
                     <StableNumInput
                       value={atkRP}
                       onChange={v=>setAtkRP(Math.min(curRP+tempRP,Math.max(0,v)))}
                       min={0} max={curRP+tempRP}
-                      style={{...inp(),width:'72px',textAlign:'center',fontSize:'22px',fontWeight:'700',color:'#c8503a',borderRadius:0,borderLeft:'none',borderRight:'none'}}
+                      style={{...inp(),width:'72px',textAlign:'center',fontSize: '25px',fontWeight:'700',color:'#c8503a',borderRadius:0,borderLeft:'none',borderRight:'none'}}
                     />
-                    <button onClick={()=>setAtkRP(p=>Math.min(curRP+tempRP,p+1))} style={{...Btn('#c8503a'),padding:'0 12px',fontSize:'22px',fontWeight:'300',borderLeft:'none',borderRadius:'0 3px 3px 0',lineHeight:1}}>+</button>
+                    <button onClick={()=>setAtkRP(p=>Math.min(curRP+tempRP,p+1))} style={{...Btn('#c8503a'),padding:'0 12px',fontSize: '25px',fontWeight:'300',borderLeft:'none',borderRadius:'0 3px 3px 0',lineHeight:1}}>+</button>
                   </div>
                   {/* Controlled slider — updates atkRP (and StableNumInput) while dragging */}
                   <div style={{flex:1,position:'relative',padding:'10px 0'}}>
@@ -2638,26 +2638,26 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                 </div>
                 <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'10px',marginBottom:'10px'}}>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted}}>PRESSURE STEPS</span>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:'#c8503a'}}>{pSteps(atkRP,curRP)}/5 · Save DC: <strong>{10+pSteps(atkRP,curRP)*2}</strong></span>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted}}>PRESSURE STEPS</span>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:'#c8503a'}}>{pSteps(atkRP,curRP)}/5 · Save DC: <strong>{10+pSteps(atkRP,curRP)*2}</strong></span>
                   </div>
                   <div style={{display:'flex',gap:'4px'}}>
                     {[1,2,3,4,5].map(i=><div key={i} style={{flex:1,height:'7px',borderRadius:'2px',background:i<=pSteps(atkRP,curRP)?'#c8503a':'#1c2030',transition:'background 0.12s'}}/>)}
                   </div>
                 </div>
                 {tempRP > 0 ? (
-                  <div style={{background:'#1a0800',border:`1px solid #ff402055`,borderRadius:'3px',padding:'8px 12px',fontSize:'13px',color:'#ff7040'}}>⚠ Overextend: +{tempRP} temp RP · State applied after attack</div>
+                  <div style={{background:'#1a0800',border:`1px solid #ff402055`,borderRadius:'3px',padding:'8px 12px',fontSize: '16px',color:'#ff7040'}}>⚠ Overextend: +{tempRP} temp RP · State applied after attack</div>
                 ) : oxRolledThisAttack ? (
-                  <div style={{background:'#1a1008',border:`1px solid #88404055`,borderRadius:'3px',padding:'8px 12px',fontSize:'12px',color:'#c08080',lineHeight:1.45}}>
+                  <div style={{background:'#1a1008',border:`1px solid #88404055`,borderRadius:'3px',padding:'8px 12px',fontSize: '15px',color:'#c08080',lineHeight:1.45}}>
                     ⚠ Overextend already used this attack (failed save — no temp RP). You can declare overextension again on a later attack.
                   </div>
                 ) : (
-                  <button type="button" onClick={()=>setOxOpen(true)} style={{...Btn('#ff4020'),padding:'7px',width:'100%',fontSize:'11px',background:'#1a0800',letterSpacing:'0.08em'}}>⚠ OVEREXTEND</button>
+                  <button type="button" onClick={()=>setOxOpen(true)} style={{...Btn('#ff4020'),padding:'7px',width:'100%',fontSize: '14px',background:'#1a0800',letterSpacing:'0.08em'}}>⚠ OVEREXTEND</button>
                 )}
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
                 <button onClick={cancelPreStake} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
-                <button onClick={doStake} disabled={atkRP===0} style={{...Btn('#c8503a'),padding:'10px',background:'#1a0604',fontSize:'12px',opacity:atkRP===0?0.3:1}}>⚔ STAKE {atkRP} RP</button>
+                <button onClick={doStake} disabled={atkRP===0} style={{...Btn('#c8503a'),padding:'10px',background:'#1a0604',fontSize: '15px',opacity:atkRP===0?0.3:1}}>⚔ STAKE {atkRP} RP</button>
               </div>
             </>
           )}
@@ -2665,8 +2665,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           {/* Overextend sub-panel (not used on opportunity attacks) */}
           {atkStage==='stake'&&oxOpen&&!atkOppFlow&&(
             <div style={{background:'#100806',border:`1px solid #ff402055`,borderRadius:'4px',padding:'16px'}}>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'0.18em',color:'#ff5030',marginBottom:'12px'}}>⚠ OVEREXTEND</div>
-              <div style={{fontSize:'13px',color:T.textMuted,lineHeight:'1.7',marginBottom:'14px'}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize: '14px',letterSpacing:'0.18em',color:'#ff5030',marginBottom:'12px'}}>⚠ OVEREXTEND</div>
+              <div style={{fontSize: '16px',color:T.textMuted,lineHeight:'1.7',marginBottom:'14px'}}>
                 Declare extra RP beyond your pool (max = your available RP). Save DC = 10 + (10 × OE ÷ A), clamped 10–20 (OE = borrow, A = available). Roll d20 — meet or beat DC to gain temp RP for this attack.<br/>
                 <span style={{color:'#ff7040'}}>If you succeed, you gain temp RP for this attack and become Overextended when the attack finishes. If you fail, you gain no temp RP and do not become Overextended.</span>
               </div>
@@ -2676,26 +2676,26 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   onChange={setOxAmount}
                   min={0}
                   max={curRP}
-                  style={{...inp(),textAlign:'center',fontSize:'22px',color:'#ff5030'}}
+                  style={{...inp(),textAlign:'center',fontSize: '25px',color:'#ff5030'}}
                 />
               </Fld>
               {!oxRoll && (
-                <div style={{fontSize:'12px',color:T.textMuted,marginBottom:'12px',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>
+                <div style={{fontSize: '15px',color:T.textMuted,marginBottom:'12px',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>
                   OE <strong style={{color:'#ff7040'}}>{Math.min(oxAmount, curRP)}</strong>
                   {' · '}
                   DC <strong style={{color:'#ff7040'}}>{calcOverextensionDC(Math.min(oxAmount, curRP), curRP)}</strong>
                 </div>
               )}
-              {!oxRoll&&<button onClick={rollOX} disabled={oxAmount===0||curRP===0} style={{...Btn('#ff4020'),padding:'9px',width:'100%',fontSize:'12px',background:'#1a0800',marginBottom:'10px',opacity:oxAmount===0||curRP===0?0.3:1}}>⬡ ROLL d20</button>}
+              {!oxRoll&&<button onClick={rollOX} disabled={oxAmount===0||curRP===0} style={{...Btn('#ff4020'),padding:'9px',width:'100%',fontSize: '15px',background:'#1a0800',marginBottom:'10px',opacity:oxAmount===0||curRP===0?0.3:1}}>⬡ ROLL d20</button>}
               {oxRoll&&(
                 <div style={{background:oxResult==='success'?'#0a2010':'#1e0808',border:`1px solid ${oxResult==='success'?'#50a04055':'#cc404055'}`,borderRadius:'3px',padding:'12px',marginBottom:'12px',textAlign:'center'}}>
-                  <div style={{fontSize:'34px',fontWeight:'700',color:oxResult==='success'?'#60d040':'#e05050',marginBottom:'4px'}}>{oxRoll}</div>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.14em',color:oxResult==='success'?'#60d040':'#e05050',marginBottom:'4px'}}>
+                  <div style={{fontSize: '37px',fontWeight:'700',color:oxResult==='success'?'#60d040':'#e05050',marginBottom:'4px'}}>{oxRoll}</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.14em',color:oxResult==='success'?'#60d040':'#e05050',marginBottom:'4px'}}>
                     {oxResult === 'success'
                       ? `SUCCESS — +${oxAmount} temp RP granted`
                       : 'FAIL — No extra RP. You do not overextend.'}
                   </div>
-                  <div style={{fontSize:'12px',color:T.textMuted}}>
+                  <div style={{fontSize: '15px',color:T.textMuted}}>
                     DC {calcOverextensionDC(Math.min(oxAmount, curRP), curRP)} · Rolled {oxRoll}
                   </div>
                 </div>
@@ -2705,12 +2705,12 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   <button
                     type="button"
                     onClick={()=>{setOxOpen(false);setOxAmount(0);setOxRoll(null);setOxResult(null);setTempRP(0);}}
-                    style={{...Btn(T.textMuted),padding:'9px',fontSize:'11px'}}
+                    style={{...Btn(T.textMuted),padding:'9px',fontSize: '14px'}}
                   >
                     CANCEL
                   </button>
                 )}
-                <button type="button" onClick={confirmOX} disabled={!oxRoll} style={{...Btn('#ff4020'),padding:'9px',fontSize:'11px',background:'#1a0800',opacity:oxRoll?1:0.3}}>CONFIRM</button>
+                <button type="button" onClick={confirmOX} disabled={!oxRoll} style={{...Btn('#ff4020'),padding:'9px',fontSize: '14px',background:'#1a0800',opacity:oxRoll?1:0.3}}>CONFIRM</button>
               </div>
             </div>
           )}
@@ -2721,15 +2721,15 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               {/* RP staked summary */}
               <div style={{background:'#0e0a06',border:`1px solid #c8503a44`,borderRadius:'3px',padding:'12px',marginBottom:'14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <div>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'3px'}}>{atkOppFlow ? 'RP COST' : 'RP STAKED'}</div>
-                  <div style={{fontSize:'26px',fontWeight:'700',color:'#c8503a'}}>{atkStaked} RP</div>
-                  <div style={{fontSize:'12px',color:T.textDim,marginTop:'2px'}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,marginBottom:'3px'}}>{atkOppFlow ? 'RP COST' : 'RP STAKED'}</div>
+                  <div style={{fontSize: '29px',fontWeight:'700',color:'#c8503a'}}>{atkStaked} RP</div>
+                  <div style={{fontSize: '15px',color:T.textDim,marginTop:'2px'}}>
                     {atkOppFlow ? 'Opportunity attack · damage uses ×1' : 'Deducted · cannot be recovered'}
                   </div>
                 </div>
                 <div style={{textAlign:'right'}}>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'3px'}}>FORMULA</div>
-                  <div style={{fontSize:'15px',color:T.text}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,marginBottom:'3px'}}>FORMULA</div>
+                  <div style={{fontSize: '18px',color:T.text}}>
                     {atkOppFlow
                       ? atkWeapon.channels.map((ch,ci)=>`${ci>0?' + ':''}${ch.dice}${atkWeapon.dieType} × 1`).join('')
                       : atkWeapon.channels.map((ch,ci)=>`${ci>0?' + ':''}${ch.dice}${atkWeapon.dieType} × ${atkStaked}`).join('')}
@@ -2739,17 +2739,17 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
               {/* Step 1: Crit roll */}
               <div style={{marginBottom:'12px'}}>
-                <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.14em',color:T.textMuted,marginBottom:'8px'}}>STEP 1 — CRITICAL HIT ROLL</div>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.14em',color:T.textMuted,marginBottom:'8px'}}>STEP 1 — CRITICAL HIT ROLL</div>
                 {atkCritRoll===null
-                  ? <button onClick={doCritRoll} style={{...Btn('#e8a020'),padding:'11px',width:'100%',background:'#1a1000',fontSize:'12px',letterSpacing:'0.1em'}}>⬡ ROLL FOR CRIT (d20)</button>
+                  ? <button onClick={doCritRoll} style={{...Btn('#e8a020'),padding:'11px',width:'100%',background:'#1a1000',fontSize: '15px',letterSpacing:'0.1em'}}>⬡ ROLL FOR CRIT (d20)</button>
                   : <div style={{background:atkIsCrit?'#1a1200':'#0c0c10',border:`1px solid ${atkIsCrit?'#e8a02066':'#2a2a40'}`,borderRadius:'3px',padding:'12px',display:'flex',alignItems:'center',gap:'16px'}}>
-                      <div style={{fontSize:'38px',fontWeight:'700',color:atkIsCrit?'#e8a020':T.text,lineHeight:1}}>{atkCritRoll}</div>
+                      <div style={{fontSize: '41px',fontWeight:'700',color:atkIsCrit?'#e8a020':T.text,lineHeight:1}}>{atkCritRoll}</div>
                       <div>
                         {atkIsCrit
-                          ? <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.14em',color:'#e8a020'}}>⭑ CRITICAL HIT</div>
-                          : <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:T.textMuted}}>No crit <span style={{color:T.textDim}}>(need 20)</span></div>
+                          ? <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.14em',color:'#e8a020'}}>⭑ CRITICAL HIT</div>
+                          : <div style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.textMuted}}>No crit <span style={{color:T.textDim}}>(need 20)</span></div>
                         }
-                        <div style={{fontSize:'12px',color:T.textDim,marginTop:'2px'}}>Rolled {atkCritRoll} on d20</div>
+                        <div style={{fontSize: '15px',color:T.textDim,marginTop:'2px'}}>Rolled {atkCritRoll} on d20</div>
                       </div>
                     </div>
                 }
@@ -2757,9 +2757,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
               {/* Step 2: Damage roll */}
               <div style={{marginBottom:'12px',opacity:atkCritRoll===null?0.35:1,transition:'opacity 0.2s'}}>
-                <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.14em',color:T.textMuted,marginBottom:'8px'}}>STEP 2 — DAMAGE ROLL</div>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.14em',color:T.textMuted,marginBottom:'8px'}}>STEP 2 — DAMAGE ROLL</div>
                 {!atkResult
-                  ? <button onClick={doDmgRoll} disabled={atkCritRoll===null} style={{...Btn('#c8503a'),padding:'11px',width:'100%',background:'#1a0604',fontSize:'12px',letterSpacing:'0.1em'}}>
+                  ? <button onClick={doDmgRoll} disabled={atkCritRoll===null} style={{...Btn('#c8503a'),padding:'11px',width:'100%',background:'#1a0604',fontSize: '15px',letterSpacing:'0.1em'}}>
                       ⚔ ROLL DAMAGE {atkIsCrit&&<span style={{color:'#e8a020'}}> · ×2 CRIT</span>}
                     </button>
                   : <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
@@ -2768,36 +2768,36 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                         const dmg = atkResult.isCrit ? ch.dmg*2 : ch.dmg;
                         return(
                           <div key={ci} style={{background:atkResult.isCrit?'#1a1200':'#0c0c10',border:`1px solid ${atkResult.isCrit?'#e8a02044':elColor+'33'}`,borderRadius:'3px',padding:'12px',display:'flex',alignItems:'center',gap:'16px'}}>
-                            <div style={{fontSize:'38px',fontWeight:'700',color:atkResult.isCrit?'#e8a020':elColor,lineHeight:1}}>{ch.sum}</div>
+                            <div style={{fontSize: '41px',fontWeight:'700',color:atkResult.isCrit?'#e8a020':elColor,lineHeight:1}}>{ch.sum}</div>
                             <div style={{flex:1}}>
-                              <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'0.1em',color:elColor,marginBottom:'3px'}}>{ch.element.toUpperCase()}</div>
-                              <div style={{fontSize:'12px',color:T.textDim}}>
+                              <div style={{fontFamily:"'Cinzel',serif",fontSize: '14px',letterSpacing:'0.1em',color:elColor,marginBottom:'3px'}}>{ch.element.toUpperCase()}</div>
+                              <div style={{fontSize: '15px',color:T.textDim}}>
                                 {ch.rolls.length>1?`(${ch.rolls.join('+')}=${ch.sum})`:ch.rolls[0]}
                                 {atkOppFlow ? ' × 1 (opportunity)' : ` × ${atkResult.rpUsed} RP`}
                                 {atkResult.isCrit?' × 2 CRIT':''}
                               </div>
                             </div>
                             <div style={{textAlign:'right'}}>
-                              <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'2px'}}>DMG</div>
-                              <div style={{fontWeight:'700',fontSize:'22px',color:atkResult.isCrit?'#e8a020':elColor}}>{fmtNum(dmg)}</div>
+                              <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,marginBottom:'2px'}}>DMG</div>
+                              <div style={{fontWeight:'700',fontSize: '25px',color:atkResult.isCrit?'#e8a020':elColor}}>{fmtNum(dmg)}</div>
                             </div>
                           </div>
                         );
                       })}
                       <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'10px 14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                        <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted}}>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted}}>
                           {atkResult.isCrit
                             ? <span style={{color:'#e8a020'}}>⭑ CRITICAL HIT — doubled</span>
                             : <span>CRIT ROLL: <strong style={{color:T.text}}>{atkResult.critRoll}</strong> <span style={{color:T.textDim}}>(need 20)</span></span>
                           }
                         </div>
                         <div style={{textAlign:'right'}}>
-                          <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'2px'}}>TOTAL DAMAGE</div>
-                          <div style={{color:atkResult.isCrit?'#e8a020':'#c8503a',fontWeight:'700',fontSize:'28px'}}>{fmtNum(atkResult.chs.reduce((s,c)=>s+(atkResult.isCrit?c.dmg*2:c.dmg),0))}</div>
+                          <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,marginBottom:'2px'}}>TOTAL DAMAGE</div>
+                          <div style={{color:atkResult.isCrit?'#e8a020':'#c8503a',fontWeight:'700',fontSize: '31px'}}>{fmtNum(atkResult.chs.reduce((s,c)=>s+(atkResult.isCrit?c.dmg*2:c.dmg),0))}</div>
                         </div>
                       </div>
                       {!atkOppFlow && tempRP > 0 && (
-                        <div style={{padding:'6px 10px',background:'#1a0800',border:`1px solid #ff402055`,borderRadius:'3px',fontSize:'11px',color:'#ff7040',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>⚠ OVEREXTENDED state applied</div>
+                        <div style={{padding:'6px 10px',background:'#1a0800',border:`1px solid #ff402055`,borderRadius:'3px',fontSize: '14px',color:'#ff7040',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}>⚠ OVEREXTENDED state applied</div>
                       )}
                     </div>
                 }
@@ -2805,15 +2805,15 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
               {/* Close / cancel */}
               {atkResult
-                ? <button onClick={closeAtk} style={{...Btn('#c8503a'),padding:'10px',width:'100%',background:'#1a0604',fontSize:'12px',letterSpacing:'0.1em'}}>CLOSE</button>
-                : <button onClick={cancelPostStake} style={{...Btn(T.textMuted),padding:'8px',width:'100%',fontSize:'11px'}}>TARGET SAVED — CLOSE (RP spent)</button>
+                ? <button onClick={closeAtk} style={{...Btn('#c8503a'),padding:'10px',width:'100%',background:'#1a0604',fontSize: '15px',letterSpacing:'0.1em'}}>CLOSE</button>
+                : <button onClick={cancelPostStake} style={{...Btn(T.textMuted),padding:'8px',width:'100%',fontSize: '14px'}}>TARGET SAVED — CLOSE (RP spent)</button>
               }
             </>
           )}
 
           {/* Stage 3: result stage no longer used — kept as safety fallback */}
           {atkStage==='result'&&atkResult&&(
-            <button onClick={closeAtk} style={{...Btn('#c8503a'),padding:'12px',width:'100%',background:'#1a0604',fontSize:'12px'}}>CLOSE</button>
+            <button onClick={closeAtk} style={{...Btn('#c8503a'),padding:'12px',width:'100%',background:'#1a0604',fontSize: '15px'}}>CLOSE</button>
           )}
         </ModalWrap>
       )}
@@ -2825,7 +2825,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         const dt=Number(gemAtkGem.die_type)||6;
         return(
           <ModalWrap accentColor={eCol} minW="440px">
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:eCol,marginBottom:'2px'}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.22em',color:eCol,marginBottom:'2px'}}>
               {gemOppFlow
                 ? (gemAtkStage === 'stake' ? 'OPPORTUNITY CAST' : 'RESOLVE OPPORTUNITY CAST')
                 : gemAtkStage==='stake'?'STAKE RESOURCE POINTS':'RESOLVE SPELL ATTACK'}
@@ -2833,8 +2833,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}}>
               <div style={{width:'14px',height:'14px',borderRadius:'50%',background:eCol,boxShadow:`0 0 10px ${eCol}88`,flexShrink:0}}/>
               <div>
-                <div style={{fontSize:'19px',fontWeight:'500',color:eCol}}>{gemAtkGem.element}</div>
-                <div style={{fontSize:'12px',color:T.textMuted}}>
+                <div style={{fontSize: '22px',fontWeight:'500',color:eCol}}>{gemAtkGem.element}</div>
+                <div style={{fontSize: '15px',color:T.textMuted}}>
                   {nd}d{dt}{gemOppFlow ? ' × 1 (no RP multiplier)' : ' × RP'} · <span style={{color:eCol}}>Auto-hit · No save</span>
                 </div>
               </div>
@@ -2843,12 +2843,12 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
             {gemAtkStage==='stake'&&gemOppFlow&&(
               <div style={{marginBottom:'16px'}}>
-                <div style={{fontSize:'13px',color:T.textMuted,lineHeight:1.65,marginBottom:'14px',background:'#080810',border:`1px solid ${T.border}`,borderRadius:'3px',padding:'12px'}}>
+                <div style={{fontSize: '16px',color:T.textMuted,lineHeight:1.65,marginBottom:'14px',background:'#080810',border:`1px solid ${T.border}`,borderRadius:'3px',padding:'12px'}}>
                   Costs <strong style={{color:T.rp}}>1 RP</strong>. Spell damage uses <strong>×1</strong> (not × staked RP). Normal turn staking does not apply.
                 </div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
                   <button type="button" onClick={closeGemAtk} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
-                  <button type="button" onClick={doGemStake} disabled={curRP < 1} style={{...Btn(eCol),padding:'10px',background:`${eCol}10`,fontSize:'12px',opacity:curRP<1?0.35:1}}>SPEND 1 RP — CONTINUE</button>
+                  <button type="button" onClick={doGemStake} disabled={curRP < 1} style={{...Btn(eCol),padding:'10px',background:`${eCol}10`,fontSize: '15px',opacity:curRP<1?0.35:1}}>SPEND 1 RP — CONTINUE</button>
                 </div>
               </div>
             )}
@@ -2858,14 +2858,14 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                 <div style={{marginBottom:'14px'}}>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
                     <label style={LBL}>RP to Stake</label>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:T.rp}}>Available: <strong>{curRP}</strong></span>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.rp}}>Available: <strong>{curRP}</strong></span>
                   </div>
                   <div style={{display:'flex',gap:'8px',alignItems:'center',marginBottom:'8px'}}>
                     <div style={{display:'flex',alignItems:'stretch',flexShrink:0}}>
-                      <button onClick={()=>setGemAtkRP(p=>Math.max(0,p-1))} style={{...Btn(eCol),padding:'0 12px',fontSize:'22px',fontWeight:'300',borderRight:'none',borderRadius:'3px 0 0 3px',lineHeight:1}}>−</button>
+                      <button onClick={()=>setGemAtkRP(p=>Math.max(0,p-1))} style={{...Btn(eCol),padding:'0 12px',fontSize: '25px',fontWeight:'300',borderRight:'none',borderRadius:'3px 0 0 3px',lineHeight:1}}>−</button>
                       <StableNumInput value={gemAtkRP} onChange={v=>setGemAtkRP(Math.min(curRP,Math.max(0,v)))} min={0} max={curRP}
-                        style={{...inp(),width:'72px',textAlign:'center',fontSize:'22px',fontWeight:'700',color:eCol,borderRadius:0,borderLeft:'none',borderRight:'none'}}/>
-                      <button onClick={()=>setGemAtkRP(p=>Math.min(curRP,p+1))} style={{...Btn(eCol),padding:'0 12px',fontSize:'22px',fontWeight:'300',borderLeft:'none',borderRadius:'0 3px 3px 0',lineHeight:1}}>+</button>
+                        style={{...inp(),width:'72px',textAlign:'center',fontSize: '25px',fontWeight:'700',color:eCol,borderRadius:0,borderLeft:'none',borderRight:'none'}}/>
+                      <button onClick={()=>setGemAtkRP(p=>Math.min(curRP,p+1))} style={{...Btn(eCol),padding:'0 12px',fontSize: '25px',fontWeight:'300',borderLeft:'none',borderRadius:'0 3px 3px 0',lineHeight:1}}>+</button>
                     </div>
                     <div style={{flex:1,position:'relative',padding:'10px 0'}}>
                       <div style={{height:'6px',background:'#1c2030',borderRadius:'3px',position:'relative',overflow:'visible'}}>
@@ -2888,15 +2888,15 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                         style={{position:'absolute',inset:0,opacity:0,cursor:'pointer',width:'100%',height:'100%',margin:0,padding:0}}/>
                     </div>
                   </div>
-                  <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'8px 12px',fontSize:'13px',color:T.textMuted}}>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>FORMULA </span>
+                  <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'8px 12px',fontSize: '16px',color:T.textMuted}}>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>FORMULA </span>
                     <span style={{color:eCol}}>{nd}d{dt}</span> × <span style={{color:T.rp,fontWeight:'700'}}>{gemAtkRP}</span>
                     {gemAtkRP>0&&<span style={{color:T.textDim}}> = up to {nd*dt*gemAtkRP} dmg</span>}
                   </div>
                 </div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
                   <button onClick={closeGemAtk} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
-                  <button onClick={doGemStake} disabled={gemAtkRP===0} style={{...Btn(eCol),padding:'10px',background:`${eCol}10`,fontSize:'12px',opacity:gemAtkRP===0?0.3:1}}>⚡ STAKE {gemAtkRP} RP</button>
+                  <button onClick={doGemStake} disabled={gemAtkRP===0} style={{...Btn(eCol),padding:'10px',background:`${eCol}10`,fontSize: '15px',opacity:gemAtkRP===0?0.3:1}}>⚡ STAKE {gemAtkRP} RP</button>
                 </div>
               </>
             )}
@@ -2906,15 +2906,15 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                 {/* RP staked summary */}
                 <div style={{background:`${eCol}08`,border:`1px solid ${eCol}33`,borderRadius:'3px',padding:'12px',marginBottom:'14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <div>
-                    <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'3px'}}>{gemOppFlow ? 'RP COST' : 'RP STAKED'}</div>
-                    <div style={{fontSize:'26px',fontWeight:'700',color:eCol}}>{gemAtkStaked} RP</div>
-                    <div style={{fontSize:'12px',color:T.textDim,marginTop:'2px'}}>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,marginBottom:'3px'}}>{gemOppFlow ? 'RP COST' : 'RP STAKED'}</div>
+                    <div style={{fontSize: '29px',fontWeight:'700',color:eCol}}>{gemAtkStaked} RP</div>
+                    <div style={{fontSize: '15px',color:T.textDim,marginTop:'2px'}}>
                       {gemOppFlow ? 'Opportunity cast · damage ×1' : 'Multiplier · auto-hits'}
                     </div>
                   </div>
                   <div style={{textAlign:'right'}}>
-                    <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'3px'}}>FORMULA</div>
-                    <div style={{fontSize:'15px',color:T.text}}>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,marginBottom:'3px'}}>FORMULA</div>
+                    <div style={{fontSize: '18px',color:T.text}}>
                       {gemOppFlow ? `${nd}d${dt} × 1` : `${nd}d${dt} × ${gemAtkStaked}`}
                     </div>
                   </div>
@@ -2922,17 +2922,17 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
                 {/* Step 1: Crit roll */}
                 <div style={{marginBottom:'12px'}}>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.14em',color:T.textMuted,marginBottom:'8px'}}>STEP 1 — CRITICAL HIT ROLL</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.14em',color:T.textMuted,marginBottom:'8px'}}>STEP 1 — CRITICAL HIT ROLL</div>
                   {gemAtkCritRoll===null
-                    ? <button type="button" onClick={doGemCritRoll} style={{...Btn('#e8a020'),padding:'11px',width:'100%',background:'#1a1000',fontSize:'12px',letterSpacing:'0.1em'}}>⬡ ROLL FOR CRIT (d20)</button>
+                    ? <button type="button" onClick={doGemCritRoll} style={{...Btn('#e8a020'),padding:'11px',width:'100%',background:'#1a1000',fontSize: '15px',letterSpacing:'0.1em'}}>⬡ ROLL FOR CRIT (d20)</button>
                     : <div style={{background:gemAtkIsCrit?'#1a1200':'#0c0c10',border:`1px solid ${gemAtkIsCrit?'#e8a02066':'#2a2a40'}`,borderRadius:'3px',padding:'12px',display:'flex',alignItems:'center',gap:'16px'}}>
-                        <div style={{fontSize:'38px',fontWeight:'700',color:gemAtkIsCrit?'#e8a020':T.text,lineHeight:1}}>{gemAtkCritRoll}</div>
+                        <div style={{fontSize: '41px',fontWeight:'700',color:gemAtkIsCrit?'#e8a020':T.text,lineHeight:1}}>{gemAtkCritRoll}</div>
                         <div>
                           {gemAtkIsCrit
-                            ? <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.14em',color:'#e8a020'}}>⭑ CRITICAL HIT</div>
-                            : <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:T.textMuted}}>No crit <span style={{color:T.textDim}}>(need 20)</span></div>
+                            ? <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.14em',color:'#e8a020'}}>⭑ CRITICAL HIT</div>
+                            : <div style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.textMuted}}>No crit <span style={{color:T.textDim}}>(need 20)</span></div>
                           }
-                          <div style={{fontSize:'12px',color:T.textDim,marginTop:'2px'}}>Rolled {gemAtkCritRoll} on d20</div>
+                          <div style={{fontSize: '15px',color:T.textDim,marginTop:'2px'}}>Rolled {gemAtkCritRoll} on d20</div>
                         </div>
                       </div>
                   }
@@ -2940,47 +2940,47 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
                 {/* Step 2: Damage roll */}
                 <div style={{marginBottom:'12px',opacity:gemAtkCritRoll===null?0.35:1,transition:'opacity 0.2s'}}>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.14em',color:T.textMuted,marginBottom:'8px'}}>STEP 2 — DAMAGE ROLL</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.14em',color:T.textMuted,marginBottom:'8px'}}>STEP 2 — DAMAGE ROLL</div>
                   {!gemAtkResult
-                    ? <button type="button" onClick={doGemRoll} disabled={gemAtkCritRoll===null} style={{...Btn(eCol),padding:'11px',width:'100%',background:`${eCol}10`,fontSize:'12px',letterSpacing:'0.1em'}}>
+                    ? <button type="button" onClick={doGemRoll} disabled={gemAtkCritRoll===null} style={{...Btn(eCol),padding:'11px',width:'100%',background:`${eCol}10`,fontSize: '15px',letterSpacing:'0.1em'}}>
                         ⚡ ROLL DAMAGE {gemAtkIsCrit&&<span style={{color:'#e8a020'}}> · ×2 CRIT</span>}
                       </button>
                     : <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
                         <div style={{background:gemAtkIsCrit?'#1a1200':'#0c0c10',border:`1px solid ${gemAtkIsCrit?'#e8a02044':eCol+'33'}`,borderRadius:'3px',padding:'12px',display:'flex',alignItems:'center',gap:'16px'}}>
-                          <div style={{fontSize:'38px',fontWeight:'700',color:gemAtkIsCrit?'#e8a020':eCol,lineHeight:1}}>{gemAtkResult.sum}</div>
+                          <div style={{fontSize: '41px',fontWeight:'700',color:gemAtkIsCrit?'#e8a020':eCol,lineHeight:1}}>{gemAtkResult.sum}</div>
                           <div style={{flex:1}}>
-                            <div style={{fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'0.1em',color:eCol,marginBottom:'3px'}}>{gemAtkGem.element.toUpperCase()}</div>
-                            <div style={{fontSize:'12px',color:T.textDim}}>
+                            <div style={{fontFamily:"'Cinzel',serif",fontSize: '14px',letterSpacing:'0.1em',color:eCol,marginBottom:'3px'}}>{gemAtkGem.element.toUpperCase()}</div>
+                            <div style={{fontSize: '15px',color:T.textDim}}>
                               {gemAtkResult.rolls.length>1?`(${gemAtkResult.rolls.join('+')}=${gemAtkResult.sum})`:gemAtkResult.rolls[0]}
                               {gemOppFlow ? ' × 1 (opportunity)' : ` × ${gemAtkResult.rpUsed} RP`}
                               {gemAtkIsCrit?' × 2 CRIT':''}
                             </div>
                           </div>
                           <div style={{textAlign:'right'}}>
-                            <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'2px'}}>DMG</div>
-                            <div style={{fontWeight:'700',fontSize:'22px',color:gemAtkIsCrit?'#e8a020':eCol}}>{fmtNum(gemAtkResult.dmg)}</div>
+                            <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,marginBottom:'2px'}}>DMG</div>
+                            <div style={{fontWeight:'700',fontSize: '25px',color:gemAtkIsCrit?'#e8a020':eCol}}>{fmtNum(gemAtkResult.dmg)}</div>
                           </div>
                         </div>
                         <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'10px 14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                          <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted}}>
+                          <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted}}>
                             {gemAtkIsCrit
                               ? <span style={{color:'#e8a020'}}>⭑ CRITICAL HIT — doubled</span>
                               : <span style={{color:eCol}}>AUTO-HIT · NO SAVE</span>
                             }
                           </div>
                           <div style={{textAlign:'right'}}>
-                            <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginBottom:'2px'}}>TOTAL DAMAGE</div>
-                            <div style={{color:gemAtkIsCrit?'#e8a020':eCol,fontWeight:'700',fontSize:'28px'}}>{fmtNum(gemAtkResult.dmg)}</div>
+                            <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,marginBottom:'2px'}}>TOTAL DAMAGE</div>
+                            <div style={{color:gemAtkIsCrit?'#e8a020':eCol,fontWeight:'700',fontSize: '31px'}}>{fmtNum(gemAtkResult.dmg)}</div>
                           </div>
                         </div>
-                        {gemAtkGem.notes&&<div style={{padding:'8px 12px',background:T.surface,borderRadius:'3px',border:`1px solid ${eCol}22`,fontSize:'12px',color:eCol}}>✦ {gemAtkGem.notes}</div>}
+                        {gemAtkGem.notes&&<div style={{padding:'8px 12px',background:T.surface,borderRadius:'3px',border:`1px solid ${eCol}22`,fontSize: '15px',color:eCol}}>✦ {gemAtkGem.notes}</div>}
                       </div>
                   }
                 </div>
 
                 {gemAtkResult
-                  ? <button onClick={closeGemAtk} style={{...Btn(eCol),padding:'10px',width:'100%',background:`${eCol}10`,fontSize:'12px',letterSpacing:'0.1em'}}>CLOSE</button>
-                  : <button onClick={closeGemAtk} style={{...Btn(T.textMuted),padding:'8px',width:'100%',fontSize:'11px'}}>CANCEL (RP spent)</button>
+                  ? <button onClick={closeGemAtk} style={{...Btn(eCol),padding:'10px',width:'100%',background:`${eCol}10`,fontSize: '15px',letterSpacing:'0.1em'}}>CLOSE</button>
+                  : <button onClick={closeGemAtk} style={{...Btn(T.textMuted),padding:'8px',width:'100%',fontSize: '14px'}}>CANCEL (RP spent)</button>
                 }
               </>
             )}
@@ -2991,14 +2991,14 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* Damage Modal */}
       {dModal==='damage'&&(
         <ModalWrap accentColor={T.hp} minW="440px">
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:T.hp,marginBottom:'16px'}}>APPLY DAMAGE</div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.22em',color:T.hp,marginBottom:'16px'}}>APPLY DAMAGE</div>
           {dmgLines.map((e,ei)=>(
             <div key={ei} style={{display:'flex',gap:'7px',marginBottom:'8px',alignItems:'center'}}>
               <StableNumInput
                 value={Number(e.amount)||0}
                 onChange={v=>setDmgAmount(ei,String(v))}
                 min={0}
-                style={{...inp(),width:'115px',textAlign:'center',fontSize:'18px'}}
+                style={{...inp(),width:'115px',textAlign:'center',fontSize: '21px'}}
                 placeholder="Amount"
               />
               <select value={e.type} onChange={x=>setDmgType(ei,x.target.value)} style={{...inp(),flex:1,color:e.type==='Physical'?T.text:ELEM_COLOR[e.type]}}>
@@ -3007,30 +3007,30 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               {dmgLines.length>1&&<button onClick={()=>{setDmgLines(p=>p.filter((_,i)=>i!==ei));setDmgResult(null);}} style={{...Btn('#662020'),padding:'5px 9px'}}>✕</button>}
             </div>
           ))}
-          <button onClick={()=>{setDmgLines(p=>[...p,{amount:'',type:'Physical'}]);setDmgResult(null);}} style={{...Btn(T.textMuted),padding:'5px 14px',fontSize:'11px',marginBottom:'14px'}}>+ ADD DAMAGE TYPE</button>
-          {!dmgResult&&<button onClick={computeDmg} style={{...Btn(T.hp),padding:'10px',width:'100%',fontSize:'12px',background:'#2a0808',marginBottom:'12px'}}>CALCULATE DAMAGE</button>}
+          <button onClick={()=>{setDmgLines(p=>[...p,{amount:'',type:'Physical'}]);setDmgResult(null);}} style={{...Btn(T.textMuted),padding:'5px 14px',fontSize: '14px',marginBottom:'14px'}}>+ ADD DAMAGE TYPE</button>
+          {!dmgResult&&<button onClick={computeDmg} style={{...Btn(T.hp),padding:'10px',width:'100%',fontSize: '15px',background:'#2a0808',marginBottom:'12px'}}>CALCULATE DAMAGE</button>}
           {dmgResult&&(
             <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'12px',marginBottom:'12px'}}>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,letterSpacing:'0.12em',marginBottom:'10px'}}>BREAKDOWN</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,letterSpacing:'0.12em',marginBottom:'10px'}}>BREAKDOWN</div>
               {dmgResult.res.map((l,li)=>(
-                <div key={li} style={{display:'flex',gap:'8px',alignItems:'center',marginBottom:'6px',fontSize:'14px',flexWrap:'wrap'}}>
+                <div key={li} style={{display:'flex',gap:'8px',alignItems:'center',marginBottom:'6px',fontSize: '17px',flexWrap:'wrap'}}>
                   <span style={{color:l.color,fontWeight:'500',minWidth:'140px'}}>{l.label}</span>
-                  <span style={{color:T.textMuted,fontSize:'12px',flex:1}}>{l.detail}</span>
-                  <span style={{color:l.heal?'#50c050':T.hp,fontWeight:'700',fontSize:'17px'}}>{l.heal?'+':''}{fmtNum(Math.abs(l.change))}</span>
+                  <span style={{color:T.textMuted,fontSize: '15px',flex:1}}>{l.detail}</span>
+                  <span style={{color:l.heal?'#50c050':T.hp,fontWeight:'700',fontSize: '20px'}}>{l.heal?'+':''}{fmtNum(Math.abs(l.change))}</span>
                 </div>
               ))}
               <div style={{borderTop:`1px solid ${T.border}`,marginTop:'10px',paddingTop:'10px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted}}>NET HP CHANGE</span>
-                <span style={{color:dmgResult.net<0?T.hp:'#50c050',fontSize:'22px',fontWeight:'700'}}>{dmgResult.net>=0?'+':''}{fmtNum(dmgResult.net)}</span>
+                <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted}}>NET HP CHANGE</span>
+                <span style={{color:dmgResult.net<0?T.hp:'#50c050',fontSize: '25px',fontWeight:'700'}}>{dmgResult.net>=0?'+':''}{fmtNum(dmgResult.net)}</span>
               </div>
-              <div style={{fontSize:'13px',color:T.textMuted,marginTop:'6px',textAlign:'center'}}>
+              <div style={{fontSize: '16px',color:T.textMuted,marginTop:'6px',textAlign:'center'}}>
                 <strong style={{color:T.text}}>{fmtNum(curHP)}</strong> → <strong style={{color:T.text}}>{fmtNum(Math.max(0,Math.min(maxHP,curHP+dmgResult.net)))}</strong> / {fmtNum(maxHP)}
               </div>
             </div>
           )}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
             <button onClick={()=>setDModal(null)} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
-            <button onClick={confirmDmg} disabled={!dmgResult} style={{...Btn(T.hp),padding:'10px',background:'#2a0808',opacity:dmgResult?1:0.28,fontSize:'12px'}}>CONFIRM</button>
+            <button onClick={confirmDmg} disabled={!dmgResult} style={{...Btn(T.hp),padding:'10px',background:'#2a0808',opacity:dmgResult?1:0.28,fontSize: '15px'}}>CONFIRM</button>
           </div>
         </ModalWrap>
       )}
@@ -3038,15 +3038,15 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* Heal Modal */}
       {dModal==='heal'&&(
         <ModalWrap accentColor="#50a050" minW="320px">
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:'#50a050',marginBottom:'16px'}}>APPLY HEALING</div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.22em',color:'#50a050',marginBottom:'16px'}}>APPLY HEALING</div>
           <Fld label="HP to Restore" style={{marginBottom:'16px'}}>
             <input type="number" value={healAmt} min={1} onChange={e=>setHealAmt(e.target.value)} placeholder="Enter healing amount…"
-              style={{...inp(),textAlign:'center',fontSize:'26px',color:'#60d060',padding:'8px'}} autoFocus/>
+              style={{...inp(),textAlign:'center',fontSize: '29px',color:'#60d060',padding:'8px'}} autoFocus/>
           </Fld>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
             <button onClick={()=>setDModal(null)} style={{...Btn(T.textMuted),padding:'10px'}}>CANCEL</button>
             <button onClick={confirmHeal} disabled={!Number(healAmt)||Number(healAmt)<=0}
-              style={{...Btn('#50a050'),padding:'10px',background:'#062006',fontSize:'12px',opacity:Number(healAmt)>0?1:0.28}}>✦ HEAL</button>
+              style={{...Btn('#50a050'),padding:'10px',background:'#062006',fontSize: '15px',opacity:Number(healAmt)>0?1:0.28}}>✦ HEAL</button>
           </div>
         </ModalWrap>
       )}
@@ -3086,13 +3086,13 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               fontFamily: "'Cinzel',serif",
             }}
           >
-            <span style={{ color: T.textMuted, fontSize: '11px', flexShrink: 0 }} aria-hidden>
+            <span style={{ color: T.textMuted, fontSize: '14px', flexShrink: 0 }} aria-hidden>
               ◀
             </span>
             <span
               style={{
                 color: T.gold,
-                fontSize: '10px',
+                fontSize: '13px',
                 letterSpacing: '0.2em',
               }}
             >
@@ -3114,7 +3114,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             >
               <div
                 style={{
-                  fontSize: '9px',
+                  fontSize: '12px',
                   letterSpacing: '0.06em',
                   color: T.textMuted,
                   fontFamily: "'Cinzel',serif",
@@ -3128,7 +3128,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               </div>
               <div
                 style={{
-                  fontSize: '11px',
+                  fontSize: '14px',
                   fontWeight: 600,
                   color: T.text,
                   fontFamily: "'Cinzel',serif",
@@ -3185,14 +3185,14 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             <span
               style={{
                 textAlign: 'center',
-                fontSize: '9px',
+                fontSize: '12px',
                 letterSpacing: '0.18em',
                 color: T.textMuted,
               }}
             >
               Dice log
             </span>
-            <span style={{ color: T.textMuted, fontSize: '11px', textAlign: 'center' }} aria-hidden>
+            <span style={{ color: T.textMuted, fontSize: '14px', textAlign: 'center' }} aria-hidden>
               ▶
             </span>
           </button>
@@ -3212,7 +3212,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             overflow:'hidden'}}>
             {/* Header */}
             <div style={{padding:'8px 14px 6px',borderBottom:`1px solid ${ATTR_COLOR[ctxMenu.attr]}22`,
-              fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.2em',
+              fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.2em',
               color:ATTR_COLOR[ctxMenu.attr],opacity:0.7}}>{ctxMenu.attr.toUpperCase()} ROLL</div>
             {/* Normal */}
             {[
@@ -3223,7 +3223,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               <button key={mode} onClick={()=>{closeCtx();rollSave(ctxMenu.attr,mode);}}
                 style={{display:'block',width:'100%',textAlign:'left',background:'transparent',
                   border:'none',borderBottom:`1px solid ${ATTR_COLOR[ctxMenu.attr]}11`,
-                  padding:'10px 14px',color:'#e4d8c0',fontSize:'13px',cursor:'pointer',
+                  padding:'10px 14px',color:'#e4d8c0',fontSize: '16px',cursor:'pointer',
                   fontFamily:'inherit',transition:'background 0.1s'}}
                 onMouseEnter={e=>e.currentTarget.style.background=ATTR_COLOR[ctxMenu.attr]+'18'}
                 onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
@@ -3237,7 +3237,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                 <button onClick={()=>{closeCtx();setDefRpInput(0);setDefModal({attr:ctxMenu.attr});}}
                   style={{display:'block',width:'100%',textAlign:'left',background:'transparent',
                     border:'none',padding:'10px 14px',color:ATTR_COLOR[ctxMenu.attr],
-                    fontSize:'13px',cursor:'pointer',fontFamily:'inherit',transition:'background 0.1s'}}
+                    fontSize: '16px',cursor:'pointer',fontFamily:'inherit',transition:'background 0.1s'}}
                   onMouseEnter={e=>e.currentTarget.style.background=ATTR_COLOR[ctxMenu.attr]+'18'}
                   onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                   <span style={{marginRight:'10px',opacity:0.6}}>🛡</span>
@@ -3258,8 +3258,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         return(
           <ModalWrap accentColor={ac} minW="380px">
             <div style={{textAlign:'center',padding:'8px 0'}}>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.28em',color:ac,marginBottom:'4px',opacity:0.7}}>DEFENSIVE SAVE</div>
-              <div style={{fontSize:'12px',color:T.textMuted,marginBottom:'12px',lineHeight:1.5}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.28em',color:ac,marginBottom:'4px',opacity:0.7}}>DEFENSIVE SAVE</div>
+              <div style={{fontSize: '15px',color:T.textMuted,marginBottom:'12px',lineHeight:1.5}}>
                 Save roll = d20 + resistance modifier + defensive bonus (+0–+5). Bonus tiers use <strong style={{color:T.gold}}>Base RP</strong> ({effBaseRP}) as reference; you may commit up to your <strong style={{color:T.rp}}>available RP</strong> ({curRP}).
               </div>
 
@@ -3269,44 +3269,44 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   <button
                     type="button"
                     onClick={()=>setDefModal(d=>d&&{...d,attr:'Power'})}
-                    style={{...Btn(ATTR_COLOR.Power),padding:'10px',fontSize:'11px',background:defModal.attr==='Power'?`${ATTR_COLOR.Power}22`:'transparent',opacity:defModal.attr==='Power'?1:0.75}}
+                    style={{...Btn(ATTR_COLOR.Power),padding:'10px',fontSize: '14px',background:defModal.attr==='Power'?`${ATTR_COLOR.Power}22`:'transparent',opacity:defModal.attr==='Power'?1:0.75}}
                   >
                     Power — Block
                   </button>
                   <button
                     type="button"
                     onClick={()=>setDefModal(d=>d&&{...d,attr:'Agility'})}
-                    style={{...Btn(ATTR_COLOR.Agility),padding:'10px',fontSize:'11px',background:defModal.attr==='Agility'?`${ATTR_COLOR.Agility}22`:'transparent',opacity:defModal.attr==='Agility'?1:0.75}}
+                    style={{...Btn(ATTR_COLOR.Agility),padding:'10px',fontSize: '14px',background:defModal.attr==='Agility'?`${ATTR_COLOR.Agility}22`:'transparent',opacity:defModal.attr==='Agility'?1:0.75}}
                   >
                     Agility — Dodge
                   </button>
                 </div>
-                <div style={{fontSize:'12px',color:T.textMuted,marginTop:'8px'}}>
+                <div style={{fontSize: '15px',color:T.textMuted,marginTop:'8px'}}>
                   Modifier on die: <strong style={{color:ac}}>{mStr(calcMod(attrs[defModal.attr]))}</strong> ({defModal.attr})
                 </div>
               </div>
 
               <div style={{background:'#111520',border:`1px solid ${ac}33`,borderRadius:'4px',padding:'14px 18px',marginBottom:'14px',textAlign:'left'}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',letterSpacing:'0.18em',color:'#8a7a68'}}>RP COMMITTED (spent on roll)</div>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:T.rp}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.18em',color:'#8a7a68'}}>RP COMMITTED (spent on roll)</div>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.rp}}>
                     Available: <strong>{curRP}</strong>
                   </span>
                 </div>
                 <div style={{display:'flex',gap:'12px',alignItems:'center',marginBottom:'8px'}}>
                   <div style={{display:'flex',alignItems:'stretch',flexShrink:0}}>
                     <button type="button" onClick={()=>setDefRpInput(v=>Math.max(0,(Number(v)||0)-1))}
-                      style={{...Btn(ac),padding:'0 12px',fontSize:'22px',fontWeight:'300',borderRight:'none',borderRadius:'3px 0 0 3px',lineHeight:1}}>−</button>
+                      style={{...Btn(ac),padding:'0 12px',fontSize: '25px',fontWeight:'300',borderRight:'none',borderRadius:'3px 0 0 3px',lineHeight:1}}>−</button>
                     <StableNumInput
                       value={rpIn}
                       onChange={setDefRpInput}
                       min={0}
                       max={curRP}
                       clearOnFocus
-                      style={{...inp(),width:'72px',textAlign:'center',fontSize:'22px',fontWeight:'700',color:ac,borderRadius:0,borderLeft:'none',borderRight:'none',padding:'4px 6px'}}
+                      style={{...inp(),width:'72px',textAlign:'center',fontSize: '25px',fontWeight:'700',color:ac,borderRadius:0,borderLeft:'none',borderRight:'none',padding:'4px 6px'}}
                     />
                     <button type="button" onClick={()=>setDefRpInput(v=>Math.min(curRP,(Number(v)||0)+1))}
-                      style={{...Btn(ac),padding:'0 12px',fontSize:'22px',fontWeight:'300',borderLeft:'none',borderRadius:'0 3px 3px 0',lineHeight:1}}>+</button>
+                      style={{...Btn(ac),padding:'0 12px',fontSize: '25px',fontWeight:'300',borderLeft:'none',borderRadius:'0 3px 3px 0',lineHeight:1}}>+</button>
                   </div>
                   <div style={{flex:1,position:'relative',padding:'10px 0'}}>
                     <div style={{height:'6px',background:'#1c2030',borderRadius:'3px',position:'relative',overflow:'visible'}}>
@@ -3349,8 +3349,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   </div>
                 </div>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:'#8a7a68'}}>vs Base RP (bonus tiers)</span>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:'11px',color:ac,whiteSpace:'nowrap'}}>+{defBonus} defensive bonus</span>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:'#8a7a68'}}>vs Base RP (bonus tiers)</span>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:ac,whiteSpace:'nowrap'}}>+{defBonus} defensive bonus</span>
                 </div>
                 <div style={{display:'flex',gap:'4px',marginBottom:'2px'}}>
                   {[1,2,3,4,5].map(i=>(
@@ -3366,7 +3366,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                     />
                   ))}
                 </div>
-                <div style={{fontSize:'11px',color:'#504538',marginTop:'8px',lineHeight:1.5}}>
+                <div style={{fontSize: '14px',color:'#504538',marginTop:'8px',lineHeight:1.5}}>
                   {rpIn === 0
                     ? '0% of Base RP → +0 defensive bonus.'
                     : `${pctOfBase}% of Base RP → +${defBonus} on the d20 roll (max +5).`}
@@ -3374,9 +3374,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               </div>
 
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-                <button type="button" onClick={()=>setDefModal(null)} style={{...Btn('#8a7a68'),padding:'10px',fontSize:'11px'}}>CANCEL</button>
+                <button type="button" onClick={()=>setDefModal(null)} style={{...Btn('#8a7a68'),padding:'10px',fontSize: '14px'}}>CANCEL</button>
                 <button type="button" onClick={()=>{setDefModal(null);rollSave(defModal.attr,'defensive',rpIn);}}
-                  style={{...Btn(ac),padding:'10px',fontSize:'12px',background:`${ac}15`,fontWeight:'600'}}>
+                  style={{...Btn(ac),padding:'10px',fontSize: '15px',background:`${ac}15`,fontWeight:'600'}}>
                   🎲 ROLL SAVE
                 </button>
               </div>
@@ -3389,7 +3389,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {wepModal==='browseWeapon'&&(
         <ModalWrap accentColor="#c8503a" minW="580px">
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:'#c8503a'}}>WEAPON DATABASE</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.22em',color:'#c8503a'}}>WEAPON DATABASE</div>
             <div style={{display:'flex',gap:'4px'}}>
               {['All','My Homebrew'].map(lbl=>{
                 const mine=lbl==='My Homebrew';
@@ -3398,7 +3398,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   <button key={lbl} onClick={()=>{
                     setLibShowMine(mine);setLibExpanded(null);setLibLoading(true);
                     api.get(mine?'/library/weapons/mine':'/library/weapons').then(r=>{setLibWeapons(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));
-                  }} style={{...Btn(active?'#c8503a':'#3a2a28'),padding:'3px 10px',fontSize:'10px',background:active?'#1a0604':'transparent'}}>
+                  }} style={{...Btn(active?'#c8503a':'#3a2a28'),padding:'3px 10px',fontSize: '13px',background:active?'#1a0604':'transparent'}}>
                     {lbl}
                   </button>
                 );
@@ -3413,7 +3413,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             </select>
           </div>
           <div style={{maxHeight:'400px',overflowY:'auto',border:`1px solid ${T.border}`,borderRadius:'3px'}}>
-            {libLoading&&<div style={{padding:'24px',textAlign:'center',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize:'11px'}}>LOADING…</div>}
+            {libLoading&&<div style={{padding:'24px',textAlign:'center',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize: '14px'}}>LOADING…</div>}
             {!libLoading&&libWeapons
               .filter(w=>{
                 const matchName=!libSearch||w.name.toLowerCase().includes(libSearch.toLowerCase());
@@ -3438,7 +3438,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                       style={{padding:'10px 14px',cursor:'pointer',display:'flex',alignItems:'center',gap:'10px'}}>
                       <div style={{flex:1}}>
                         <span style={{fontWeight:'500',color:rarCol}}>{w.name}</span>
-                        <span style={{fontSize:'12px',color:T.textMuted,marginLeft:'10px'}}>
+                        <span style={{fontSize: '15px',color:T.textMuted,marginLeft:'10px'}}>
                           {sheetW.channels.map((ch,i)=><span key={i}>{i>0?' + ':''}{ch.dice}d{w.base_die_type} <span style={{color:ch.element==='Physical'?T.textMuted:ELEM_COLOR[ch.element]}}>{ch.element}</span></span>)}
                           <span style={{color:T.textDim}}> × RP</span>
                         </span>
@@ -3446,24 +3446,24 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                       <button type="button" onClick={e=>{e.stopPropagation();doAdd();}}
                         disabled={!canAddWeapon}
                         title={!canAddWeapon ? (equipStatRequirementMessage('weapon', w) || 'Requirements not met') : 'Add to inventory'}
-                        style={{...Btn('#c8503a'),padding:'3px 14px',fontSize:'11px',background:'#1a0604',flexShrink:0,opacity:canAddWeapon?1:0.35}}>
+                        style={{...Btn('#c8503a'),padding:'3px 14px',fontSize: '14px',background:'#1a0604',flexShrink:0,opacity:canAddWeapon?1:0.35}}>
                         + ADD
                       </button>
                     </div>
                     {/* Expanded detail */}
                     {isExp&&(
-                      <div style={{padding:'0 14px 12px 14px',fontSize:'13px',color:T.textMuted,display:'flex',flexDirection:'column',gap:'5px'}}>
+                      <div style={{padding:'0 14px 12px 14px',fontSize: '16px',color:T.textMuted,display:'flex',flexDirection:'column',gap:'5px'}}>
                         {w.description&&<div style={{fontStyle:'italic',color:T.textMuted,marginBottom:'2px'}}>{w.description}</div>}
                         <div style={{display:'flex',gap:'16px',flexWrap:'wrap'}}>
-                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>RARITY </span><span style={{color:rarCol}}>{cap(w.rarity)}</span></span>
-                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>DIE </span>d{w.base_die_type}</span>
-                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>BUDGET </span>{w.total_dice_budget} dice</span>
-                          {w.gem_slots>0&&<span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>GEM SLOTS </span>{w.gem_slots}</span>}
-                          {sheetW.attrReq&&<span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>REQ </span><span style={{color:'#e8b050'}}>{sheetW.attrReq}</span></span>}
+                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>RARITY </span><span style={{color:rarCol}}>{cap(w.rarity)}</span></span>
+                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>DIE </span>d{w.base_die_type}</span>
+                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>BUDGET </span>{w.total_dice_budget} dice</span>
+                          {w.gem_slots>0&&<span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>GEM SLOTS </span>{w.gem_slots}</span>}
+                          {sheetW.attrReq&&<span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>REQ </span><span style={{color:'#e8b050'}}>{sheetW.attrReq}</span></span>}
                         </div>
                         <div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginTop:'2px'}}>
                           {sheetW.channels.map((ch,i)=>(
-                            <span key={i} style={{padding:'2px 9px',borderRadius:'8px',background:`${ch.element==='Physical'?T.text:ELEM_COLOR[ch.element]}18`,border:`1px solid ${ch.element==='Physical'?T.border:ELEM_COLOR[ch.element]+'44'}`,color:ch.element==='Physical'?T.text:ELEM_COLOR[ch.element],fontSize:'12px'}}>
+                            <span key={i} style={{padding:'2px 9px',borderRadius:'8px',background:`${ch.element==='Physical'?T.text:ELEM_COLOR[ch.element]}18`,border:`1px solid ${ch.element==='Physical'?T.border:ELEM_COLOR[ch.element]+'44'}`,color:ch.element==='Physical'?T.text:ELEM_COLOR[ch.element],fontSize: '15px'}}>
                               {ch.dice}d{w.base_die_type} {ch.element}
                             </span>
                           ))}
@@ -3475,13 +3475,13 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               })
             }
             {!libLoading&&libWeapons.filter(w=>(!libSearch||w.name.toLowerCase().includes(libSearch.toLowerCase()))&&(!libRarityFilter||w.rarity===libRarityFilter)).length===0&&(
-              <div style={{padding:'24px',textAlign:'center',color:T.textDim,fontSize:'13px'}}>No weapons match your filters.</div>
+              <div style={{padding:'24px',textAlign:'center',color:T.textDim,fontSize: '16px'}}>No weapons match your filters.</div>
             )}
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginTop:'12px'}}>
             <button onClick={()=>setWepModal(null)} style={{...Btn(T.textMuted),padding:'9px'}}>CANCEL</button>
             <button onClick={()=>{setWepModal(null);addManualWep();}} style={{...Btn('#c8503a'),padding:'9px',background:'#1a0804'}}>+ ADD MANUALLY</button>
-            <a href="/homebrew" target="_blank" rel="noopener" style={{...Btn('#c8503a'),padding:'9px',textDecoration:'none',textAlign:'center',fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'0.1em',display:'block',boxSizing:'border-box'}}>✦ WORKSHOP</a>
+            <a href="/homebrew" target="_blank" rel="noopener" style={{...Btn('#c8503a'),padding:'9px',textDecoration:'none',textAlign:'center',fontFamily:"'Cinzel',serif",fontSize: '14px',letterSpacing:'0.1em',display:'block',boxSizing:'border-box'}}>✦ WORKSHOP</a>
           </div>
         </ModalWrap>
       )}
@@ -3490,7 +3490,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {wepModal==='browseArmor'&&(
         <ModalWrap accentColor="#8a7040" minW="600px">
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:'#8a7040'}}>ARMOR DATABASE</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.22em',color:'#8a7040'}}>ARMOR DATABASE</div>
             <div style={{display:'flex',gap:'4px'}}>
               {['All','My Homebrew'].map(lbl=>{
                 const mine=lbl==='My Homebrew';
@@ -3499,7 +3499,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   <button key={lbl} onClick={()=>{
                     setLibShowMine(mine);setLibExpanded(null);setLibLoading(true);
                     api.get(mine?'/library/armor/mine':'/library/armor').then(r=>{setLibArmor(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));
-                  }} style={{...Btn(active?'#8a7040':'#3a3020'),padding:'3px 10px',fontSize:'10px',background:active?'#100c02':'transparent'}}>
+                  }} style={{...Btn(active?'#8a7040':'#3a3020'),padding:'3px 10px',fontSize: '13px',background:active?'#100c02':'transparent'}}>
                     {lbl}
                   </button>
                 );
@@ -3518,7 +3518,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             <input value={libSearch} onChange={e=>setLibSearch(e.target.value)} placeholder="Search…" style={inp()}/>
           </div>
           <div style={{maxHeight:'400px',overflowY:'auto',border:`1px solid ${T.border}`,borderRadius:'3px'}}>
-            {libLoading&&<div style={{padding:'24px',textAlign:'center',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize:'11px'}}>LOADING…</div>}
+            {libLoading&&<div style={{padding:'24px',textAlign:'center',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize: '14px'}}>LOADING…</div>}
             {!libLoading&&libArmor
               .filter(a=>{
                 const matchSlot=!libSlotFilter||a.slot===libSlotFilter;
@@ -3543,8 +3543,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                       style={{padding:'10px 14px',cursor:'pointer',display:'flex',alignItems:'center',gap:'10px'}}>
                       <div style={{flex:1}}>
                         <span style={{fontWeight:'500',color:rarCol}}>{a.name}</span>
-                        <span style={{fontSize:'12px',color:T.textMuted,marginLeft:'10px'}}>
-                          <span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:'#8a7040'}}>{slot}</span>
+                        <span style={{fontSize: '15px',color:T.textMuted,marginLeft:'10px'}}>
+                          <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:'#8a7040'}}>{slot}</span>
                           <span style={{marginLeft:'8px'}}>{parseFloat(a.mitigation_percent)}% mit</span>
                           {a.req_power>0&&<span style={{color:T.textDim,marginLeft:'8px'}}>· PWR {a.req_power}+</span>}
                         </span>
@@ -3552,19 +3552,19 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                       <button type="button" onClick={e=>{e.stopPropagation();doAdd();}}
                         disabled={!canAddArmor}
                         title={!canAddArmor ? (equipStatRequirementMessage('armor', a) || 'Requirements not met') : 'Add to inventory'}
-                        style={{...Btn('#8a7040'),padding:'3px 14px',fontSize:'11px',background:'#100c02',flexShrink:0,opacity:canAddArmor?1:0.35}}>
+                        style={{...Btn('#8a7040'),padding:'3px 14px',fontSize: '14px',background:'#100c02',flexShrink:0,opacity:canAddArmor?1:0.35}}>
                         + ADD
                       </button>
                     </div>
                     {isExp&&(
-                      <div style={{padding:'0 14px 12px 14px',fontSize:'13px',color:T.textMuted,display:'flex',flexDirection:'column',gap:'5px'}}>
+                      <div style={{padding:'0 14px 12px 14px',fontSize: '16px',color:T.textMuted,display:'flex',flexDirection:'column',gap:'5px'}}>
                         {a.description&&<div style={{fontStyle:'italic',marginBottom:'2px'}}>{a.description}</div>}
                         <div style={{display:'flex',gap:'16px',flexWrap:'wrap'}}>
-                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>RARITY </span><span style={{color:rarCol}}>{cap(a.rarity)}</span></span>
-                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>CATEGORY </span>{cap(a.category)}</span>
-                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>MITIGATION </span><span style={{color:T.text,fontWeight:'600'}}>{parseFloat(a.mitigation_percent)}%</span></span>
-                          {a.gem_slots>0&&<span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>GEM SLOTS </span>{a.gem_slots}</span>}
-                          {a.req_power>0&&<span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>REQ </span><span style={{color:'#e8b050'}}>PWR {a.req_power}</span></span>}
+                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>RARITY </span><span style={{color:rarCol}}>{cap(a.rarity)}</span></span>
+                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>CATEGORY </span>{cap(a.category)}</span>
+                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>MITIGATION </span><span style={{color:T.text,fontWeight:'600'}}>{parseFloat(a.mitigation_percent)}%</span></span>
+                          {a.gem_slots>0&&<span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>GEM SLOTS </span>{a.gem_slots}</span>}
+                          {a.req_power>0&&<span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>REQ </span><span style={{color:'#e8b050'}}>PWR {a.req_power}</span></span>}
                         </div>
                       </div>
                     )}
@@ -3573,12 +3573,12 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               })
             }
             {!libLoading&&libArmor.filter(a=>(!libSlotFilter||a.slot===libSlotFilter)&&(!libRarityFilter||a.rarity===libRarityFilter)&&(!libSearch||a.name.toLowerCase().includes(libSearch.toLowerCase()))).length===0&&(
-              <div style={{padding:'24px',textAlign:'center',color:T.textDim,fontSize:'13px'}}>No armor pieces match your filters.</div>
+              <div style={{padding:'24px',textAlign:'center',color:T.textDim,fontSize: '16px'}}>No armor pieces match your filters.</div>
             )}
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginTop:'12px'}}>
             <button onClick={()=>setWepModal(null)} style={{...Btn(T.textMuted),padding:'9px'}}>CLOSE</button>
-            <a href="/homebrew" target="_blank" rel="noopener" style={{...Btn('#8a7040'),padding:'9px',textDecoration:'none',textAlign:'center',fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'0.1em',display:'block',boxSizing:'border-box'}}>✦ WORKSHOP</a>
+            <a href="/homebrew" target="_blank" rel="noopener" style={{...Btn('#8a7040'),padding:'9px',textDecoration:'none',textAlign:'center',fontFamily:"'Cinzel',serif",fontSize: '14px',letterSpacing:'0.1em',display:'block',boxSizing:'border-box'}}>✦ WORKSHOP</a>
           </div>
         </ModalWrap>
       )}
@@ -3587,7 +3587,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {wepModal==='browseGem'&&(
         <ModalWrap accentColor={T.magic} minW="560px">
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'}}>
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:T.magic}}>SPELL GEM DATABASE</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.22em',color:T.magic}}>SPELL GEM DATABASE</div>
             <div style={{display:'flex',gap:'4px'}}>
               {['All','My Homebrew'].map(lbl=>{
                 const mine=lbl==='My Homebrew';
@@ -3596,14 +3596,14 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   <button key={lbl} onClick={()=>{
                     setLibShowMine(mine);setLibExpanded(null);setLibLoading(true);
                     api.get(mine?'/library/spell-gems/mine':'/library/spell-gems').then(r=>{setLibGems(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));
-                  }} style={{...Btn(active?T.magic:'#302040'),padding:'3px 10px',fontSize:'10px',background:active?'#0a0618':'transparent'}}>
+                  }} style={{...Btn(active?T.magic:'#302040'),padding:'3px 10px',fontSize: '13px',background:active?'#0a0618':'transparent'}}>
                     {lbl}
                   </button>
                 );
               })}
             </div>
           </div>
-          <div style={{fontSize:'13px',color:T.textMuted,marginBottom:'12px'}}>Equipping to: <span style={{color:T.magic}}>Slot {gemTargetSlot+1}</span></div>
+          <div style={{fontSize: '16px',color:T.textMuted,marginBottom:'12px'}}>Equipping to: <span style={{color:T.magic}}>Slot {gemTargetSlot+1}</span></div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
             <select value={libElemFilter} onChange={e=>setLibElemFilter(e.target.value)} style={inp()}>
               <option value="">All Elements</option>
@@ -3617,7 +3617,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             </select>
           </div>
           <div style={{maxHeight:'380px',overflowY:'auto',border:`1px solid ${T.border}`,borderRadius:'3px'}}>
-            {libLoading&&<div style={{padding:'24px',textAlign:'center',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize:'11px'}}>LOADING…</div>}
+            {libLoading&&<div style={{padding:'24px',textAlign:'center',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize: '14px'}}>LOADING…</div>}
             {!libLoading&&libGems
               .filter(g=>(!libElemFilter||g.element_type===libElemFilter)&&(!libRarityFilter||g.rarity===libRarityFilter))
               .map(g=>{
@@ -3637,27 +3637,27 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                       <div style={{width:'9px',height:'9px',borderRadius:'50%',background:eCol,boxShadow:`0 0 7px ${eCol}66`,flexShrink:0}}/>
                       <div style={{flex:1}}>
                         <span style={{fontWeight:'500',color:rarCol}}>{g.name}</span>
-                        <span style={{fontSize:'12px',color:T.textMuted,marginLeft:'10px'}}>
+                        <span style={{fontSize: '15px',color:T.textMuted,marginLeft:'10px'}}>
                           <span style={{color:eCol}}>{g.num_dice}d{g.die_type}</span>
                           <span style={{color:T.textDim}}> × RP · auto-hit</span>
                         </span>
                       </div>
                       <button onClick={e=>{e.stopPropagation();doAdd();}}
-                        style={{...Btn(T.magic),padding:'3px 14px',fontSize:'11px',background:'#0a0618',flexShrink:0}}>
+                        style={{...Btn(T.magic),padding:'3px 14px',fontSize: '14px',background:'#0a0618',flexShrink:0}}>
                         + ADD
                       </button>
                     </div>
                     {isExp&&(
-                      <div style={{padding:'0 14px 12px 14px',fontSize:'13px',color:T.textMuted,display:'flex',flexDirection:'column',gap:'5px'}}>
+                      <div style={{padding:'0 14px 12px 14px',fontSize: '16px',color:T.textMuted,display:'flex',flexDirection:'column',gap:'5px'}}>
                         {g.description&&<div style={{fontStyle:'italic',marginBottom:'2px'}}>{g.description}</div>}
                         <div style={{display:'flex',gap:'16px',flexWrap:'wrap'}}>
-                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>RARITY </span><span style={{color:rarCol}}>{cap(g.rarity)}</span></span>
-                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>ELEMENT </span><span style={{color:eCol}}>{elem}</span></span>
-                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>DAMAGE </span><span style={{color:eCol,fontWeight:'600'}}>{g.num_dice}d{g.die_type} × RP</span></span>
-                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>ARMOR RES </span>+{g.armor_resistance_percent}%</span>
+                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>RARITY </span><span style={{color:rarCol}}>{cap(g.rarity)}</span></span>
+                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>ELEMENT </span><span style={{color:eCol}}>{elem}</span></span>
+                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>DAMAGE </span><span style={{color:eCol,fontWeight:'600'}}>{g.num_dice}d{g.die_type} × RP</span></span>
+                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>ARMOR RES </span>+{g.armor_resistance_percent}%</span>
                         </div>
                         {g.secondary_effect&&(
-                          <div style={{padding:'5px 10px',background:T.surface,borderRadius:'3px',border:`1px solid ${eCol}22`,fontSize:'12px',color:eCol}}>
+                          <div style={{padding:'5px 10px',background:T.surface,borderRadius:'3px',border:`1px solid ${eCol}22`,fontSize: '15px',color:eCol}}>
                             ✦ {g.secondary_effect}
                           </div>
                         )}
@@ -3668,12 +3668,12 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               })
             }
             {!libLoading&&libGems.filter(g=>(!libElemFilter||g.element_type===libElemFilter)&&(!libRarityFilter||g.rarity===libRarityFilter)).length===0&&(
-              <div style={{padding:'24px',textAlign:'center',color:T.textDim,fontSize:'13px'}}>No gems match your filters.</div>
+              <div style={{padding:'24px',textAlign:'center',color:T.textDim,fontSize: '16px'}}>No gems match your filters.</div>
             )}
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginTop:'12px'}}>
             <button onClick={()=>setWepModal(null)} style={{...Btn(T.textMuted),padding:'9px'}}>CLOSE</button>
-            <a href="/homebrew" target="_blank" rel="noopener" style={{...Btn(T.magic),padding:'9px',textDecoration:'none',textAlign:'center',fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'0.1em',display:'block',boxSizing:'border-box'}}>✦ WORKSHOP</a>
+            <a href="/homebrew" target="_blank" rel="noopener" style={{...Btn(T.magic),padding:'9px',textDecoration:'none',textAlign:'center',fontFamily:"'Cinzel',serif",fontSize: '14px',letterSpacing:'0.1em',display:'block',boxSizing:'border-box'}}>✦ WORKSHOP</a>
           </div>
         </ModalWrap>
       )}
@@ -3681,7 +3681,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {wepModal==='browseBracer'&&(
         <ModalWrap accentColor={T.magic} minW="500px">
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:T.magic}}>FOCUS BRACER DATABASE</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.22em',color:T.magic}}>FOCUS BRACER DATABASE</div>
             <div style={{display:'flex',gap:'4px'}}>
               {['All','My Homebrew'].map(lbl=>{
                 const mine=lbl==='My Homebrew';
@@ -3690,7 +3690,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   <button key={lbl} onClick={()=>{
                     setLibShowMine(mine);setLibExpanded(null);setLibLoading(true);
                     api.get(mine?'/library/focus-bracers/mine':'/library/focus-bracers').then(r=>{setLibBracers(r.data.data);setLibLoading(false);}).catch(()=>setLibLoading(false));
-                  }} style={{...Btn(active?T.magic:'#302040'),padding:'3px 10px',fontSize:'10px',background:active?'#0a0618':'transparent'}}>
+                  }} style={{...Btn(active?T.magic:'#302040'),padding:'3px 10px',fontSize: '13px',background:active?'#0a0618':'transparent'}}>
                     {lbl}
                   </button>
                 );
@@ -3699,7 +3699,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           </div>
           <input value={libSearch} onChange={e=>setLibSearch(e.target.value)} placeholder="Search bracers…" style={{...inp(),marginBottom:'10px'}}/>
           <div style={{maxHeight:'400px',overflowY:'auto',border:`1px solid ${T.border}`,borderRadius:'3px'}}>
-            {libLoading&&<div style={{padding:'24px',textAlign:'center',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize:'11px'}}>LOADING…</div>}
+            {libLoading&&<div style={{padding:'24px',textAlign:'center',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize: '14px'}}>LOADING…</div>}
             {!libLoading&&libBracers
               .filter(b=>!libSearch||b.name.toLowerCase().includes(libSearch.toLowerCase()))
               .map(b=>{
@@ -3714,19 +3714,19 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                       style={{padding:'10px 14px',cursor:'pointer',display:'flex',alignItems:'center',gap:'10px'}}>
                       <div style={{flex:1}}>
                         <span style={{fontWeight:'500',color:T.text}}>{b.name}</span>
-                        <span style={{fontSize:'11px',padding:'1px 8px',borderRadius:'8px',marginLeft:'10px',background:`${gCol}15`,border:`1px solid ${gCol}33`,color:gCol}}>{cap(b.grade)}</span>
-                        <span style={{fontSize:'12px',color:T.textMuted,marginLeft:'10px'}}>⬡ {b.gem_slots} slots</span>
-                        {b.req_focus>0&&<span style={{fontSize:'11px',color:T.textDim,marginLeft:'8px'}}>FOC {b.req_focus}+</span>}
+                        <span style={{fontSize: '14px',padding:'1px 8px',borderRadius:'8px',marginLeft:'10px',background:`${gCol}15`,border:`1px solid ${gCol}33`,color:gCol}}>{cap(b.grade)}</span>
+                        <span style={{fontSize: '15px',color:T.textMuted,marginLeft:'10px'}}>⬡ {b.gem_slots} slots</span>
+                        {b.req_focus>0&&<span style={{fontSize: '14px',color:T.textDim,marginLeft:'8px'}}>FOC {b.req_focus}+</span>}
                       </div>
                       <button type="button" onClick={e=>{e.stopPropagation();if(!canAddBracer)return;addToInventory('focus_bracer',b.id);setWepModal(null);}}
                         disabled={!canAddBracer}
                         title={!canAddBracer ? (equipStatRequirementMessage('focus_bracer', b) || 'Requirements not met') : 'Add to inventory'}
-                        style={{...Btn(T.magic),padding:'3px 14px',fontSize:'11px',background:'#0a0618',flexShrink:0,opacity:canAddBracer?1:0.35}}>
+                        style={{...Btn(T.magic),padding:'3px 14px',fontSize: '14px',background:'#0a0618',flexShrink:0,opacity:canAddBracer?1:0.35}}>
                         + ADD
                       </button>
                     </div>
                     {isExp&&b.description&&(
-                      <div style={{padding:'0 14px 12px 14px',fontSize:'13px',color:T.textMuted,fontStyle:'italic'}}>
+                      <div style={{padding:'0 14px 12px 14px',fontSize: '16px',color:T.textMuted,fontStyle:'italic'}}>
                         {b.description}
                       </div>
                     )}
@@ -3735,12 +3735,12 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               })
             }
             {!libLoading&&libBracers.filter(b=>!libSearch||b.name.toLowerCase().includes(libSearch.toLowerCase())).length===0&&(
-              <div style={{padding:'24px',textAlign:'center',color:T.textDim,fontSize:'13px'}}>No focus bracers found.</div>
+              <div style={{padding:'24px',textAlign:'center',color:T.textDim,fontSize: '16px'}}>No focus bracers found.</div>
             )}
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginTop:'12px'}}>
             <button onClick={()=>setWepModal(null)} style={{...Btn(T.textMuted),padding:'9px'}}>CLOSE</button>
-            <a href="/homebrew" target="_blank" rel="noopener" style={{...Btn(T.magic),padding:'9px',textDecoration:'none',textAlign:'center',fontFamily:"'Cinzel',serif",fontSize:'11px',letterSpacing:'0.1em',display:'block',boxSizing:'border-box'}}>✦ WORKSHOP</a>
+            <a href="/homebrew" target="_blank" rel="noopener" style={{...Btn(T.magic),padding:'9px',textDecoration:'none',textAlign:'center',fontFamily:"'Cinzel',serif",fontSize: '14px',letterSpacing:'0.1em',display:'block',boxSizing:'border-box'}}>✦ WORKSHOP</a>
           </div>
         </ModalWrap>
       )}
@@ -3748,7 +3748,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* ══ GENERAL ITEMS BROWSER ════════════════════════════════════ */}
       {wepModal==='browseGeneral'&&(
         <ModalWrap accentColor={T.gold} minW="560px">
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:T.gold,marginBottom:'12px'}}>GEAR & CONSUMABLES</div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.22em',color:T.gold,marginBottom:'12px'}}>GEAR & CONSUMABLES</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:'8px',marginBottom:'10px'}}>
             <input value={libSearch} onChange={e=>setLibSearch(e.target.value)} placeholder="Search items…" style={inp()}/>
             <select value={libCatFilter} onChange={e=>setLibCatFilter(e.target.value)} style={{...inp(),width:'140px'}}>
@@ -3757,7 +3757,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             </select>
           </div>
           <div style={{maxHeight:'420px',overflowY:'auto',border:`1px solid ${T.border}`,borderRadius:'3px'}}>
-            {libLoading&&<div style={{padding:'24px',textAlign:'center',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize:'11px'}}>LOADING…</div>}
+            {libLoading&&<div style={{padding:'24px',textAlign:'center',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize: '14px'}}>LOADING…</div>}
             {!libLoading&&libGenItems
               .filter(item=>{
                 const matchCat=!libCatFilter||item.category===libCatFilter;
@@ -3775,22 +3775,22 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                       style={{padding:'10px 14px',cursor:'pointer',display:'flex',alignItems:'center',gap:'10px'}}>
                       <div style={{flex:1}}>
                         <span style={{fontWeight:'500',color:T.text}}>{item.name}</span>
-                        <span style={{fontSize:'11px',padding:'1px 7px',borderRadius:'8px',marginLeft:'10px',background:`${col}15`,border:`1px solid ${col}33`,color:col}}>{cap(item.category)}</span>
-                        {item.value_gold>0&&<span style={{fontSize:'11px',color:'#e8c040',marginLeft:'8px'}}>⬡ {item.value_gold}g</span>}
+                        <span style={{fontSize: '14px',padding:'1px 7px',borderRadius:'8px',marginLeft:'10px',background:`${col}15`,border:`1px solid ${col}33`,color:col}}>{cap(item.category)}</span>
+                        {item.value_gold>0&&<span style={{fontSize: '14px',color:'#e8c040',marginLeft:'8px'}}>⬡ {item.value_gold}g</span>}
                       </div>
                       <button onClick={e=>{e.stopPropagation();addToInventory('general',item.id);setWepModal(null);}}
-                        style={{...Btn(T.gold),padding:'3px 14px',fontSize:'11px',background:'#100e00',flexShrink:0}}>
+                        style={{...Btn(T.gold),padding:'3px 14px',fontSize: '14px',background:'#100e00',flexShrink:0}}>
                         + ADD
                       </button>
                     </div>
                     {isExp&&(
-                      <div style={{padding:'0 14px 12px 14px',fontSize:'13px',color:T.textMuted,display:'flex',flexDirection:'column',gap:'5px'}}>
+                      <div style={{padding:'0 14px 12px 14px',fontSize: '16px',color:T.textMuted,display:'flex',flexDirection:'column',gap:'5px'}}>
                         <div style={{fontStyle:'italic'}}>{item.description}</div>
-                        {item.effect&&<div style={{padding:'5px 10px',background:T.surface,borderRadius:'3px',border:`1px solid ${T.border}`,color:T.text,fontSize:'12px'}}>✦ {item.effect}</div>}
+                        {item.effect&&<div style={{padding:'5px 10px',background:T.surface,borderRadius:'3px',border:`1px solid ${T.border}`,color:T.text,fontSize: '15px'}}>✦ {item.effect}</div>}
                         <div style={{display:'flex',gap:'16px',flexWrap:'wrap'}}>
-                          {Number(item.weight)>0&&<span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>WEIGHT </span>{item.weight} lbs</span>}
-                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>VALUE </span><span style={{color:'#e8c040'}}>{item.value_gold}g</span></span>
-                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textDim}}>STACKABLE </span>{item.stackable?'Yes':'No'}</span>
+                          {Number(item.weight)>0&&<span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>WEIGHT </span>{item.weight} lbs</span>}
+                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>VALUE </span><span style={{color:'#e8c040'}}>{item.value_gold}g</span></span>
+                          <span><span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textDim}}>STACKABLE </span>{item.stackable?'Yes':'No'}</span>
                         </div>
                       </div>
                     )}
@@ -3799,7 +3799,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               })
             }
             {!libLoading&&libGenItems.filter(item=>(!libCatFilter||item.category===libCatFilter)&&(!libSearch||item.name.toLowerCase().includes(libSearch.toLowerCase()))).length===0&&(
-              <div style={{padding:'24px',textAlign:'center',color:T.textDim,fontSize:'13px'}}>No items match your filters.</div>
+              <div style={{padding:'24px',textAlign:'center',color:T.textDim,fontSize: '16px'}}>No items match your filters.</div>
             )}
           </div>
           <button onClick={()=>setWepModal(null)} style={{...Btn(T.textMuted),padding:'9px',width:'100%',marginTop:'12px'}}>CLOSE</button>
@@ -3809,35 +3809,35 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* Pet Browser Modal */}
       {wepModal==='browsePet'&&(
         <ModalWrap accentColor="#9b6fe8" minW="500px">
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:'12px',letterSpacing:'0.22em',color:'#9b6fe8',marginBottom:'12px'}}>BOND A COMPANION</div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize: '15px',letterSpacing:'0.22em',color:'#9b6fe8',marginBottom:'12px'}}>BOND A COMPANION</div>
           <input
             value={libPetSearch} onChange={e=>setLibPetSearch(e.target.value)}
             placeholder="Search by name or species…"
             style={{...inp(),width:'100%',marginBottom:'12px'}}
           />
           <div style={{maxHeight:'420px',overflowY:'auto',paddingRight:'2px'}}>
-            {libPetLoading&&<div style={{textAlign:'center',padding:'24px',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize:'11px'}}>LOADING…</div>}
+            {libPetLoading&&<div style={{textAlign:'center',padding:'24px',color:T.textMuted,fontFamily:"'Cinzel',serif",fontSize: '14px'}}>LOADING…</div>}
             {!libPetLoading&&libPetItems
               .filter(p=>!libPetSearch||p.name.toLowerCase().includes(libPetSearch.toLowerCase())||p.species.toLowerCase().includes(libPetSearch.toLowerCase()))
               .map(p=>(
                 <div key={p.id} style={{background:T.surface,border:`1px solid #9b6fe822`,borderRadius:'3px',padding:'10px',marginBottom:'8px'}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'6px'}}>
                     <div>
-                      <div style={{fontWeight:'600',fontSize:'15px',color:'#9b6fe8'}}>{p.name}</div>
-                      <div style={{fontFamily:"'Cinzel',serif",fontSize:'10px',color:T.textMuted,marginTop:'2px'}}>{p.species}</div>
+                      <div style={{fontWeight:'600',fontSize: '18px',color:'#9b6fe8'}}>{p.name}</div>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',color:T.textMuted,marginTop:'2px'}}>{p.species}</div>
                     </div>
-                    <button onClick={()=>bondPet(p.id)} style={{...Btn('#9b6fe8'),padding:'5px 14px',fontSize:'11px',background:'#9b6fe811'}}>+ BOND</button>
+                    <button onClick={()=>bondPet(p.id)} style={{...Btn('#9b6fe8'),padding:'5px 14px',fontSize: '14px',background:'#9b6fe811'}}>+ BOND</button>
                   </div>
                   {/* Stats */}
                   <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'4px',marginBottom:'6px'}}>
                     {[['PWR',p.power,'#c8503a'],['AGI',p.agility,'#50a060'],['FOC',p.focus,'#9b6fe8'],['PRE',p.presence,'#c4922a']].map(([lbl,val,col])=>(
                       <div key={lbl} style={{textAlign:'center',background:T.bg,borderRadius:'3px',padding:'3px',border:`1px solid ${col}22`}}>
-                        <div style={{fontFamily:"'Cinzel',serif",fontSize:'9px',color:T.textMuted}}>{lbl}</div>
-                        <div style={{fontWeight:'700',color:col,fontSize:'13px'}}>{val}</div>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize: '12px',color:T.textMuted}}>{lbl}</div>
+                        <div style={{fontWeight:'700',color:col,fontSize: '16px'}}>{val}</div>
                       </div>
                     ))}
                   </div>
-                  <div style={{display:'flex',gap:'10px',fontSize:'12px',color:T.textMuted,marginBottom:p.attacks?.length?'6px':0}}>
+                  <div style={{display:'flex',gap:'10px',fontSize: '15px',color:T.textMuted,marginBottom:p.attacks?.length?'6px':0}}>
                     <span>HP: <strong style={{color:T.hp}}>{String(p.max_hp)}</strong></span>
                     <span>RP: <strong style={{color:T.rp}}>{p.base_rp}</strong></span>
                     <span>MOV: <strong style={{color:T.text}}>{p.movement}ft</strong></span>
@@ -3845,19 +3845,19 @@ export default function VelionSheet({ characterId = undefined, initialData = und
                   {p.attacks?.length>0&&(
                     <div style={{marginTop:'6px'}}>
                       {p.attacks.map(atk=>(
-                        <div key={atk.id} style={{display:'flex',justifyContent:'space-between',fontSize:'11px',padding:'2px 0',borderBottom:`1px solid ${T.border}`}}>
+                        <div key={atk.id} style={{display:'flex',justifyContent:'space-between',fontSize: '14px',padding:'2px 0',borderBottom:`1px solid ${T.border}`}}>
                           <span style={{color:T.text}}>{atk.name}</span>
                           <span style={{color:'#9b6fe8'}}>{atk.damage_dice} <span style={{color:T.textMuted}}>{atk.damage_type}</span></span>
                         </div>
                       ))}
                     </div>
                   )}
-                  {p.description&&<div style={{marginTop:'6px',fontSize:'12px',color:T.textMuted,lineHeight:'1.5'}}>{p.description}</div>}
+                  {p.description&&<div style={{marginTop:'6px',fontSize: '15px',color:T.textMuted,lineHeight:'1.5'}}>{p.description}</div>}
                 </div>
               ))
             }
             {!libPetLoading&&libPetItems.filter(p=>!libPetSearch||p.name.toLowerCase().includes(libPetSearch.toLowerCase())||p.species.toLowerCase().includes(libPetSearch.toLowerCase())).length===0&&(
-              <div style={{padding:'24px',textAlign:'center',color:T.textDim,fontSize:'13px'}}>No companions found. Create one in the Homebrew Workshop.</div>
+              <div style={{padding:'24px',textAlign:'center',color:T.textDim,fontSize: '16px'}}>No companions found. Create one in the Homebrew Workshop.</div>
             )}
           </div>
           <button onClick={()=>setWepModal(null)} style={{...Btn(T.textMuted),padding:'9px',width:'100%',marginTop:'12px'}}>CLOSE</button>

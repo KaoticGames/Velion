@@ -41,7 +41,7 @@ const fmt = (n: number | bigint | string) => Number(n).toLocaleString();
 // ── Shared primitives ─────────────────────────────────────────────────────────
 const RarityBadge = ({ rarity }: { rarity: string }) => (
   <span style={{
-    fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.18em',
+    fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.18em',
     color: RARITY_COLOR[cap(rarity)] ?? T.textMuted,
     background: (RARITY_COLOR[cap(rarity)] ?? T.textMuted) + '18',
     border: `1px solid ${(RARITY_COLOR[cap(rarity)] ?? T.textMuted)}44`,
@@ -51,7 +51,7 @@ const RarityBadge = ({ rarity }: { rarity: string }) => (
 
 const ElemBadge = ({ el }: { el: string }) => (
   <span style={{
-    fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.14em',
+    fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em',
     color: ELEM_COLOR[cap(el)] ?? T.textMuted,
     background: (ELEM_COLOR[cap(el)] ?? T.textMuted) + '18',
     border: `1px solid ${(ELEM_COLOR[cap(el)] ?? T.textMuted)}33`,
@@ -64,15 +64,15 @@ const StatPill = ({ label, value, color = T.textMuted }:
   <div style={{ display:'flex', flexDirection:'column', alignItems:'center',
     background: T.surface, border:`1px solid ${T.border}`, borderRadius:'3px',
     padding:'5px 10px', minWidth:'52px' }}>
-    <span style={{ fontFamily:"'Cinzel',serif", fontSize:'8px',
+    <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px',
       letterSpacing:'0.16em', color: T.textDim }}>{label}</span>
-    <span style={{ fontSize:'16px', fontWeight:'700', color, lineHeight:'1.2',
+    <span style={{ fontSize: '19px', fontWeight:'700', color, lineHeight:'1.2',
       marginTop:'2px' }}>{value}</span>
   </div>
 );
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.22em',
+  <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.22em',
     color: T.textDim, marginBottom:'8px', marginTop:'16px' }}>{children}</div>
 );
 
@@ -80,7 +80,7 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 const FilterGroup = ({ label, options, value, onChange }:
   { label: string; options: string[]; value: string; onChange: (v: string) => void }) => (
   <div style={{ marginBottom:'20px' }}>
-    <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.22em',
+    <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.22em',
       color: T.textDim, marginBottom:'8px' }}>{label}</div>
     {['All', ...options].map(opt => (
       <button key={opt} onClick={() => onChange(opt === 'All' ? '' : opt)}
@@ -89,7 +89,7 @@ const FilterGroup = ({ label, options, value, onChange }:
           border:'none', borderLeft: value === (opt === 'All' ? '' : opt)
             ? `2px solid ${T.gold}` : '2px solid transparent',
           padding:'5px 10px', marginBottom:'2px', cursor:'pointer',
-          fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.1em',
+          fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.1em',
           color: value === (opt === 'All' ? '' : opt) ? T.gold : T.textMuted,
           transition:'all 0.12s',
         }}
@@ -126,25 +126,25 @@ function WeaponCard({ w, onClick }: { w: any; onClick: () => void }) {
   return (
     <ItemCard accentColor={rc} onClick={onClick}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'8px' }}>
-        <div style={{ fontSize:'15px', fontWeight:'600', color: T.text, lineHeight:'1.3',
+        <div style={{ fontSize: '18px', fontWeight:'600', color: T.text, lineHeight:'1.3',
           paddingRight:'8px' }}>{w.name}</div>
         <RarityBadge rarity={cap(w.rarity)} />
       </div>
-      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.16em',
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.16em',
         color: T.textMuted, marginBottom:'10px' }}>{cap(w.category)}</div>
       <div style={{ display:'flex', flexWrap:'wrap', gap:'5px', marginBottom:'10px' }}>
         {(w.channels ?? []).map((ch: any, i: number) => (
-          <span key={i} style={{ fontSize:'13px', fontWeight:'600',
+          <span key={i} style={{ fontSize: '16px', fontWeight:'600',
             color: ELEM_COLOR[cap(ch.damage_type)] ?? T.text }}>
             {i > 0 && <span style={{ color: T.textDim, margin:'0 4px' }}>+</span>}
             {ch.num_dice}d{w.base_die_type}
-            <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px',
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px',
               color: ELEM_COLOR[cap(ch.damage_type)] ?? T.textMuted,
               marginLeft:'4px', letterSpacing:'0.1em' }}>{ch.damage_type.toUpperCase()}</span>
           </span>
         ))}
       </div>
-      <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', fontSize:'11px', color: T.textDim }}>
+      <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', fontSize: '14px', color: T.textDim }}>
         {w.gem_slots > 0 && <span style={{ color: T.magic }}>◆ {w.gem_slots} gem slot{w.gem_slots !== 1 ? 's' : ''}</span>}
         {w.req_power > 0 && <span>PWR {w.req_power}+</span>}
         {w.req_agility > 0 && <span>AGI {w.req_agility}+</span>}
@@ -158,13 +158,13 @@ function WeaponDetail({ w, onClose }: { w: any; onClose: () => void }) {
   const rc = RARITY_COLOR[cap(w.rarity)] ?? T.textMuted;
   return (
     <DetailModal accentColor={rc} onClose={onClose}>
-      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.3em',
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.3em',
         color: T.textDim, marginBottom:'4px' }}>WEAPON</div>
-      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:'22px', letterSpacing:'0.14em',
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize: '25px', letterSpacing:'0.14em',
         color: rc, margin:'0 0 8px', fontWeight:'700' }}>{w.name}</h2>
       <div style={{ display:'flex', gap:'8px', marginBottom:'16px', flexWrap:'wrap' }}>
         <RarityBadge rarity={cap(w.rarity)} />
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.14em',
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em',
           color: T.textMuted, border:`1px solid ${T.border}`, borderRadius:'2px',
           padding:'2px 7px' }}>{cap(w.category)}</span>
       </div>
@@ -174,13 +174,13 @@ function WeaponDetail({ w, onClose }: { w: any; onClose: () => void }) {
           <div key={i} style={{ display:'flex', alignItems:'center', gap:'12px',
             background: T.surface, border:`1px solid ${T.border}`, borderRadius:'3px',
             padding:'10px 14px' }}>
-            <span style={{ fontSize:'22px', fontWeight:'700',
+            <span style={{ fontSize: '25px', fontWeight:'700',
               color: ELEM_COLOR[cap(ch.damage_type)] ?? T.text }}>
               {ch.num_dice}d{w.base_die_type}
             </span>
             <div>
               <ElemBadge el={ch.damage_type} />
-              <div style={{ fontSize:'11px', color: T.textDim, marginTop:'3px' }}>
+              <div style={{ fontSize: '14px', color: T.textDim, marginTop:'3px' }}>
                 × staked RP = final damage
               </div>
             </div>
@@ -206,7 +206,7 @@ function WeaponDetail({ w, onClose }: { w: any; onClose: () => void }) {
       {w.description && (
         <>
           <SectionLabel>DESCRIPTION</SectionLabel>
-          <p style={{ fontSize:'13px', color: T.textMuted, lineHeight:'1.7',
+          <p style={{ fontSize: '16px', color: T.textMuted, lineHeight:'1.7',
             margin:'0', fontStyle:'italic' }}>{w.description}</p>
         </>
       )}
@@ -223,23 +223,23 @@ function ArmorCard({ a, onClick }: { a: any; onClick: () => void }) {
   return (
     <ItemCard accentColor={rc} onClick={onClick}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'8px' }}>
-        <div style={{ fontSize:'15px', fontWeight:'600', color: T.text, paddingRight:'8px' }}>{a.name}</div>
+        <div style={{ fontSize: '18px', fontWeight:'600', color: T.text, paddingRight:'8px' }}>{a.name}</div>
         <RarityBadge rarity={cap(a.rarity)} />
       </div>
       <div style={{ display:'flex', gap:'6px', marginBottom:'10px', flexWrap:'wrap' }}>
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.14em',
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em',
           color: cc, background: cc + '18', border:`1px solid ${cc}33`,
           borderRadius:'2px', padding:'2px 7px' }}>{cap(a.category)}</span>
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.14em',
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em',
           color: T.textMuted, border:`1px solid ${T.border}`,
           borderRadius:'2px', padding:'2px 7px' }}>{cap(a.slot)}</span>
       </div>
-      <div style={{ fontSize:'22px', fontWeight:'700', color: rc, marginBottom:'4px' }}>
+      <div style={{ fontSize: '25px', fontWeight:'700', color: rc, marginBottom:'4px' }}>
         {parseFloat(a.mitigation_percent)}%
-        <span style={{ fontSize:'11px', fontWeight:'400', color: T.textDim,
+        <span style={{ fontSize: '14px', fontWeight:'400', color: T.textDim,
           marginLeft:'6px', fontFamily:"'Cinzel',serif", letterSpacing:'0.1em' }}>MITIGATION</span>
       </div>
-      <div style={{ fontSize:'11px', color: T.textDim, display:'flex', gap:'8px', flexWrap:'wrap' }}>
+      <div style={{ fontSize: '14px', color: T.textDim, display:'flex', gap:'8px', flexWrap:'wrap' }}>
         {a.gem_slots > 0 && <span style={{ color: T.magic }}>◆ {a.gem_slots} gem slot{a.gem_slots !== 1 ? 's' : ''}</span>}
         {a.req_power > 0 && <span>PWR {a.req_power}+</span>}
       </div>
@@ -252,16 +252,16 @@ function ArmorDetail({ a, onClose }: { a: any; onClose: () => void }) {
   const cc = CAT_COLOR[cap(a.category)] ?? T.textMuted;
   return (
     <DetailModal accentColor={rc} onClose={onClose}>
-      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.3em',
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.3em',
         color: T.textDim, marginBottom:'4px' }}>ARMOR</div>
-      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:'22px', letterSpacing:'0.14em',
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize: '25px', letterSpacing:'0.14em',
         color: rc, margin:'0 0 8px', fontWeight:'700' }}>{a.name}</h2>
       <div style={{ display:'flex', gap:'8px', marginBottom:'16px', flexWrap:'wrap' }}>
         <RarityBadge rarity={cap(a.rarity)} />
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.14em',
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em',
           color: cc, background: cc + '18', border:`1px solid ${cc}33`,
           borderRadius:'2px', padding:'2px 7px' }}>{cap(a.category)}</span>
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.14em',
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em',
           color: T.textMuted, border:`1px solid ${T.border}`, borderRadius:'2px',
           padding:'2px 7px' }}>{cap(a.slot)}</span>
       </div>
@@ -276,7 +276,7 @@ function ArmorDetail({ a, onClose }: { a: any; onClose: () => void }) {
       {a.description && (
         <>
           <SectionLabel>DESCRIPTION</SectionLabel>
-          <p style={{ fontSize:'13px', color: T.textMuted, lineHeight:'1.7',
+          <p style={{ fontSize: '16px', color: T.textMuted, lineHeight:'1.7',
             margin:'0', fontStyle:'italic' }}>{a.description}</p>
         </>
       )}
@@ -291,24 +291,24 @@ function GemCard({ g, onClick }: { g: any; onClick: () => void }) {
   return (
     <ItemCard accentColor={ec} onClick={onClick}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'8px' }}>
-        <div style={{ fontSize:'15px', fontWeight:'600', color: T.text, paddingRight:'8px' }}>{g.name}</div>
+        <div style={{ fontSize: '18px', fontWeight:'600', color: T.text, paddingRight:'8px' }}>{g.name}</div>
         <RarityBadge rarity={cap(g.rarity)} />
       </div>
       <div style={{ marginBottom:'10px' }}>
         <ElemBadge el={g.element_type} />
       </div>
-      <div style={{ fontSize:'24px', fontWeight:'700', color: ec, lineHeight:'1', marginBottom:'8px' }}>
+      <div style={{ fontSize: '27px', fontWeight:'700', color: ec, lineHeight:'1', marginBottom:'8px' }}>
         {g.num_dice}d{g.die_type}
-        <span style={{ fontSize:'12px', fontWeight:'400', color: T.textDim,
+        <span style={{ fontSize: '15px', fontWeight:'400', color: T.textDim,
           marginLeft:'8px', fontFamily:"'Cinzel',serif", letterSpacing:'0.1em' }}>× RP</span>
       </div>
       {parseFloat(g.armor_resistance_percent) > 0 && (
-        <div style={{ fontSize:'11px', color: ec }}>
+        <div style={{ fontSize: '14px', color: ec }}>
           {parseFloat(g.armor_resistance_percent)}% elemental resistance
         </div>
       )}
       {g.secondary_effect && (
-        <div style={{ fontSize:'11px', color: T.textDim, marginTop:'4px',
+        <div style={{ fontSize: '14px', color: T.textDim, marginTop:'4px',
           overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
           {g.secondary_effect}
         </div>
@@ -322,9 +322,9 @@ function GemDetail({ g, onClose }: { g: any; onClose: () => void }) {
   const ec = ELEM_COLOR[cap(g.element_type)] ?? T.textMuted;
   return (
     <DetailModal accentColor={ec} onClose={onClose}>
-      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.3em',
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.3em',
         color: T.textDim, marginBottom:'4px' }}>SPELL GEM</div>
-      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:'22px', letterSpacing:'0.14em',
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize: '25px', letterSpacing:'0.14em',
         color: ec, margin:'0 0 8px', fontWeight:'700' }}>{g.name}</h2>
       <div style={{ display:'flex', gap:'8px', marginBottom:'16px' }}>
         <RarityBadge rarity={cap(g.rarity)} />
@@ -333,9 +333,9 @@ function GemDetail({ g, onClose }: { g: any; onClose: () => void }) {
       <SectionLabel>DAMAGE</SectionLabel>
       <div style={{ background: T.surface, border:`1px solid ${ec}33`, borderRadius:'3px',
         padding:'14px 18px', marginBottom:'16px', display:'flex', alignItems:'baseline', gap:'12px' }}>
-        <span style={{ fontSize:'38px', fontWeight:'700', color: ec }}>{g.num_dice}d{g.die_type}</span>
-        <span style={{ fontSize:'16px', color: T.textDim }}>× staked RP</span>
-        <span style={{ fontSize:'11px', color: T.textDim, marginLeft:'auto',
+        <span style={{ fontSize: '41px', fontWeight:'700', color: ec }}>{g.num_dice}d{g.die_type}</span>
+        <span style={{ fontSize: '19px', color: T.textDim }}>× staked RP</span>
+        <span style={{ fontSize: '14px', color: T.textDim, marginLeft:'auto',
           fontFamily:"'Cinzel',serif", letterSpacing:'0.1em' }}>AUTO-HIT</span>
       </div>
       <SectionLabel>PROPERTIES</SectionLabel>
@@ -347,7 +347,7 @@ function GemDetail({ g, onClose }: { g: any; onClose: () => void }) {
       {g.secondary_effect && (
         <>
           <SectionLabel>SECONDARY EFFECT</SectionLabel>
-          <p style={{ fontSize:'13px', color: T.textMuted, lineHeight:'1.7',
+          <p style={{ fontSize: '16px', color: T.textMuted, lineHeight:'1.7',
             margin:'0 0 12px', background: T.surface, border:`1px solid ${T.border}`,
             borderRadius:'3px', padding:'10px 14px' }}>{g.secondary_effect}</p>
         </>
@@ -355,7 +355,7 @@ function GemDetail({ g, onClose }: { g: any; onClose: () => void }) {
       {g.description && (
         <>
           <SectionLabel>DESCRIPTION</SectionLabel>
-          <p style={{ fontSize:'13px', color: T.textMuted, lineHeight:'1.7',
+          <p style={{ fontSize: '16px', color: T.textMuted, lineHeight:'1.7',
             margin:'0', fontStyle:'italic' }}>{g.description}</p>
         </>
       )}
@@ -374,18 +374,18 @@ function BracerCard({ b, onClick }: { b: any; onClick: () => void }) {
   return (
     <ItemCard accentColor={gc} onClick={onClick}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'8px' }}>
-        <div style={{ fontSize:'15px', fontWeight:'600', color: T.text, paddingRight:'8px' }}>{b.name}</div>
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.18em',
+        <div style={{ fontSize: '18px', fontWeight:'600', color: T.text, paddingRight:'8px' }}>{b.name}</div>
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.18em',
           color: gc, background: gc + '18', border:`1px solid ${gc}44`,
           borderRadius:'2px', padding:'2px 7px' }}>{b.grade.toUpperCase()}</span>
       </div>
-      <div style={{ fontSize:'28px', fontWeight:'700', color: gc, marginBottom:'4px' }}>
+      <div style={{ fontSize: '31px', fontWeight:'700', color: gc, marginBottom:'4px' }}>
         {b.gem_slots}
-        <span style={{ fontSize:'12px', fontWeight:'400', color: T.textDim,
+        <span style={{ fontSize: '15px', fontWeight:'400', color: T.textDim,
           marginLeft:'6px', fontFamily:"'Cinzel',serif", letterSpacing:'0.1em' }}>GEM SLOTS</span>
       </div>
       {b.req_focus > 0 && (
-        <div style={{ fontSize:'11px', color: T.textDim }}>FOC {b.req_focus}+</div>
+        <div style={{ fontSize: '14px', color: T.textDim }}>FOC {b.req_focus}+</div>
       )}
     </ItemCard>
   );
@@ -395,12 +395,12 @@ function BracerDetail({ b, onClose }: { b: any; onClose: () => void }) {
   const gc = GRADE_COLOR[b.grade] ?? T.textMuted;
   return (
     <DetailModal accentColor={gc} onClose={onClose}>
-      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.3em',
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.3em',
         color: T.textDim, marginBottom:'4px' }}>FOCUS BRACER</div>
-      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:'22px', letterSpacing:'0.14em',
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize: '25px', letterSpacing:'0.14em',
         color: gc, margin:'0 0 8px', fontWeight:'700' }}>{b.name}</h2>
       <div style={{ display:'flex', gap:'8px', marginBottom:'16px' }}>
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.18em',
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.18em',
           color: gc, background: gc + '18', border:`1px solid ${gc}44`,
           borderRadius:'2px', padding:'2px 7px' }}>{b.grade.toUpperCase()}</span>
       </div>
@@ -412,7 +412,7 @@ function BracerDetail({ b, onClose }: { b: any; onClose: () => void }) {
       {b.description && (
         <>
           <SectionLabel>DESCRIPTION</SectionLabel>
-          <p style={{ fontSize:'13px', color: T.textMuted, lineHeight:'1.7',
+          <p style={{ fontSize: '16px', color: T.textMuted, lineHeight:'1.7',
             margin:'0', fontStyle:'italic' }}>{b.description}</p>
         </>
       )}
@@ -425,20 +425,20 @@ function PetCard({ p, onClick }: { p: any; onClick: () => void }) {
   return (
     <ItemCard accentColor={T.magic} onClick={onClick}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'6px' }}>
-        <div style={{ fontSize:'15px', fontWeight:'600', color: T.text }}>{p.name}</div>
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.14em',
+        <div style={{ fontSize: '18px', fontWeight:'600', color: T.text }}>{p.name}</div>
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em',
           color: T.magic, background: T.magic + '18', border:`1px solid ${T.magic}33`,
           borderRadius:'2px', padding:'2px 7px' }}>{p.species.toUpperCase()}</span>
       </div>
-      <div style={{ display:'flex', gap:'8px', marginBottom:'10px', fontSize:'12px' }}>
+      <div style={{ display:'flex', gap:'8px', marginBottom:'10px', fontSize: '15px' }}>
         {[['PWR',p.power,'#c8503a'],['AGI',p.agility,'#50a060'],['FOC',p.focus,'#9b6fe8'],['PRE',p.presence,'#c4922a']].map(([l,v,c]) => (
           <div key={l as string} style={{ textAlign:'center' }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', color: T.textDim }}>{l}</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color: T.textDim }}>{l}</div>
             <div style={{ fontWeight:'700', color: c as string }}>{v as number}</div>
           </div>
         ))}
       </div>
-      <div style={{ display:'flex', gap:'14px', fontSize:'11px', color: T.textDim }}>
+      <div style={{ display:'flex', gap:'14px', fontSize: '14px', color: T.textDim }}>
         <span>RP <span style={{ color: T.rp, fontWeight:'600' }}>{p.base_rp}</span></span>
         <span>HP <span style={{ color: T.hp, fontWeight:'600' }}>{fmt(p.max_hp)}</span></span>
         {p.attacks?.length > 0 && (
@@ -452,11 +452,11 @@ function PetCard({ p, onClick }: { p: any; onClick: () => void }) {
 function PetDetail({ p, onClose }: { p: any; onClose: () => void }) {
   return (
     <DetailModal accentColor={T.magic} onClose={onClose}>
-      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.3em',
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.3em',
         color: T.textDim, marginBottom:'4px' }}>PET / COMPANION</div>
-      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:'22px', letterSpacing:'0.14em',
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize: '25px', letterSpacing:'0.14em',
         color: T.magic, margin:'0 0 4px', fontWeight:'700' }}>{p.name}</h2>
-      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.18em',
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.18em',
         color: T.textMuted, marginBottom:'16px' }}>{p.species}</div>
       <SectionLabel>ATTRIBUTES</SectionLabel>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'6px', marginBottom:'16px' }}>
@@ -480,15 +480,15 @@ function PetDetail({ p, onClose }: { p: any; onClose: () => void }) {
                 borderRadius:'3px', padding:'10px 14px', display:'flex',
                 justifyContent:'space-between', alignItems:'center' }}>
                 <div>
-                  <div style={{ fontSize:'14px', fontWeight:'600', color: T.text }}>{atk.name}</div>
+                  <div style={{ fontSize: '17px', fontWeight:'600', color: T.text }}>{atk.name}</div>
                   {atk.description && (
-                    <div style={{ fontSize:'11px', color: T.textDim, marginTop:'2px' }}>{atk.description}</div>
+                    <div style={{ fontSize: '14px', color: T.textDim, marginTop:'2px' }}>{atk.description}</div>
                   )}
                 </div>
                 <div style={{ textAlign:'right', flexShrink:0, marginLeft:'12px' }}>
-                  <span style={{ fontSize:'16px', fontWeight:'700',
+                  <span style={{ fontSize: '19px', fontWeight:'700',
                     color: ELEM_COLOR[cap(atk.damage_type)] ?? T.text }}>{atk.damage_dice}</span>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px',
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px',
                     letterSpacing:'0.14em', color: T.textDim }}>{atk.damage_type.toUpperCase()}</div>
                 </div>
               </div>
@@ -499,7 +499,7 @@ function PetDetail({ p, onClose }: { p: any; onClose: () => void }) {
       {p.description && (
         <>
           <SectionLabel>DESCRIPTION</SectionLabel>
-          <p style={{ fontSize:'13px', color: T.textMuted, lineHeight:'1.7',
+          <p style={{ fontSize: '16px', color: T.textMuted, lineHeight:'1.7',
             margin:'0', fontStyle:'italic' }}>{p.description}</p>
         </>
       )}
@@ -513,12 +513,12 @@ function EnemyCard({ e, onClick }: { e: any; onClick: () => void }) {
   return (
     <ItemCard accentColor={cc} onClick={onClick}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'6px' }}>
-        <div style={{ fontSize:'15px', fontWeight:'600', color: T.text }}>{e.name}</div>
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.18em',
+        <div style={{ fontSize: '18px', fontWeight:'600', color: T.text }}>{e.name}</div>
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.18em',
           color: cc, background: cc + '18', border:`1px solid ${cc}44`,
           borderRadius:'2px', padding:'2px 7px' }}>{e.classification.toUpperCase()}</span>
       </div>
-      <div style={{ display:'flex', gap:'14px', marginBottom:'8px', fontSize:'13px' }}>
+      <div style={{ display:'flex', gap:'14px', marginBottom:'8px', fontSize: '16px' }}>
         <span style={{ color: T.textDim }}>HP <span style={{ color: T.hp, fontWeight:'700' }}>{fmt(e.hp)}</span></span>
         <span style={{ color: T.textDim }}>Res <span style={{ color: cc, fontWeight:'700' }}>+{e.resistance_modifier}</span></span>
         <span style={{ color: T.textDim }}>RP <span style={{ color: T.rp, fontWeight:'700' }}>{e.base_rp}</span></span>
@@ -526,7 +526,7 @@ function EnemyCard({ e, onClick }: { e: any; onClick: () => void }) {
       {e.attack_tiers?.length > 0 && (
         <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
           {e.attack_tiers.map((t: any) => (
-            <span key={t.id} style={{ fontFamily:"'Cinzel',serif", fontSize:'9px',
+            <span key={t.id} style={{ fontFamily:"'Cinzel',serif", fontSize: '12px',
               letterSpacing:'0.12em', color: T.textDim, border:`1px solid ${T.border}`,
               borderRadius:'2px', padding:'2px 7px' }}>
               {cap(t.tier_name)} ×{t.damage_multiplier}
@@ -545,16 +545,16 @@ function EnemyDetail({ e, onClose }: { e: any; onClose: () => void }) {
   return (
     <DetailModal accentColor={cc} onClose={onClose}>
       <div style={{ display:'flex', gap:'8px', alignItems:'center', marginBottom:'4px' }}>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.3em',
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.3em',
           color: T.textDim }}>ENEMY</div>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.18em',
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.18em',
           color: T.dmGold, background: T.dmGold + '18', border:`1px solid ${T.dmGold}33`,
           borderRadius:'2px', padding:'2px 7px' }}>DM</div>
       </div>
-      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:'22px', letterSpacing:'0.14em',
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize: '25px', letterSpacing:'0.14em',
         color: cc, margin:'0 0 8px', fontWeight:'700' }}>{e.name}</h2>
       <div style={{ display:'flex', gap:'8px', marginBottom:'16px' }}>
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.18em',
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.18em',
           color: cc, background: cc + '18', border:`1px solid ${cc}44`,
           borderRadius:'2px', padding:'2px 7px' }}>{e.classification.toUpperCase()}</span>
       </div>
@@ -580,16 +580,16 @@ function EnemyDetail({ e, onClose }: { e: any; onClose: () => void }) {
                 borderRadius:'3px', padding:'10px 14px',
                 display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                 <div>
-                  <span style={{ fontFamily:"'Cinzel',serif", fontSize:'11px',
+                  <span style={{ fontFamily:"'Cinzel',serif", fontSize: '14px',
                     letterSpacing:'0.14em', color: cc }}>{cap(t.tier_name)}</span>
-                  <span style={{ fontSize:'11px', color: T.textDim, marginLeft:'10px' }}>
+                  <span style={{ fontSize: '14px', color: T.textDim, marginLeft:'10px' }}>
                     {t.pressure_steps} pressure step{t.pressure_steps !== 1 ? 's' : ''}
                   </span>
                 </div>
                 <div style={{ textAlign:'right' }}>
-                  <span style={{ fontSize:'18px', fontWeight:'700', color: cc }}>×{t.damage_multiplier}</span>
+                  <span style={{ fontSize: '21px', fontWeight:'700', color: cc }}>×{t.damage_multiplier}</span>
                   {t.max_pool_contribution > 0 && (
-                    <div style={{ fontSize:'10px', color: T.textDim }}>pool max +{t.max_pool_contribution}</div>
+                    <div style={{ fontSize: '13px', color: T.textDim }}>pool max +{t.max_pool_contribution}</div>
                   )}
                 </div>
               </div>
@@ -605,12 +605,12 @@ function EnemyDetail({ e, onClose }: { e: any; onClose: () => void }) {
               <div key={i} style={{ background: T.surface, border:`1px solid ${T.border}`,
                 borderRadius:'3px', padding:'10px 14px' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'3px' }}>
-                  <span style={{ fontSize:'13px', fontWeight:'600', color: T.text }}>{atk.name}</span>
-                  <span style={{ fontSize:'13px', fontWeight:'700',
+                  <span style={{ fontSize: '16px', fontWeight:'600', color: T.text }}>{atk.name}</span>
+                  <span style={{ fontSize: '16px', fontWeight:'700',
                     color: ELEM_COLOR[cap(atk.damage_type)] ?? T.text }}>{atk.damage_dice}</span>
                 </div>
                 {atk.description && (
-                  <div style={{ fontSize:'11px', color: T.textDim }}>{atk.description}</div>
+                  <div style={{ fontSize: '14px', color: T.textDim }}>{atk.description}</div>
                 )}
               </div>
             ))}
@@ -624,11 +624,11 @@ function EnemyDetail({ e, onClose }: { e: any; onClose: () => void }) {
             {traits.map((tr: any, i: number) => (
               <div key={i} style={{ background: T.surface, border:`1px solid ${T.border}`,
                 borderRadius:'3px', padding:'10px 14px' }}>
-                <div style={{ fontSize:'13px', fontWeight:'600', color: T.gold,
+                <div style={{ fontSize: '16px', fontWeight:'600', color: T.gold,
                   marginBottom:'3px' }}>{tr.name}</div>
-                <div style={{ fontSize:'12px', color: T.textMuted }}>{tr.description}</div>
+                <div style={{ fontSize: '15px', color: T.textMuted }}>{tr.description}</div>
                 {tr.mechanic_override && (
-                  <div style={{ fontSize:'11px', color: T.rp, marginTop:'4px',
+                  <div style={{ fontSize: '14px', color: T.rp, marginTop:'4px',
                     fontFamily:"'Cinzel',serif", letterSpacing:'0.06em' }}>{tr.mechanic_override}</div>
                 )}
               </div>
@@ -639,7 +639,7 @@ function EnemyDetail({ e, onClose }: { e: any; onClose: () => void }) {
       {e.description && (
         <>
           <SectionLabel>DESCRIPTION</SectionLabel>
-          <p style={{ fontSize:'13px', color: T.textMuted, lineHeight:'1.7',
+          <p style={{ fontSize: '16px', color: T.textMuted, lineHeight:'1.7',
             margin:'0', fontStyle:'italic' }}>{e.description}</p>
         </>
       )}
@@ -662,7 +662,7 @@ function DetailModal({ accentColor, onClose, children }:
         <button onClick={onClose}
           style={{ position:'sticky', top:0, float:'right', background:'transparent',
             border:`1px solid ${T.border}`, borderRadius:'2px', color: T.textMuted,
-            cursor:'pointer', fontSize:'14px', padding:'2px 10px', marginBottom:'8px',
+            cursor:'pointer', fontSize: '17px', padding:'2px 10px', marginBottom:'8px',
             fontFamily:"'Cinzel',serif", letterSpacing:'0.12em' }}>✕</button>
         <div style={{ clear:'both' }}>{children}</div>
       </div>
@@ -764,18 +764,18 @@ export default function Library() {
         <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between',
           marginBottom:'16px' }}>
           <div>
-            <h1 style={{ fontFamily:"'Cinzel',serif", fontSize:'24px', letterSpacing:'0.16em',
+            <h1 style={{ fontFamily:"'Cinzel',serif", fontSize: '27px', letterSpacing:'0.16em',
               color: T.gold, margin:'0', fontWeight:'700' }}>Library</h1>
           </div>
           {/* Search */}
           <div style={{ position:'relative', marginBottom:'2px' }}>
             <span style={{ position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)',
-              color: T.textDim, fontSize:'13px', pointerEvents:'none' }}>⌕</span>
+              color: T.textDim, fontSize: '16px', pointerEvents:'none' }}>⌕</span>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder={`Search ${currentTab?.label?.toLowerCase() ?? ''}…`}
               style={{ background: T.card, border:`1px solid ${T.border}`,
                 borderRadius:'3px', padding:'8px 14px 8px 34px', width:'260px',
-                color: T.text, fontSize:'13px', outline:'none', fontFamily:'inherit',
+                color: T.text, fontSize: '16px', outline:'none', fontFamily:'inherit',
                 transition:'border-color 0.15s' }}
               onFocus={e => e.currentTarget.style.borderColor = accentColor + '66'}
               onBlur={e => e.currentTarget.style.borderColor = T.border}
@@ -789,12 +789,12 @@ export default function Library() {
               style={{ background:'transparent', border:'none', borderBottom:
                 tab === t.id ? `2px solid ${t.color}` : '2px solid transparent',
                 padding:'10px 20px', cursor:'pointer', fontFamily:"'Cinzel',serif",
-                fontSize:'11px', letterSpacing:'0.16em',
+                fontSize: '14px', letterSpacing:'0.16em',
                 color: tab === t.id ? t.color : T.textMuted,
                 transition:'all 0.15s', fontWeight: tab === t.id ? '600' : '400',
                 display:'flex', alignItems:'center', gap:'8px' }}>
               {t.label}
-              {t.dm && <span style={{ fontFamily:"'Cinzel',serif", fontSize:'8px',
+              {t.dm && <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px',
                 letterSpacing:'0.18em', color: T.dmGold,
                 border:`1px solid ${T.dmGold}44`, borderRadius:'2px',
                 padding:'1px 5px' }}>DM</span>}
@@ -844,7 +844,7 @@ export default function Library() {
               value={filters['focus-bracers'].grade} onChange={v => setFilter('grade', v.toLowerCase())} />
           )}
           {tab === 'pets' && (
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.16em',
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.16em',
               color: T.textDim, lineHeight:'1.7' }}>
               Search by name or species using the search bar above.
             </div>
@@ -862,14 +862,14 @@ export default function Library() {
           {/* Count + state label */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
             marginBottom:'18px' }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.2em',
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.2em',
               color: T.textDim }}>
               {loading ? 'LOADING…'
                 : sortedItems.length === 0 ? 'NO RESULTS'
                 : `${sortedItems.length} ${sortedItems.length === 1 ? currentTab?.label?.slice(0,-1) ?? 'ITEM' : currentTab?.label?.toUpperCase() ?? 'ITEMS'}`}
             </div>
             {!loading && sortedItems.length > 0 && (
-              <div style={{ fontSize:'11px', color: T.textDim }}>
+              <div style={{ fontSize: '14px', color: T.textDim }}>
                 Click any card for full details
               </div>
             )}
@@ -890,8 +890,8 @@ export default function Library() {
           {/* Empty state */}
           {!loading && sortedItems.length === 0 && (
             <div style={{ textAlign:'center', padding:'60px 20px' }}>
-              <div style={{ fontSize:'40px', marginBottom:'16px', opacity:0.3 }}>◈</div>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:'13px', letterSpacing:'0.2em',
+              <div style={{ fontSize: '43px', marginBottom:'16px', opacity:0.3 }}>◈</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize: '16px', letterSpacing:'0.2em',
                 color: T.textDim }}>
                 {search ? 'No results for your search' : `No ${currentTab?.label?.toLowerCase() ?? 'items'} found`}
               </div>
@@ -900,7 +900,7 @@ export default function Library() {
                   style={{ marginTop:'12px', background:'transparent',
                     border:`1px solid ${T.border}`, borderRadius:'3px',
                     padding:'6px 16px', color: T.textMuted, cursor:'pointer',
-                    fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.14em' }}>
+                    fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.14em' }}>
                   CLEAR SEARCH
                 </button>
               )}

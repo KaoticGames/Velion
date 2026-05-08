@@ -43,14 +43,14 @@ function ComingSoon({ icon, label, desc }: { icon: string; label: string; desc: 
         background: T.card, border: `1px solid ${T.border}`, borderTop: `2px solid ${T.goldDim}`,
         borderRadius: '4px', padding: '48px 40px', textAlign: 'center', maxWidth: '480px',
       }}>
-        <div style={{ fontSize: '36px', marginBottom: '16px' }}>{icon}</div>
+        <div style={{ fontSize: '39px', marginBottom: '16px' }}>{icon}</div>
         <div style={{
-          fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.2em',
+          fontFamily: "'Cinzel', serif", fontSize: '17px', letterSpacing: '0.2em',
           color: T.gold, marginBottom: '12px',
         }}>
           {label}
         </div>
-        <p style={{ color: T.textMuted, fontSize: '15px', lineHeight: '1.7', fontFamily: "'EB Garamond', serif" }}>
+        <p style={{ color: T.textMuted, fontSize: '18px', lineHeight: '1.7', fontFamily: "'EB Garamond', serif" }}>
           {desc}
         </p>
       </div>

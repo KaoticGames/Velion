@@ -32,7 +32,7 @@ export function TwitchSignInButton({ disabled }: Props) {
         background:      '#9146ff',
         color:           '#fff',
         fontFamily:      "'Roobert', 'Helvetica Neue', system-ui, sans-serif",
-        fontSize:        '14px',
+        fontSize: '17px',
         fontWeight:      600,
         letterSpacing:   '0.02em',
         cursor:          disabled ? 'not-allowed' : 'pointer',

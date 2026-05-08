@@ -129,17 +129,17 @@ const ATTR_GUIDE_GAP_PX  = 28;
 // ── Style helpers ─────────────────────────────────────────────────────────
 const inp = (x: React.CSSProperties = {}): React.CSSProperties => ({
   background: T.surface, border: `1px solid ${T.border}`, color: T.text,
-  borderRadius: '3px', padding: '10px 14px', fontSize: '15px',
+  borderRadius: '3px', padding: '10px 14px', fontSize: '18px',
   fontFamily: "'EB Garamond', serif", outline: 'none', width: '100%', ...x,
 });
 const lbl: React.CSSProperties = {
-  fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.14em',
+  fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.14em',
   color: T.textMuted, display: 'block', marginBottom: '6px',
 };
 const mkBtn = (color = T.gold, filled = false): React.CSSProperties => ({
   background: filled ? color : 'transparent',
   border: `1px solid ${color}`, color: filled ? '#06070c' : color,
-  fontFamily: "'Cinzel', serif", fontSize: '11px', letterSpacing: '0.14em',
+  fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.14em',
   padding: '10px 24px', borderRadius: '3px', cursor: 'pointer',
 });
 
@@ -160,17 +160,17 @@ function AttributeHelpPanel({ highlighted }: { highlighted: AttrHelpKey | null }
         transition: 'border-color .15s, box-shadow .15s',
       }}
     >
-      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '9px', letterSpacing: '.2em', color: T.textMuted, marginBottom: '12px' }}>
+      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '.2em', color: T.textMuted, marginBottom: '12px' }}>
         ATTRIBUTE GUIDE
       </div>
-      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '16px', letterSpacing: '.12em', color: accent, fontWeight: 600, marginBottom: '8px' }}>
+      <div style={{ fontFamily: "'Cinzel', serif", fontSize: '19px', letterSpacing: '.12em', color: accent, fontWeight: 600, marginBottom: '8px' }}>
         {help.label}
       </div>
-      <p style={{ fontFamily: "'EB Garamond', serif", fontSize: '14px', lineHeight: 1.65, color: T.textMuted, margin: '0 0 12px', fontStyle: 'italic' }}>
+      <p style={{ fontFamily: "'EB Garamond', serif", fontSize: '17px', lineHeight: 1.65, color: T.textMuted, margin: '0 0 12px', fontStyle: 'italic' }}>
         {help.summary}
       </p>
       {help.bullets && help.bullets.length > 0 && (
-        <ul style={{ margin: '0 0 14px', paddingLeft: '0', listStyle: 'none', color: T.text, fontFamily: "'EB Garamond', serif", fontSize: '12px', lineHeight: 1.55 }}>
+        <ul style={{ margin: '0 0 14px', paddingLeft: '0', listStyle: 'none', color: T.text, fontFamily: "'EB Garamond', serif", fontSize: '15px', lineHeight: 1.55 }}>
           {help.bullets.map((b, i) => (
             <li key={i} style={{ marginBottom: '6px', paddingLeft: '2px' }}>
               <span style={{ color: accent, marginRight: '6px' }}>▸</span>
@@ -180,7 +180,7 @@ function AttributeHelpPanel({ highlighted }: { highlighted: AttrHelpKey | null }
         </ul>
       )}
       {help.paragraphs.map((p, i) => (
-        <p key={i} style={{ fontFamily: "'EB Garamond', serif", fontSize: '13px', lineHeight: 1.7, color: T.text, margin: '0 0 12px' }}>
+        <p key={i} style={{ fontFamily: "'EB Garamond', serif", fontSize: '16px', lineHeight: 1.7, color: T.text, margin: '0 0 12px' }}>
           {p}
         </p>
       ))}
@@ -424,8 +424,8 @@ export default function CharacterWizard() {
         {/* ── Left rail ─────────────────────────────────────────────── */}
         <div style={{ background:T.surface, borderRight:`1px solid ${T.border}`, padding:'40px 28px', display:'flex', flexDirection:'column' }}>
           <div style={{ marginBottom:'36px' }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'.3em', color:T.textMuted, marginBottom:'6px' }}>VELION MYTHERA</div>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:'16px', color:T.gold, letterSpacing:'.14em', fontWeight:600 }}>CHARACTER CREATION</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'.3em', color:T.textMuted, marginBottom:'6px' }}>VELION MYTHERA</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize: '19px', color:T.gold, letterSpacing:'.14em', fontWeight:600 }}>CHARACTER CREATION</div>
           </div>
 
           {/* Step nav */}
@@ -442,7 +442,7 @@ export default function CharacterWizard() {
                         background: active ? T.gold : done ? T.goldDim : T.card,
                         border:`2px solid ${active ? T.gold : done ? T.goldDim : T.border}`,
                         display:'flex', alignItems:'center', justifyContent:'center',
-                        fontFamily:"'Cinzel',serif", fontSize:'10px', fontWeight:700,
+                        fontFamily:"'Cinzel',serif", fontSize: '13px', fontWeight:700,
                         color: active ? '#06070c' : done ? T.gold : T.textMuted,
                         animation: active ? 'pulse 2s ease-in-out infinite' : 'none',
                         cursor: clickable ? 'pointer' : 'default', transition:'all .3s', zIndex:1,
@@ -457,10 +457,10 @@ export default function CharacterWizard() {
                     onClick={() => clickable && jumpTo(s.num)}
                     style={{ paddingBottom: i < STEPS.length-1 ? '32px' : 0, paddingTop:'2px', cursor: clickable ? 'pointer' : 'default' }}
                   >
-                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'.14em', color: active ? T.gold : done ? T.text : T.textMuted, marginBottom:'2px', transition:'color .2s' }}>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', letterSpacing:'.14em', color: active ? T.gold : done ? T.text : T.textMuted, marginBottom:'2px', transition:'color .2s' }}>
                       {s.label}
                     </div>
-                    <div style={{ fontFamily:"'EB Garamond',serif", fontSize:'13px', color: active ? T.textMuted : T.textDim }}>
+                    <div style={{ fontFamily:"'EB Garamond',serif", fontSize: '16px', color: active ? T.textMuted : T.textDim }}>
                       {s.sub}
                     </div>
                   </div>
@@ -472,16 +472,16 @@ export default function CharacterWizard() {
           {/* Live preview */}
           {(name || allAssigned) && (
             <div style={{ marginTop:'32px', background:T.card, border:`1px solid ${T.border}`, borderTop:`2px solid ${ATTR_COLOR[chosen]}`, borderRadius:'4px', padding:'16px', animation:'fadeIn .3s ease-out' }}>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'.2em', color:T.textMuted, marginBottom:'10px' }}>PREVIEW</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'.2em', color:T.textMuted, marginBottom:'10px' }}>PREVIEW</div>
               {portrait && <img src={portrait} alt="" style={{ width:'48px', height:'48px', objectFit:'cover', borderRadius:'3px', border:`1px solid ${T.border}`, marginBottom:'10px', display:'block' }} />}
-              {name && <div style={{ fontFamily:"'Cinzel',serif", fontSize:'14px', color:T.text, marginBottom:'4px', fontWeight:600 }}>{name}</div>}
-              {step >= 3 && <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', color:ATTR_COLOR[chosen], letterSpacing:'.1em', marginBottom:'12px' }}>LVL 1 · {chosen.toUpperCase()}</div>}
+              {name && <div style={{ fontFamily:"'Cinzel',serif", fontSize: '17px', color:T.text, marginBottom:'4px', fontWeight:600 }}>{name}</div>}
+              {step >= 3 && <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', color:ATTR_COLOR[chosen], letterSpacing:'.1em', marginBottom:'12px' }}>LVL 1 · {chosen.toUpperCase()}</div>}
               {allAssigned && (
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'5px', marginBottom: step >= 3 ? '10px' : 0 }}>
                   {ATTRS.map(a => (
                     <div key={a} style={{ background:T.surface, borderRadius:'3px', padding:'5px 8px', border:`1px solid ${a === chosen && step >= 3 ? ATTR_COLOR[a]+'44' : T.border}` }}>
-                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', color:ATTR_COLOR[a], letterSpacing:'.1em' }}>{a.slice(0,3).toUpperCase()}</div>
-                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'16px', color:T.text }}>{attrs[a]}</div>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:ATTR_COLOR[a], letterSpacing:'.1em' }}>{a.slice(0,3).toUpperCase()}</div>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '19px', color:T.text }}>{attrs[a]}</div>
                     </div>
                   ))}
                 </div>
@@ -490,8 +490,8 @@ export default function CharacterWizard() {
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'5px' }}>
                   {[{l:'BASE RP', v:String(baseRP), c:T.rp},{l:'MAX HP', v:fmtNum(maxHP), c:T.hp}].map(({l,v,c}) => (
                     <div key={l} style={{ background:T.surface, borderRadius:'3px', padding:'5px 8px' }}>
-                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', color:c, letterSpacing:'.1em' }}>{l}</div>
-                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'16px', color:T.text }}>{v}</div>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:c, letterSpacing:'.1em' }}>{l}</div>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '19px', color:T.text }}>{v}</div>
                     </div>
                   ))}
                 </div>
@@ -524,19 +524,19 @@ export default function CharacterWizard() {
                   >
                     {portrait
                       ? <img src={portrait} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                      : <span style={{ fontSize:'28px', opacity:.3 }}>⚔</span>}
+                      : <span style={{ fontSize: '31px', opacity:.3 }}>⚔</span>}
                   </div>
                   <div>
-                    <p style={{ color:T.textMuted, fontSize:'14px', lineHeight:'1.6', fontFamily:"'EB Garamond',serif", marginBottom:'12px' }}>
+                    <p style={{ color:T.textMuted, fontSize: '17px', lineHeight:'1.6', fontFamily:"'EB Garamond',serif", marginBottom:'12px' }}>
                       Upload a portrait for your character. PNG, JPEG, or WEBP.<br />
                       A default portrait will be assigned if none is provided.
                     </p>
                     <div style={{ display:'flex', gap:'8px' }}>
-                      <button onClick={() => fileRef.current?.click()} style={{ ...mkBtn(T.textMuted), padding:'7px 16px', fontSize:'10px' }}>
+                      <button onClick={() => fileRef.current?.click()} style={{ ...mkBtn(T.textMuted), padding:'7px 16px', fontSize: '13px' }}>
                         {portrait ? 'CHANGE IMAGE' : 'UPLOAD PORTRAIT'}
                       </button>
                       {portrait && (
-                        <button onClick={() => { setPortrait(null); setPortraitFile(null); }} style={{ ...mkBtn(T.hp), padding:'7px 16px', fontSize:'10px' }}>
+                        <button onClick={() => { setPortrait(null); setPortraitFile(null); }} style={{ ...mkBtn(T.hp), padding:'7px 16px', fontSize: '13px' }}>
                           REMOVE
                         </button>
                       )}
@@ -552,9 +552,9 @@ export default function CharacterWizard() {
                 <label style={lbl}>CHARACTER NAME <span style={{ color:T.hp }}>*</span></label>
                 <input type="text" value={name} onChange={e => setName(e.target.value)}
                   placeholder="Enter a name..." autoFocus
-                  style={inp({ fontSize:'22px', padding:'12px 16px', color:T.gold, letterSpacing:'.05em' })} />
+                  style={inp({ fontSize: '25px', padding:'12px 16px', color:T.gold, letterSpacing:'.05em' })} />
                 {name.length > 0 && name.length < 2 && (
-                  <div style={{ color:T.hp, fontSize:'12px', marginTop:'4px', fontFamily:"'EB Garamond',serif" }}>Name must be at least 2 characters.</div>
+                  <div style={{ color:T.hp, fontSize: '15px', marginTop:'4px', fontFamily:"'EB Garamond',serif" }}>Name must be at least 2 characters.</div>
                 )}
               </div>
 
@@ -564,7 +564,7 @@ export default function CharacterWizard() {
                 <textarea value={backstory} onChange={e => setBackstory(e.target.value)}
                   placeholder="Describe your character's origin, motivations, and history. There are no rules here."
                   rows={7} style={{ ...inp(), resize:'vertical', lineHeight:'1.7', fontStyle: backstory ? 'normal' : 'italic' }} />
-                <div style={{ textAlign:'right', fontSize:'12px', color:T.textMuted, marginTop:'4px', fontFamily:"'EB Garamond',serif" }}>{backstory.length} characters</div>
+                <div style={{ textAlign:'right', fontSize: '15px', color:T.textMuted, marginTop:'4px', fontFamily:"'EB Garamond',serif" }}>{backstory.length} characters</div>
               </div>
 
               <Callout>"In Velion Mythera, your character's story is not written by their class or race — it is written by what they carry, what they choose, and how far they are willing to push beyond their limits."</Callout>
@@ -603,10 +603,10 @@ export default function CharacterWizard() {
                     ROLL ALL {4 - pool.length} REMAINING
                   </button>
                 </>}
-                {pool.length === 4 && !allAssigned && <div style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'.14em', color:T.gold }}>✦ All results in — assign each one below</div>}
-                {allAssigned && <div style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'.14em', color:T.success }}>✦ All attributes assigned</div>}
+                {pool.length === 4 && !allAssigned && <div style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', letterSpacing:'.14em', color:T.gold }}>✦ All results in — assign each one below</div>}
+                {allAssigned && <div style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', letterSpacing:'.14em', color:T.success }}>✦ All attributes assigned</div>}
                 {pool.length > 0 && (
-                  <button onClick={doMulligan} style={{ ...mkBtn(T.hp), padding:'9px 20px', fontSize:'10px', marginLeft:'auto' }}>
+                  <button onClick={doMulligan} style={{ ...mkBtn(T.hp), padding:'9px 20px', fontSize: '13px', marginLeft:'auto' }}>
                     ✕ MULLIGAN — REROLL EVERYTHING
                   </button>
                 )}
@@ -616,14 +616,14 @@ export default function CharacterWizard() {
               {rolling && animNums.length > 0 && (
                 <div style={{ display:'flex', gap:'10px', marginBottom:'20px' }}>
                   {animNums.map((n, i) => (
-                    <div key={i} style={{ width:'44px', height:'44px', background:T.surface, border:`1px solid ${T.gold}44`, borderRadius:'4px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Cinzel',serif", fontSize:'18px', color:T.gold+'88' }}>{n}</div>
+                    <div key={i} style={{ width:'44px', height:'44px', background:T.surface, border:`1px solid ${T.gold}44`, borderRadius:'4px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Cinzel',serif", fontSize: '21px', color:T.gold+'88' }}>{n}</div>
                   ))}
                 </div>
               )}
 
               {/* Pool */}
               {pool.length > 0 && <>
-                <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'.18em', color:T.textMuted, marginBottom:'12px' }}>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'.18em', color:T.textMuted, marginBottom:'12px' }}>
                   ROLLED RESULTS — Click a result to select it, then click an attribute slot to assign it
                 </div>
                 <div style={{ display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'28px' }}>
@@ -667,13 +667,13 @@ export default function CharacterWizard() {
                         {/* Individual dice */}
                         <div style={{ display:'flex', gap:'5px', marginBottom:'8px' }}>
                           {entry.rolls.map((r, i) => (
-                            <div key={i} style={{ width:'26px', height:'26px', background:T.surface, border:`1px solid ${T.border}`, borderRadius:'3px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Cinzel',serif", fontSize:'11px', color:T.textMuted }}>{r}</div>
+                            <div key={i} style={{ width:'26px', height:'26px', background:T.surface, border:`1px solid ${T.border}`, borderRadius:'3px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Cinzel',serif", fontSize: '14px', color:T.textMuted }}>{r}</div>
                           ))}
                         </div>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'26px', color: isSel ? T.gold : T.text, fontWeight:700 }}>{entry.result}</div>
+                          <div style={{ fontFamily:"'Cinzel',serif", fontSize: '29px', color: isSel ? T.gold : T.text, fontWeight:700 }}>{entry.result}</div>
                         </div>
-                        {isSel && <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', color:T.gold, letterSpacing:'.1em', marginTop:'4px' }}>SELECT AN ATTRIBUTE ↓</div>}
+                        {isSel && <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.gold, letterSpacing:'.1em', marginTop:'4px' }}>SELECT AN ATTRIBUTE ↓</div>}
                       </div>
                     );
                   })}
@@ -681,7 +681,7 @@ export default function CharacterWizard() {
 
                 {/* Mulligan count */}
                 {mulliganUsed > 0 && (
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', color:T.textMuted, letterSpacing:'.12em', marginBottom:'20px' }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.textMuted, letterSpacing:'.12em', marginBottom:'20px' }}>
                     MULLIGAN USED {mulliganUsed} TIME{mulliganUsed !== 1 ? 'S' : ''} — No limit
                   </div>
                 )}
@@ -689,7 +689,7 @@ export default function CharacterWizard() {
 
               {pool.length > 0 && (
                 <>
-                <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'.18em', color:T.textMuted, marginBottom:'12px' }}>ASSIGN TO ATTRIBUTES</div>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'.18em', color:T.textMuted, marginBottom:'12px' }}>ASSIGN TO ATTRIBUTES</div>
                 <div ref={guideTargetRef} style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
                   {ATTRS.map(attr => {
                     const entry = pool.find(p => p.id === assignment[attr]);
@@ -726,17 +726,17 @@ export default function CharacterWizard() {
                         }}
                       >
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
-                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', color, letterSpacing:'.14em' }}>{attr.toUpperCase()}</div>
-                          {entry && <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', color:T.textMuted }}>CLICK TO UNASSIGN</div>}
-                          {willSwap && !entry && <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', color:T.gold }}>CLICK TO ASSIGN</div>}
+                          <div style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', color, letterSpacing:'.14em' }}>{attr.toUpperCase()}</div>
+                          {entry && <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.textMuted }}>CLICK TO UNASSIGN</div>}
+                          {willSwap && !entry && <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.gold }}>CLICK TO ASSIGN</div>}
                         </div>
                         {entry ? (
                           <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-                            <div style={{ fontFamily:"'Cinzel',serif", fontSize:'32px', color, fontWeight:700, lineHeight:1 }}>{entry.result}</div>
-                            <div style={{ fontFamily:"'Cinzel',serif", fontSize:'14px', color:T.textMuted }}>{calcMod(entry.result)>=0?'+':''}{calcMod(entry.result)} mod</div>
+                            <div style={{ fontFamily:"'Cinzel',serif", fontSize: '35px', color, fontWeight:700, lineHeight:1 }}>{entry.result}</div>
+                            <div style={{ fontFamily:"'Cinzel',serif", fontSize: '17px', color:T.textMuted }}>{calcMod(entry.result)>=0?'+':''}{calcMod(entry.result)} mod</div>
                           </div>
                         ) : (
-                          <div style={{ fontFamily:"'EB Garamond',serif", fontSize:'14px', color:T.textDim, fontStyle:'italic' }}>
+                          <div style={{ fontFamily:"'EB Garamond',serif", fontSize: '17px', color:T.textDim, fontStyle:'italic' }}>
                             {selected !== null ? 'Click to assign' : 'No value assigned'}
                           </div>
                         )}
@@ -750,13 +750,13 @@ export default function CharacterWizard() {
               {/* ── Growth Pool Roll ───────────────────────────────────── */}
               {allAssigned && (
                 <div style={{ marginTop:'28px' }}>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'.18em', color:T.textMuted, marginBottom:'12px' }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'.18em', color:T.textMuted, marginBottom:'12px' }}>
                     GROWTH POOL — Roll 1d6
                   </div>
                   <div style={{ background:T.card, border:`1px solid ${growthPool ? T.gold+'44' : T.border}`, borderLeft:`3px solid ${growthPool ? T.gold : T.goldDim}`, borderRadius:'4px', padding:'20px', display:'flex', alignItems:'center', gap:'24px' }}>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', color:T.gold, letterSpacing:'.14em', marginBottom:'4px' }}>GROWTH POOL</div>
-                      <div style={{ fontFamily:"'EB Garamond',serif", fontSize:'13px', color:T.textMuted, lineHeight:'1.5' }}>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', color:T.gold, letterSpacing:'.14em', marginBottom:'4px' }}>GROWTH POOL</div>
+                      <div style={{ fontFamily:"'EB Garamond',serif", fontSize: '16px', color:T.textMuted, lineHeight:'1.5' }}>
                         Rolled once at character creation and added to your Base RP permanently.
                         It grows further at each level-up.
                       </div>
@@ -781,14 +781,14 @@ export default function CharacterWizard() {
                         </button>
                       )}
                       {growthPool && (
-                        <div style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', color:T.success, letterSpacing:'.1em', textAlign:'center' }}>
+                        <div style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', color:T.success, letterSpacing:'.1em', textAlign:'center' }}>
                           ✓ LOCKED IN
                         </div>
                       )}
                     </div>
                   </div>
                   {!growthPool && (
-                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', color:T.gold+'88', letterSpacing:'.12em', marginTop:'8px' }}>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.gold+'88', letterSpacing:'.12em', marginTop:'8px' }}>
                       ROLL YOUR GROWTH POOL TO CONTINUE
                     </div>
                   )}
@@ -845,27 +845,27 @@ export default function CharacterWizard() {
                       onClick={() => { setHighlightedAttr(toAttrKey(attr)); setChosen(attr); }}
                       style={{ background: isChosen ? `${color}14` : T.card, border:`2px solid ${isChosen ? color : T.border}`, borderRadius:'4px', padding:'20px', cursor:'pointer', textAlign:'left', transition:'all .2s' }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
-                        <div style={{ fontFamily:"'Cinzel',serif", fontSize:'13px', color, letterSpacing:'.14em' }}>{attr.toUpperCase()}</div>
-                        {isChosen && <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', color:'#06070c', background:color, padding:'2px 8px', borderRadius:'2px' }}>CHOSEN</div>}
+                        <div style={{ fontFamily:"'Cinzel',serif", fontSize: '16px', color, letterSpacing:'.14em' }}>{attr.toUpperCase()}</div>
+                        {isChosen && <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:'#06070c', background:color, padding:'2px 8px', borderRadius:'2px' }}>CHOSEN</div>}
                       </div>
                       <div style={{ display:'flex', gap:'16px', marginBottom:'14px' }}>
                         <div>
-                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', color:T.textMuted, marginBottom:'2px' }}>SCORE</div>
-                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'24px', color:T.text }}>{val}</div>
+                          <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.textMuted, marginBottom:'2px' }}>SCORE</div>
+                          <div style={{ fontFamily:"'Cinzel',serif", fontSize: '27px', color:T.text }}>{val}</div>
                         </div>
                         <div>
-                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', color:T.textMuted, marginBottom:'2px' }}>MODIFIER</div>
-                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'24px', color }}>{mod>=0?`+${mod}`:mod}</div>
+                          <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.textMuted, marginBottom:'2px' }}>MODIFIER</div>
+                          <div style={{ fontFamily:"'Cinzel',serif", fontSize: '27px', color }}>{mod>=0?`+${mod}`:mod}</div>
                         </div>
                       </div>
                       <div style={{ borderTop:`1px solid ${T.border}`, paddingTop:'10px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
                         <div>
-                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', color:T.rp, letterSpacing:'.1em', marginBottom:'2px' }}>BASE RP</div>
-                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'15px', color:T.text }}>{thisRP}</div>
+                          <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.rp, letterSpacing:'.1em', marginBottom:'2px' }}>BASE RP</div>
+                          <div style={{ fontFamily:"'Cinzel',serif", fontSize: '18px', color:T.text }}>{thisRP}</div>
                         </div>
                         <div>
-                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', color:T.hp, letterSpacing:'.1em', marginBottom:'2px' }}>MAX HP</div>
-                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'15px', color:T.text }}>{fmtNum(thisHP)}</div>
+                          <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.hp, letterSpacing:'.1em', marginBottom:'2px' }}>MAX HP</div>
+                          <div style={{ fontFamily:"'Cinzel',serif", fontSize: '18px', color:T.text }}>{fmtNum(thisHP)}</div>
                         </div>
                       </div>
                     </button>
@@ -875,7 +875,7 @@ export default function CharacterWizard() {
 
               {/* Formula breakdown */}
               <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:'4px', padding:'20px 24px', marginTop:'24px' }}>
-                <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'.18em', color:T.textMuted, marginBottom:'14px' }}>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'.18em', color:T.textMuted, marginBottom:'14px' }}>
                   YOUR STARTING VALUES WITH {chosen.toUpperCase()} CHOSEN
                 </div>
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px', marginBottom:'14px' }}>
@@ -928,9 +928,9 @@ export default function CharacterWizard() {
                   <div style={{ display:'flex', gap:'16px', alignItems:'flex-start' }}>
                     {portrait && <img src={portrait} alt="" style={{ width:'72px', height:'72px', objectFit:'cover', borderRadius:'3px', border:`1px solid ${T.border}`, flexShrink:0 }} />}
                     <div>
-                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'22px', color:T.gold, marginBottom:'4px' }}>{name}</div>
-                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', color:ATTR_COLOR[chosen], letterSpacing:'.12em' }}>LEVEL 1 · CHOSEN: {chosen.toUpperCase()}</div>
-                      {backstory && <p style={{ fontFamily:"'EB Garamond',serif", fontSize:'14px', color:T.textMuted, lineHeight:'1.7', fontStyle:'italic', marginTop:'8px' }}>{backstory.length>200 ? backstory.slice(0,200)+'…' : backstory}</p>}
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '25px', color:T.gold, marginBottom:'4px' }}>{name}</div>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', color:ATTR_COLOR[chosen], letterSpacing:'.12em' }}>LEVEL 1 · CHOSEN: {chosen.toUpperCase()}</div>
+                      {backstory && <p style={{ fontFamily:"'EB Garamond',serif", fontSize: '17px', color:T.textMuted, lineHeight:'1.7', fontStyle:'italic', marginTop:'8px' }}>{backstory.length>200 ? backstory.slice(0,200)+'…' : backstory}</p>}
                     </div>
                   </div>
                 </div>
@@ -940,10 +940,10 @@ export default function CharacterWizard() {
                   <SLbl>ATTRIBUTES</SLbl>
                   {ATTRS.map(a => (
                     <div key={a} style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px', alignItems:'center' }}>
-                      <span style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'.12em', color: a===chosen ? ATTR_COLOR[a] : T.textMuted }}>{a.toUpperCase()} {a===chosen?'★':''}</span>
+                      <span style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'.12em', color: a===chosen ? ATTR_COLOR[a] : T.textMuted }}>{a.toUpperCase()} {a===chosen?'★':''}</span>
                       <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
-                        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'16px', color:T.text }}>{attrs[a]}</span>
-                        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', color:ATTR_COLOR[a] }}>{calcMod(attrs[a])>=0?'+':''}{calcMod(attrs[a])}</span>
+                        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '19px', color:T.text }}>{attrs[a]}</span>
+                        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', color:ATTR_COLOR[a] }}>{calcMod(attrs[a])>=0?'+':''}{calcMod(attrs[a])}</span>
                       </div>
                     </div>
                   ))}
@@ -953,12 +953,12 @@ export default function CharacterWizard() {
                 <div style={{ background:T.card, border:`1px solid ${T.border}`, borderTop:`2px solid ${T.goldDim}`, borderRadius:'4px', padding:'20px' }}>
                   <SLbl>STARTING STATS</SLbl>
                   <div style={{ marginBottom:'16px' }}>
-                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', color:T.rp, letterSpacing:'.12em', marginBottom:'2px' }}>BASE RP</div>
-                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:'28px', color:T.text }}>{baseRP}</div>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.rp, letterSpacing:'.12em', marginBottom:'2px' }}>BASE RP</div>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize: '31px', color:T.text }}>{baseRP}</div>
                   </div>
                   <div>
-                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', color:T.hp, letterSpacing:'.12em', marginBottom:'2px' }}>MAX HP</div>
-                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:'28px', color:T.text }}>{fmtNum(maxHP)}</div>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.hp, letterSpacing:'.12em', marginBottom:'2px' }}>MAX HP</div>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize: '31px', color:T.text }}>{fmtNum(maxHP)}</div>
                   </div>
                 </div>
 
@@ -966,9 +966,9 @@ export default function CharacterWizard() {
                 <div style={{ background:T.card, border:`1px solid ${T.border}`, borderTop:`2px solid ${T.goldDim}`, borderRadius:'4px', padding:'20px', gridColumn:'1/-1' }}>
                   <SLbl>STARTING EQUIPMENT</SLbl>
                   {Object.keys(startingGear).length === 0 ? (
-                    <p style={{ fontFamily:"'EB Garamond',serif", fontSize:'14px', color:T.textMuted, fontStyle:'italic', margin:0 }}>None selected — you can equip from your character sheet.</p>
+                    <p style={{ fontFamily:"'EB Garamond',serif", fontSize: '17px', color:T.textMuted, fontStyle:'italic', margin:0 }}>None selected — you can equip from your character sheet.</p>
                   ) : (
-                    <ul style={{ margin:0, paddingLeft:'18px', color:T.text, fontFamily:"'EB Garamond',serif", fontSize:'14px', lineHeight:1.7 }}>
+                    <ul style={{ margin:0, paddingLeft:'18px', color:T.text, fontFamily:"'EB Garamond',serif", fontSize: '17px', lineHeight:1.7 }}>
                       {(['main_hand','off_hand','helmet','shirt','chestplate','pants','leggings','gauntlets','boots','bracer'] as const).map(slot => {
                         const g = startingGear[slot];
                         if (!g) return null;
@@ -985,13 +985,13 @@ export default function CharacterWizard() {
               </div>
 
               {error && (
-                <div style={{ background:'#1a0604', border:`1px solid ${T.hp}44`, borderRadius:'3px', padding:'12px 16px', color:T.hp, fontSize:'14px', fontFamily:"'EB Garamond',serif", marginBottom:'16px' }}>
+                <div style={{ background:'#1a0604', border:`1px solid ${T.hp}44`, borderRadius:'3px', padding:'12px 16px', color:T.hp, fontSize: '17px', fontFamily:"'EB Garamond',serif", marginBottom:'16px' }}>
                   {error}
                 </div>
               )}
 
               <button onClick={confirm} disabled={submitting}
-                style={{ ...mkBtn(T.gold,true), width:'100%', padding:'16px', fontSize:'13px', letterSpacing:'.2em', opacity: submitting?.6:1, animation: submitting?'none':'pulse 3s ease-in-out infinite' }}>
+                style={{ ...mkBtn(T.gold,true), width:'100%', padding:'16px', fontSize: '16px', letterSpacing:'.2em', opacity: submitting?.6:1, animation: submitting?'none':'pulse 3s ease-in-out infinite' }}>
                 {submitting ? 'SEALING YOUR LEGEND…' : '✦ BEGIN YOUR LEGEND ✦'}
               </button>
             </>}
@@ -1003,7 +1003,7 @@ export default function CharacterWizard() {
             <button onClick={goBack} style={{ ...mkBtn(T.textMuted), padding:'10px 20px' }}>
               {step === 1 ? 'CANCEL' : '← BACK'}
             </button>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'.16em', color:T.textMuted }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'.16em', color:T.textMuted }}>
               STEP {step} OF {STEPS.length}
             </div>
             {step < 5 ? (
@@ -1026,9 +1026,9 @@ export default function CharacterWizard() {
 function Heading({ num, title, sub }: { num:number; title:string; sub:string }) {
   return (
     <div style={{ marginBottom:'32px' }}>
-      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'.3em', color:T.textMuted, marginBottom:'6px' }}>STEP {num} OF {STEPS.length}</div>
-      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:'28px', color:T.gold, letterSpacing:'.1em', fontWeight:700, marginBottom:'6px' }}>{title}</h2>
-      <p style={{ fontFamily:"'EB Garamond',serif", fontSize:'16px', color:T.textMuted, fontStyle:'italic' }}>{sub}</p>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'.3em', color:T.textMuted, marginBottom:'6px' }}>STEP {num} OF {STEPS.length}</div>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize: '31px', color:T.gold, letterSpacing:'.1em', fontWeight:700, marginBottom:'6px' }}>{title}</h2>
+      <p style={{ fontFamily:"'EB Garamond',serif", fontSize: '19px', color:T.textMuted, fontStyle:'italic' }}>{sub}</p>
       <div style={{ height:'1px', background:`linear-gradient(to right,${T.gold}44,transparent)`, marginTop:'16px' }} />
     </div>
   );
@@ -1037,8 +1037,8 @@ function Heading({ num, title, sub }: { num:number; title:string; sub:string }) 
 function Callout({ title, children }: { title?:string; children:React.ReactNode }) {
   return (
     <div style={{ background:T.card, border:`1px solid ${T.border}`, borderLeft:`3px solid ${T.goldDim}`, borderRadius:'3px', padding:'14px 18px', marginBottom:'28px' }}>
-      {title && <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'.18em', color:T.gold, marginBottom:'6px' }}>{title}</div>}
-      <p style={{ color:T.textMuted, fontSize:'14px', lineHeight:'1.7', fontFamily:"'EB Garamond',serif", margin:0, fontStyle: title ? 'normal' : 'italic' }}>{children}</p>
+      {title && <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'.18em', color:T.gold, marginBottom:'6px' }}>{title}</div>}
+      <p style={{ color:T.textMuted, fontSize: '17px', lineHeight:'1.7', fontFamily:"'EB Garamond',serif", margin:0, fontStyle: title ? 'normal' : 'italic' }}>{children}</p>
     </div>
   );
 }
@@ -1046,17 +1046,17 @@ function Callout({ title, children }: { title?:string; children:React.ReactNode 
 function FCell({ label, value, color, large, note }: { label:string; value:string; color:string; large?:boolean; note?:string }) {
   return (
     <div>
-      <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'.14em', color:T.textMuted, marginBottom:'4px' }}>{label}</div>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'.14em', color:T.textMuted, marginBottom:'4px' }}>{label}</div>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize: large?'28px':'20px', color, lineHeight:'1' }}>{value}</div>
-      {note && <div style={{ fontFamily:"'EB Garamond',serif", fontSize:'11px', color:T.textMuted, marginTop:'2px', fontStyle:'italic' }}>{note}</div>}
+      {note && <div style={{ fontFamily:"'EB Garamond',serif", fontSize: '14px', color:T.textMuted, marginTop:'2px', fontStyle:'italic' }}>{note}</div>}
     </div>
   );
 }
 
 function SLbl({ children }: { children:React.ReactNode }) {
-  return <div style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'.22em', color:T.textMuted, marginBottom:'12px' }}>{children}</div>;
+  return <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'.22em', color:T.textMuted, marginBottom:'12px' }}>{children}</div>;
 }
 
 function Opt() {
-  return <span style={{ color:T.textMuted, fontStyle:'italic', fontFamily:"'EB Garamond',serif", fontSize:'12px', letterSpacing:0 }}>optional</span>;
+  return <span style={{ color:T.textMuted, fontStyle:'italic', fontFamily:"'EB Garamond',serif", fontSize: '15px', letterSpacing:0 }}>optional</span>;
 }

@@ -102,7 +102,7 @@ export default function Landing() {
 
         <p style={{
           maxWidth:     '560px',
-          fontSize:     '19px',
+          fontSize: '22px',
           lineHeight:   '1.7',
           color:        T.textMuted,
           marginBottom: '48px',
@@ -116,7 +116,7 @@ export default function Landing() {
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
           <Link to="/register" style={{
             fontFamily:     "'Cinzel', serif",
-            fontSize:       '12px',
+            fontSize: '15px',
             letterSpacing:  '0.18em',
             textDecoration: 'none',
             color:          '#06070c',
@@ -129,7 +129,7 @@ export default function Landing() {
           </Link>
           <Link to="/compendium" style={{
             fontFamily:     "'Cinzel', serif",
-            fontSize:       '12px',
+            fontSize: '15px',
             letterSpacing:  '0.18em',
             textDecoration: 'none',
             color:          T.gold,
@@ -145,10 +145,10 @@ export default function Landing() {
       {/* ── Features ──────────────────────────────────────────────────── */}
       <section style={{ padding: '80px 24px', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.3em', color: T.textMuted, marginBottom: '12px' }}>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.3em', color: T.textMuted, marginBottom: '12px' }}>
             THE SYSTEM
           </div>
-          <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: '28px', color: T.gold, letterSpacing: '0.1em' }}>
+          <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: '31px', color: T.gold, letterSpacing: '0.1em' }}>
             Built For Epic Scale
           </h2>
         </div>
@@ -166,17 +166,17 @@ export default function Landing() {
               borderRadius: '4px',
               padding:      '24px',
             }}>
-              <div style={{ fontSize: '24px', marginBottom: '12px' }}>{f.icon}</div>
+              <div style={{ fontSize: '27px', marginBottom: '12px' }}>{f.icon}</div>
               <div style={{
                 fontFamily:    "'Cinzel', serif",
-                fontSize:      '12px',
+                fontSize: '15px',
                 letterSpacing: '0.12em',
                 color:         T.gold,
                 marginBottom:  '10px',
               }}>
                 {f.title.toUpperCase()}
               </div>
-              <p style={{ color: T.textMuted, fontSize: '15px', lineHeight: '1.6' }}>{f.desc}</p>
+              <p style={{ color: T.textMuted, fontSize: '18px', lineHeight: '1.6' }}>{f.desc}</p>
             </div>
           ))}
         </div>
@@ -191,10 +191,10 @@ export default function Landing() {
       }}>
         <div style={{ maxWidth: '960px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <div style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.3em', color: T.textMuted, marginBottom: '12px' }}>
+            <div style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.3em', color: T.textMuted, marginBottom: '12px' }}>
               SUBSCRIPTIONS
             </div>
-            <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: '28px', color: T.gold, letterSpacing: '0.1em' }}>
+            <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: '31px', color: T.gold, letterSpacing: '0.1em' }}>
               Choose Your Role
             </h2>
           </div>
@@ -216,27 +216,27 @@ export default function Landing() {
                 {tier.highlight && (
                   <div style={{
                     position:      'absolute', top: '-1px', right: '20px',
-                    fontFamily:    "'Cinzel', serif", fontSize: '9px',
+                    fontFamily:    "'Cinzel', serif", fontSize: '12px',
                     letterSpacing: '0.14em', color: '#06070c',
                     background:    T.gold, padding: '3px 10px', borderRadius: '0 0 3px 3px',
                   }}>
                     MOST POPULAR
                   </div>
                 )}
-                <div style={{ fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.14em', color: tier.color, marginBottom: '6px' }}>
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: '17px', letterSpacing: '0.14em', color: tier.color, marginBottom: '6px' }}>
                   {tier.name.toUpperCase()}
                 </div>
-                <div style={{ fontFamily: "'Cinzel', serif", fontSize: '32px', color: T.text, marginBottom: '20px' }}>
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: '35px', color: T.text, marginBottom: '20px' }}>
                   {tier.price}
                 </div>
                 <ul style={{ listStyle: 'none', marginBottom: '28px' }}>
                   {tier.perks.map((p) => (
                     <li key={p} style={{
-                      color: T.textMuted, fontSize: '14px', padding: '4px 0',
+                      color: T.textMuted, fontSize: '17px', padding: '4px 0',
                       borderBottom: `1px solid ${T.border}`,
                       display: 'flex', alignItems: 'center', gap: '8px',
                     }}>
-                      <span style={{ color: tier.color, fontSize: '10px' }}>✦</span>
+                      <span style={{ color: tier.color, fontSize: '13px' }}>✦</span>
                       {p}
                     </li>
                   ))}
@@ -245,7 +245,7 @@ export default function Landing() {
                   display:        'block',
                   textAlign:      'center',
                   fontFamily:     "'Cinzel', serif",
-                  fontSize:       '11px',
+                  fontSize: '14px',
                   letterSpacing:  '0.14em',
                   textDecoration: 'none',
                   color:          tier.highlight ? '#06070c' : tier.color,
@@ -264,7 +264,7 @@ export default function Landing() {
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
       <footer style={{ padding: '32px 24px', textAlign: 'center', borderTop: `1px solid ${T.border}` }}>
-        <p style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.2em', color: T.textMuted }}>
+        <p style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.2em', color: T.textMuted }}>
           © 2026 VELION MYTHERA · ALL RIGHTS RESERVED
         </p>
       </footer>

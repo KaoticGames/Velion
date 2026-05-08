@@ -33,17 +33,14 @@ export default function Characters() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
         <div>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.3em', color: T.textMuted, marginBottom: '8px' }}>
-            YOUR ROSTER
-          </div>
-          <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: '26px', color: T.gold, letterSpacing: '0.1em' }}>
+          <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: '29px', color: T.gold, letterSpacing: '0.1em' }}>
             CHARACTERS
           </h1>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
           {isFree && (
-            <span style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.1em', color: T.textMuted }}>
+            <span style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.1em', color: T.textMuted }}>
               {charCount} / 3 free slots used
             </span>
           )}
@@ -51,7 +48,7 @@ export default function Characters() {
             to={atCharLimit ? '/account/subscription' : '/characters/new'}
             style={{
               fontFamily:     "'Cinzel', serif",
-              fontSize:       '11px',
+              fontSize: '14px',
               letterSpacing:  '0.14em',
               textDecoration: 'none',
               color:          atCharLimit ? T.textMuted : '#06070c',
@@ -69,7 +66,7 @@ export default function Characters() {
 
       {/* Loading */}
       {isLoading && (
-        <div style={{ textAlign: 'center', padding: '80px 0', color: T.textMuted, fontFamily: "'Cinzel', serif", fontSize: '11px', letterSpacing: '0.2em' }}>
+        <div style={{ textAlign: 'center', padding: '80px 0', color: T.textMuted, fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.2em' }}>
           LOADING ROSTER...
         </div>
       )}
@@ -80,17 +77,17 @@ export default function Characters() {
           background: T.card, border: `1px solid ${T.border}`, borderTop: `2px solid ${T.goldDim}`,
           borderRadius: '4px', padding: '32px', textAlign: 'center',
         }}>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.2em', color: T.textMuted, marginBottom: '12px' }}>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '15px', letterSpacing: '0.2em', color: T.textMuted, marginBottom: '12px' }}>
             {mockAuth ? 'BACKEND NOT CONNECTED' : 'COULD NOT LOAD CHARACTERS'}
           </div>
-          <p style={{ color: T.textMuted, fontSize: '14px', maxWidth: '440px', margin: '0 auto 20px' }}>
+          <p style={{ color: T.textMuted, fontSize: '17px', maxWidth: '440px', margin: '0 auto 20px' }}>
             {mockAuth
               ? 'Running in dev mode without a backend. Start the API server on port 3001, or click New Character to open a local sheet.'
               : 'There was a problem loading your characters. Please try again.'}
           </p>
           {mockAuth && (
             <Link to="/characters/new" style={{
-              fontFamily: "'Cinzel', serif", fontSize: '11px', letterSpacing: '0.14em',
+              fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.14em',
               textDecoration: 'none', color: '#06070c', background: T.gold,
               padding: '9px 24px', borderRadius: '3px',
             }}>
@@ -106,15 +103,15 @@ export default function Characters() {
           background: T.card, border: `1px dashed ${T.border}`, borderRadius: '4px',
           padding: '64px 32px', textAlign: 'center',
         }}>
-          <div style={{ fontSize: '32px', marginBottom: '16px' }}>⚔</div>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.18em', color: T.textMuted, marginBottom: '8px' }}>
+          <div style={{ fontSize: '35px', marginBottom: '16px' }}>⚔</div>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: '16px', letterSpacing: '0.18em', color: T.textMuted, marginBottom: '8px' }}>
             NO CHARACTERS YET
           </div>
-          <p style={{ color: T.textMuted, fontSize: '15px', marginBottom: '24px' }}>
+          <p style={{ color: T.textMuted, fontSize: '18px', marginBottom: '24px' }}>
             Your legend begins here.
           </p>
           <Link to="/characters/new" style={{
-            fontFamily: "'Cinzel', serif", fontSize: '11px', letterSpacing: '0.14em',
+            fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.14em',
             textDecoration: 'none', color: '#06070c', background: T.gold,
             padding: '11px 28px', borderRadius: '3px',
           }}>
@@ -153,14 +150,14 @@ export default function Characters() {
                   }}>
                     {c.portrait_url
                       ? <img src={c.portrait_url} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontSize: '22px', opacity: 0.4 }}>⚔</span>
+                      : <span style={{ fontSize: '25px', opacity: 0.4 }}>⚔</span>
                     }
                   </div>
                   <div>
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: '14px', color: T.text, fontWeight: '600', marginBottom: '3px' }}>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: '17px', color: T.text, fontWeight: '600', marginBottom: '3px' }}>
                       {c.name}
                     </div>
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.1em', color: ATTR_COLOR[c.chosen_attribute] ?? T.gold }}>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '0.1em', color: ATTR_COLOR[c.chosen_attribute] ?? T.gold }}>
                       LEVEL {c.level} · {c.chosen_attribute.toUpperCase()}
                     </div>
                   </div>
@@ -169,14 +166,14 @@ export default function Characters() {
                 {/* Stats row */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                   <div style={{ background: T.surface, borderRadius: '3px', padding: '8px 10px' }}>
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: '9px', letterSpacing: '0.12em', color: T.hp, marginBottom: '2px' }}>HP</div>
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: '14px', color: T.text }}>
-                      {fmtNum(c.current_hp)} <span style={{ fontSize: '10px', color: T.textMuted }}>/ {fmtNum(c.max_hp)}</span>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.12em', color: T.hp, marginBottom: '2px' }}>HP</div>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: '17px', color: T.text }}>
+                      {fmtNum(c.current_hp)} <span style={{ fontSize: '13px', color: T.textMuted }}>/ {fmtNum(c.max_hp)}</span>
                     </div>
                   </div>
                   <div style={{ background: T.surface, borderRadius: '3px', padding: '8px 10px' }}>
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: '9px', letterSpacing: '0.12em', color: T.rp, marginBottom: '2px' }}>BASE RP</div>
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: '14px', color: T.text }}>{c.base_rp}</div>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.12em', color: T.rp, marginBottom: '2px' }}>BASE RP</div>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: '17px', color: T.text }}>{c.base_rp}</div>
                   </div>
                 </div>
               </div>

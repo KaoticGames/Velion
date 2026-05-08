@@ -145,12 +145,12 @@ function normalizeFogImageData(raw: string | null | undefined): string | null {
 const btnSt = (bg: string, col: string): React.CSSProperties => ({
   background: bg, color: col, border: `1px solid ${col}33`,
   borderRadius: '2px', padding: '3px 8px', cursor: 'pointer',
-  fontFamily: "'Cinzel',serif", fontSize: '9px', letterSpacing: '0.1em',
+  fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.1em',
 });
 
 const miniInputSt: React.CSSProperties = {
   background: '#0d1018', border: '1px solid #1c2230', borderRadius: '2px',
-  padding: '4px 8px', color: '#e4d8c0', fontSize: '11px', outline: 'none',
+  padding: '4px 8px', color: '#e4d8c0', fontSize: '14px', outline: 'none',
 };
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -391,12 +391,12 @@ export default function MapCanvas(props: Props) {
       }
 
       const lbl = token.label ?? inst?.label ?? '?';
-      ctx.fillStyle = T.text; ctx.font = `bold ${Math.max(9, cz * 0.22 * sc2)}px 'Inter',sans-serif`;
+      ctx.fillStyle = T.text; ctx.font = `bold ${Math.max(12, cz * 0.22 * sc2)}px 'Inter',sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(lbl.slice(0, 3).toUpperCase(), cx, cy);
 
       if (token.is_hidden && isDM) {
-        ctx.font = `${Math.max(8, cz * 0.18)}px sans-serif`;
+        ctx.font = `${Math.max(12, cz * 0.18)}px sans-serif`;
         ctx.textBaseline = 'top'; ctx.fillStyle = T.gold;
         ctx.fillText('👁', cx, cy + radius + 2);
       }
@@ -412,7 +412,7 @@ export default function MapCanvas(props: Props) {
 
       if (inst?.is_defeated) {
         ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = T.hp; ctx.font = `${cz * 0.4}px sans-serif`;
+        ctx.fillStyle = T.hp; ctx.font = `${Math.max(12, cz * 0.4)}px sans-serif`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('✕', cx, cy);
       }
 
@@ -956,7 +956,7 @@ export default function MapCanvas(props: Props) {
           boxShadow:'0 4px 24px rgba(0,0,0,0.7)', display:'flex', flexDirection:'column', gap:'8px',
         }}>
           <button onClick={() => { setTokenPanelId(null); setSelectedTokenIds(new Set()); }}
-            style={{ position:'absolute', top:'6px', right:'8px', background:'transparent', border:'none', cursor:'pointer', color:T.textMuted, fontSize:'14px' }}>✕</button>
+            style={{ position:'absolute', top:'6px', right:'8px', background:'transparent', border:'none', cursor:'pointer', color:T.textMuted, fontSize: '17px' }}>✕</button>
 
           {/* Label */}
           {renaming?.tokenId === panelToken.id ? (
@@ -968,19 +968,19 @@ export default function MapCanvas(props: Props) {
             </div>
           ) : (
             <div style={{ display:'flex', alignItems:'center', gap:'6px', cursor:'pointer' }} onClick={() => setRenaming({ tokenId: panelToken.id, label: panelToken.label ?? '' })}>
-              <span style={{ fontFamily:"'Cinzel',serif", fontSize:'12px', color:T.gold, flex:1 }}>{panelToken.label ?? panelInst?.label ?? '—'}</span>
-              <span style={{ fontSize:'10px', color:T.textDim }}>✎</span>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize: '15px', color:T.gold, flex:1 }}>{panelToken.label ?? panelInst?.label ?? '—'}</span>
+              <span style={{ fontSize: '13px', color:T.textDim }}>✎</span>
             </div>
           )}
 
-          {panelInst && <div style={{ fontSize:'10px', color:T.textMuted }}>HP <span style={{ color:T.hp, fontWeight:700 }}>{Number(panelInst.current_hp)}</span>/{Number(panelInst.max_hp)}</div>}
+          {panelInst && <div style={{ fontSize: '13px', color:T.textMuted }}>HP <span style={{ color:T.hp, fontWeight:700 }}>{Number(panelInst.current_hp)}</span>/{Number(panelInst.max_hp)}</div>}
 
           {/* Scale */}
-          <div style={{ fontSize:'10px', color:T.textMuted, lineHeight:1.5 }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:'7px', letterSpacing:'0.16em', color:T.textDim, marginBottom:'4px' }}>SIZE</div>
+          <div style={{ fontSize: '13px', color:T.textMuted, lineHeight:1.5 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.16em', color:T.textDim, marginBottom:'4px' }}>SIZE</div>
             Drag the gold handle on the selected token to resize.
             <button onClick={() => updateToken(panelToken.id, { scale: 1 })}
-              style={{ ...btnSt('transparent', T.textMuted), marginLeft:'8px', padding:'2px 8px', fontSize:'9px' }}>
+              style={{ ...btnSt('transparent', T.textMuted), marginLeft:'8px', padding:'2px 8px', fontSize: '12px' }}>
               RESET
             </button>
           </div>
@@ -1002,7 +1002,7 @@ export default function MapCanvas(props: Props) {
       {/* Multi-select bar */}
       {selectedTokenIds.size > 1 && (
         <div style={{ position:'absolute', bottom:'16px', left:'50%', transform:'translateX(-50%)', background:T.card, border:`1px solid ${T.border}`, borderRadius:'6px', padding:'8px 16px', display:'flex', alignItems:'center', gap:'12px', zIndex:20, pointerEvents:'auto', boxShadow:'0 4px 16px rgba(0,0,0,0.6)' }}>
-          <span style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', color:T.textMuted }}>{selectedTokenIds.size} TOKENS</span>
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', color:T.textMuted }}>{selectedTokenIds.size} TOKENS</span>
           {!allSameGroup && <button onClick={groupSelected} style={btnSt(T.gold+'22', T.gold)}>GROUP</button>}
           {allSameGroup  && <button onClick={() => { const id = [...selectedTokenIds][0]; ungroupToken(id); }} style={btnSt(T.rp+'18', T.rp)}>UNGROUP</button>}
           <button onClick={() => { setSelectedTokenIds(new Set()); setTokenPanelId(null); }} style={btnSt('transparent', T.textMuted)}>✕</button>
@@ -1016,7 +1016,7 @@ export default function MapCanvas(props: Props) {
       {encounterToast && (
         <div style={{ position:'absolute', top:'16px', left:'50%', transform:'translateX(-50%)',
           background:T.card, border:`1px solid ${T.gold}44`, borderRadius:'6px', padding:'8px 16px',
-          fontFamily:"'Cinzel',serif", fontSize:'10px', color:T.gold, zIndex:50, pointerEvents:'none',
+          fontFamily:"'Cinzel',serif", fontSize: '13px', color:T.gold, zIndex:50, pointerEvents:'none',
           boxShadow:'0 4px 16px rgba(0,0,0,0.6)' }}>
           {encounterToast}
         </div>
@@ -1039,41 +1039,41 @@ function StatBlockModal({ enemyId, onClose }: { enemyId: string; onClose: () => 
         {!enemy ? <div style={{ color:T.textMuted, textAlign:'center', padding:'24px 0' }}>Loading…</div> : (
           <>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
-              <span style={{ fontFamily:"'Cinzel',serif", fontSize:'15px', color:T.gold }}>{enemy.name}</span>
-              <button onClick={onClose} style={{ background:'transparent', border:'none', cursor:'pointer', color:T.textMuted, fontSize:'18px' }}>×</button>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize: '18px', color:T.gold }}>{enemy.name}</span>
+              <button onClick={onClose} style={{ background:'transparent', border:'none', cursor:'pointer', color:T.textMuted, fontSize: '21px' }}>×</button>
             </div>
             <div style={{ display:'flex', gap:'8px', marginBottom:'12px', flexWrap:'wrap' }}>
               {([['POW',enemy.power],['AGI',enemy.agility],['FOC',enemy.focus],['PRE',enemy.presence]] as [string,number][]).map(([k,v]) => (
                 <div key={k} style={{ textAlign:'center', background:T.surface, borderRadius:'3px', padding:'6px 10px' }}>
-                  <div style={{ fontSize:'8px', color:T.textDim, fontFamily:"'Cinzel',serif" }}>{k}</div>
-                  <div style={{ fontSize:'15px', color:T.text, fontWeight:700 }}>{v}</div>
+                  <div style={{ fontSize: '12px', color:T.textDim, fontFamily:"'Cinzel',serif" }}>{k}</div>
+                  <div style={{ fontSize: '18px', color:T.text, fontWeight:700 }}>{v}</div>
                 </div>
               ))}
               {[['HP',enemy.hp,T.hp],['RP',enemy.base_rp,T.rp]].map(([k,v,c]) => (
                 <div key={String(k)} style={{ textAlign:'center', background:T.surface, borderRadius:'3px', padding:'6px 10px' }}>
-                  <div style={{ fontSize:'8px', color:T.textDim, fontFamily:"'Cinzel',serif" }}>{k}</div>
-                  <div style={{ fontSize:'15px', color:String(c), fontWeight:700 }}>{v}</div>
+                  <div style={{ fontSize: '12px', color:T.textDim, fontFamily:"'Cinzel',serif" }}>{k}</div>
+                  <div style={{ fontSize: '18px', color:String(c), fontWeight:700 }}>{v}</div>
                 </div>
               ))}
             </div>
             {enemy.attacks.length > 0 && <>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', color:T.textDim, letterSpacing:'0.16em', marginBottom:'6px' }}>ATTACKS</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.textDim, letterSpacing:'0.16em', marginBottom:'6px' }}>ATTACKS</div>
               {enemy.attacks.map((a,i) => (
                 <div key={i} style={{ display:'flex', justifyContent:'space-between', background:T.surface, borderRadius:'3px', padding:'5px 10px', marginBottom:'3px' }}>
-                  <span style={{ fontSize:'11px', color:T.text }}>{a.name}</span>
-                  <span style={{ fontSize:'10px', color:T.textMuted }}>{a.damage_dice} {a.damage_type}</span>
+                  <span style={{ fontSize: '14px', color:T.text }}>{a.name}</span>
+                  <span style={{ fontSize: '13px', color:T.textMuted }}>{a.damage_dice} {a.damage_type}</span>
                 </div>
               ))}
             </>}
             {enemy.traits.length > 0 && <>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:'8px', color:T.textDim, letterSpacing:'0.16em', margin:'12px 0 6px' }}>TRAITS</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', color:T.textDim, letterSpacing:'0.16em', margin:'12px 0 6px' }}>TRAITS</div>
               {enemy.traits.map((tr,i) => (
-                <div key={i} style={{ fontSize:'10px', color:T.textMuted, marginBottom:'5px', lineHeight:'1.5' }}>
+                <div key={i} style={{ fontSize: '13px', color:T.textMuted, marginBottom:'5px', lineHeight:'1.5' }}>
                   <span style={{ color:T.text, fontFamily:"'Cinzel',serif" }}>{tr.name}: </span>{tr.description}
                 </div>
               ))}
             </>}
-            {enemy.description && <div style={{ fontSize:'10px', color:T.textDim, marginTop:'10px', lineHeight:'1.6', fontStyle:'italic' }}>{enemy.description}</div>}
+            {enemy.description && <div style={{ fontSize: '13px', color:T.textDim, marginTop:'10px', lineHeight:'1.6', fontStyle:'italic' }}>{enemy.description}</div>}
           </>
         )}
       </div>
@@ -1088,7 +1088,7 @@ function drawRuler(ctx: CanvasRenderingContext2D, start: {x:number;y:number}, en
   ctx.strokeStyle=color; ctx.lineWidth=2; ctx.setLineDash([6,4]); ctx.stroke(); ctx.setLineDash([]);
   const dist = cellDist(start.x,start.y,end.x,end.y);
   const mid  = {x:(s.x+e.x)/2, y:(s.y+e.y)/2};
-  ctx.fillStyle=color; ctx.font="bold 11px 'Inter',sans-serif";
+  ctx.fillStyle=color; ctx.font="bold 14px 'Inter',sans-serif";
   ctx.textAlign='center'; ctx.textBaseline='bottom';
   ctx.fillText(`${(dist*fpc).toFixed(0)}ft`, mid.x, mid.y-3);
 }

@@ -8,7 +8,7 @@ const T = {
 
 const navLinkStyle = ({ isActive }: { isActive: boolean }) => ({
   fontFamily:     "'Cinzel', serif",
-  fontSize:       '11px',
+  fontSize: '14px',
   letterSpacing:  '0.14em',
   textDecoration: 'none',
   color:          isActive ? T.gold : T.textMuted,
@@ -31,8 +31,8 @@ export default function NavBar() {
     <nav style={{
       background:    T.bg,
       borderBottom:  `1px solid ${T.border}`,
-      padding:       '0 24px',
-      height:        '52px',
+      padding:       '6px 24px',
+      height:        '75px',
       display:       'flex',
       alignItems:    'center',
       justifyContent:'space-between',
@@ -66,7 +66,7 @@ export default function NavBar() {
         {!user && (
           <Link to="/login" style={{
             fontFamily:     "'Cinzel', serif",
-            fontSize:       '11px',
+            fontSize: '14px',
             letterSpacing:  '0.16em',
             textDecoration: 'none',
             color:          T.gold,
@@ -81,7 +81,7 @@ export default function NavBar() {
         {mockAuth && !user && (
           <span style={{
             fontFamily:    "'Cinzel', serif",
-            fontSize:      '9px',
+            fontSize: '12px',
             letterSpacing: '0.12em',
             color:         '#cc9020',
             border:        '1px solid #cc902055',
@@ -95,7 +95,7 @@ export default function NavBar() {
           <>
             <span style={{
               fontFamily:    "'Cinzel', serif",
-              fontSize:      '10px',
+              fontSize: '13px',
               letterSpacing: '0.1em',
               color:         T.textMuted,
             }}>
@@ -103,7 +103,7 @@ export default function NavBar() {
             </span>
             <span style={{
               fontFamily:    "'Cinzel', serif",
-              fontSize:      '9px',
+              fontSize: '12px',
               letterSpacing: '0.1em',
               color:         user.subscription_tier === 'dm' ? T.gold : '#706858',
               textTransform: 'uppercase',
@@ -120,7 +120,7 @@ export default function NavBar() {
                 border:        `1px solid ${T.border}`,
                 color:         T.textMuted,
                 fontFamily:    "'Cinzel', serif",
-                fontSize:      '10px',
+                fontSize: '13px',
                 letterSpacing: '0.1em',
                 padding:       '4px 12px',
                 borderRadius:  '3px',

@@ -107,15 +107,29 @@ export async function findOrCreateOAuthUser(p: FindOrCreateParams): Promise<type
 
   if (!user) {
     const [byEmail] = await db.select().from(users)
-      .where(and(eq(users.email, emailLower), isNull(users.deleted_at)))
+      .where(eq(users.email, emailLower))
       .limit(1);
 
     if (byEmail) {
+      // If a prior account with this email was soft-deleted, revive it for OAuth sign-in.
+      if (byEmail.deleted_at) {
+        const [revived] = await db.update(users).set({
+          deleted_at:   null,
+          display_name: byEmail.display_name || displayName,
+          avatar_url:   byEmail.avatar_url ?? avatarUrl ?? null,
+          beta_access:  true,
+        }).where(eq(users.id, byEmail.id)).returning();
+        user = revived;
+      } else {
+        user = byEmail;
+      }
+
       await db.insert(oauthAccounts).values({
         user_id:          byEmail.id,
         provider,
         provider_user_id: providerUserId,
-      });
+      }).onConflictDoNothing();
+
       const [u] = await db.select().from(users).where(eq(users.id, byEmail.id)).limit(1);
       user = u;
       if (avatarUrl && user && !user.avatar_url) {
@@ -166,7 +180,7 @@ export async function findOrCreateOAuthUser(p: FindOrCreateParams): Promise<type
       user_id:          created.id,
       provider,
       provider_user_id: providerUserId,
-    });
+    }).onConflictDoNothing();
 
     user = created;
   }

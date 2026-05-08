@@ -135,7 +135,7 @@ export default function VTT() {
     return (
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:T.bg, flexDirection:'column', gap:'16px' }}>
         <div style={{ width:'32px', height:'32px', border:`2px solid ${T.border}`, borderTop:`2px solid ${T.gold}`, borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'0.2em', color:T.textDim }}>CONNECTING…</span>
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', letterSpacing:'0.2em', color:T.textDim }}>CONNECTING…</span>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -145,8 +145,8 @@ export default function VTT() {
   if (sessionEnded) {
     return (
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:T.bg, flexDirection:'column', gap:'12px' }}>
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:'18px', color:T.textMuted, letterSpacing:'0.12em' }}>SESSION ENDED</span>
-        <span style={{ fontSize:'12px', color:T.textDim }}>Returning to campaigns…</span>
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize: '21px', color:T.textMuted, letterSpacing:'0.12em' }}>SESSION ENDED</span>
+        <span style={{ fontSize: '15px', color:T.textDim }}>Returning to campaigns…</span>
       </div>
     );
   }
@@ -172,14 +172,14 @@ export default function VTT() {
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
           <button
             onClick={() => navigate(`/campaigns/${session.campaign_id}`)}
-            style={{ background:'transparent', border:'none', cursor:'pointer', color:T.textMuted, fontSize:'16px', padding:'4px', lineHeight:1 }}
+            style={{ background:'transparent', border:'none', cursor:'pointer', color:T.textMuted, fontSize: '19px', padding:'4px', lineHeight:1 }}
             title="Back to campaign"
           >←</button>
           {isDM ? (
             <select
               value={activeMap?.id ?? ''}
               onChange={e => e.target.value && socket.changeMap(e.target.value)}
-              style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'0.12em', color:T.text, background:T.card, border:`1px solid ${T.border}`, borderRadius:'3px', padding:'4px 10px', cursor:'pointer', outline:'none', minWidth:'140px' }}
+              style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', letterSpacing:'0.12em', color:T.text, background:T.card, border:`1px solid ${T.border}`, borderRadius:'3px', padding:'4px 10px', cursor:'pointer', outline:'none', minWidth:'140px' }}
             >
               <option value="" disabled>{activeMap?.name ?? 'NO MAP SET'}</option>
               {campaignMaps.map(m => (
@@ -187,12 +187,12 @@ export default function VTT() {
               ))}
             </select>
           ) : (
-            <span style={{ fontFamily:"'Cinzel',serif", fontSize:'12px', letterSpacing:'0.16em', color:T.text }}>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize: '15px', letterSpacing:'0.16em', color:T.text }}>
               {activeMap?.name ?? 'NO MAP SET'}
             </span>
           )}
           {!isStarted && isDM && (
-            <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.18em', color:T.gold, background:T.gold+'18', border:`1px solid ${T.gold}33`, borderRadius:'2px', padding:'2px 8px' }}>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.18em', color:T.gold, background:T.gold+'18', border:`1px solid ${T.gold}33`, borderRadius:'2px', padding:'2px 8px' }}>
               PREP
             </span>
           )}
@@ -202,7 +202,7 @@ export default function VTT() {
           {/* Connected indicator */}
           <div style={{ display:'flex', alignItems:'center', gap:'5px' }}>
             <div style={{ width:'6px', height:'6px', borderRadius:'50%', background: connected ? T.green : T.hp }} />
-            <span style={{ fontSize:'10px', color:T.textDim }}>
+            <span style={{ fontSize: '13px', color:T.textDim }}>
               {connected ? 'LIVE' : 'RECONNECTING…'}
             </span>
           </div>
@@ -213,13 +213,13 @@ export default function VTT() {
           {isDM && !isStarted && (
             <button
               onClick={socket.startSession}
-              style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.14em', background:T.green, border:`1px solid ${T.green}`, borderRadius:'2px', padding:'6px 16px', cursor:'pointer', color:'#080b10', fontWeight:'700' }}
+              style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.14em', background:T.green, border:`1px solid ${T.green}`, borderRadius:'2px', padding:'6px 16px', cursor:'pointer', color:'#080b10', fontWeight:'700' }}
             >
               START SESSION
             </button>
           )}
           {isDM && isStarted && (
-            <span style={{ fontFamily:"'Cinzel',serif", fontSize:'9px', letterSpacing:'0.18em', color:T.green }}>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.18em', color:T.green }}>
               SESSION LIVE
             </span>
           )}
@@ -333,14 +333,14 @@ function WaitingScreen({ sessionName }: { sessionName: string }) {
         <div style={{ position:'absolute', inset:0, border:`1px solid ${T.gold}33`, borderRadius:'50%', animation:'pulse 2s ease-in-out infinite' }} />
         <div style={{ position:'absolute', inset:'12px', border:`1px solid ${T.gold}55`, borderRadius:'50%', animation:'pulse 2s ease-in-out infinite 0.4s' }} />
         <div style={{ position:'absolute', inset:'24px', background:T.gold+'22', border:`1px solid ${T.gold}`, borderRadius:'50%' }} />
-        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px' }}>⚔</div>
+        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize: '27px' }}>⚔</div>
       </div>
 
       <div style={{ textAlign:'center' }}>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:'16px', letterSpacing:'0.16em', color:T.text, marginBottom:'8px' }}>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize: '19px', letterSpacing:'0.16em', color:T.text, marginBottom:'8px' }}>
           {sessionName || 'WAITING FOR DM'}
         </div>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:'10px', letterSpacing:'0.2em', color:T.textDim }}>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.2em', color:T.textDim }}>
           THE DM IS PREPARING THE SESSION
         </div>
       </div>
@@ -364,8 +364,8 @@ function WaitingScreen({ sessionName }: { sessionName: string }) {
 function NoMapPlaceholder({ isDM }: { isDM: boolean }) {
   return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', flexDirection:'column', gap:'12px', color:T.textDim }}>
-      <span style={{ fontSize:'32px', opacity:0.3 }}>🗺</span>
-      <span style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'0.18em' }}>
+      <span style={{ fontSize: '35px', opacity:0.3 }}>🗺</span>
+      <span style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', letterSpacing:'0.18em' }}>
         {isDM ? 'SELECT A MAP FROM THE TOOLBAR' : 'AWAITING MAP'}
       </span>
     </div>

@@ -83,7 +83,7 @@ export default function PartyPanel({ tokens, enemyInstances, isDM, sessionId, ca
       {/* Players */}
       <SectionLabel>PARTY</SectionLabel>
       {playerTokens.length === 0 ? (
-        <div style={{ fontSize: '10px', color: T.textDim, padding: '4px 0 8px', fontFamily: "'Cinzel',serif", letterSpacing: '0.12em' }}>
+        <div style={{ fontSize: '13px', color: T.textDim, padding: '4px 0 8px', fontFamily: "'Cinzel',serif", letterSpacing: '0.12em' }}>
           NO PLAYER TOKENS ON MAP
         </div>
       ) : (
@@ -123,15 +123,15 @@ export default function PartyPanel({ tokens, enemyInstances, isDM, sessionId, ca
                     }}
                   >
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '11px', color: T.text, fontFamily: "'Cinzel',serif", letterSpacing: '0.08em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '14px', color: T.text, fontFamily: "'Cinzel',serif", letterSpacing: '0.08em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {character.name}
                       </div>
-                      <div style={{ fontSize: '9px', color: T.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '12px', color: T.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {member.user?.email ?? 'Player'}
                       </div>
                     </div>
                     {tokenOnMap ? (
-                      <span style={{ fontSize: '9px', color: T.green, letterSpacing: '0.08em' }}>ON MAP</span>
+                      <span style={{ fontSize: '12px', color: T.green, letterSpacing: '0.08em' }}>ON MAP</span>
                     ) : (
                       <button
                         disabled={isPlacing}
@@ -143,7 +143,7 @@ export default function PartyPanel({ tokens, enemyInstances, isDM, sessionId, ca
                           padding: '4px 8px',
                           cursor: isPlacing ? 'default' : 'pointer',
                           color: T.gold,
-                          fontSize: '9px',
+                          fontSize: '12px',
                           fontFamily: "'Cinzel',serif",
                           letterSpacing: '0.08em',
                           flexShrink: 0,
@@ -209,7 +209,7 @@ function PlayerTokenRow({ token, isOwnToken }: { token: MapToken; isOwnToken: bo
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '11px',
+          fontSize: '14px',
           color: T.rp,
           flexShrink: 0,
           fontWeight: 700,
@@ -220,7 +220,7 @@ function PlayerTokenRow({ token, isOwnToken }: { token: MapToken; isOwnToken: bo
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontSize: '11px',
+            fontSize: '14px',
             color: T.text,
             fontFamily: "'Cinzel',serif",
             letterSpacing: '0.08em',
@@ -231,7 +231,7 @@ function PlayerTokenRow({ token, isOwnToken }: { token: MapToken; isOwnToken: bo
         >
           {token.label ?? 'Unknown'}
         </div>
-        <div style={{ fontSize: '10px', color: T.textDim, display: 'flex', gap: '8px' }}>
+        <div style={{ fontSize: '13px', color: T.textDim, display: 'flex', gap: '8px' }}>
           <span>
             {token.cell_x},{token.cell_y}
           </span>
@@ -291,25 +291,25 @@ function EnemyTokenRow({ token, instance, sessionId, socket }: {
           width: '26px', height: '26px', borderRadius: '50%',
           background: '#2a0a0a', border: `1px solid ${T.hp}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '10px', color: T.hp, flexShrink: 0, fontWeight: 700,
+          fontSize: '13px', color: T.hp, flexShrink: 0, fontWeight: 700,
           opacity: instance.is_defeated ? 0.4 : 1,
         }}>
           {instance.label.slice(0, 2).toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '10px', color: instance.is_defeated ? T.textDim : T.text, fontFamily: "'Cinzel',serif", letterSpacing: '0.08em' }}>
+          <div style={{ fontSize: '13px', color: instance.is_defeated ? T.textDim : T.text, fontFamily: "'Cinzel',serif", letterSpacing: '0.08em' }}>
             {instance.label}
           </div>
           {/* HP bar */}
           <div style={{ height: '3px', background: '#1a0505', borderRadius: '2px', marginTop: '3px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${hpPct * 100}%`, background: hpColor, borderRadius: '2px', transition: 'width 0.3s' }} />
           </div>
-          <div style={{ fontSize: '9px', color: T.textMuted, marginTop: '2px' }}>
+          <div style={{ fontSize: '12px', color: T.textMuted, marginTop: '2px' }}>
             {instance.current_hp} / {instance.max_hp}
             {instance.is_defeated && <span style={{ color: T.hp, marginLeft: '6px' }}>DEFEATED</span>}
           </div>
         </div>
-        <span style={{ fontSize: '9px', color: T.textDim }}>{expanded ? '▲' : '▼'}</span>
+        <span style={{ fontSize: '12px', color: T.textDim }}>{expanded ? '▲' : '▼'}</span>
       </div>
 
       {/* Expanded damage controls */}
@@ -323,19 +323,19 @@ function EnemyTokenRow({ token, instance, sessionId, socket }: {
             placeholder="amount"
             style={{
               flex: 1, background: T.surface, border: `1px solid ${T.border}`,
-              borderRadius: '2px', padding: '4px 6px', color: T.text, fontSize: '11px',
+              borderRadius: '2px', padding: '4px 6px', color: T.text, fontSize: '14px',
               fontFamily: "'Inter',sans-serif", outline: 'none',
             }}
           />
           <button
             onClick={applyDamage}
             title="Apply damage"
-            style={{ background: T.hp + '22', border: `1px solid ${T.hp}`, borderRadius: '2px', padding: '4px 8px', cursor: 'pointer', color: T.hp, fontSize: '10px', fontFamily: "'Cinzel',serif" }}
+            style={{ background: T.hp + '22', border: `1px solid ${T.hp}`, borderRadius: '2px', padding: '4px 8px', cursor: 'pointer', color: T.hp, fontSize: '13px', fontFamily: "'Cinzel',serif" }}
           >DMG</button>
           <button
             onClick={applyHealing}
             title="Apply healing"
-            style={{ background: T.green + '22', border: `1px solid ${T.green}`, borderRadius: '2px', padding: '4px 8px', cursor: 'pointer', color: T.green, fontSize: '10px', fontFamily: "'Cinzel',serif" }}
+            style={{ background: T.green + '22', border: `1px solid ${T.green}`, borderRadius: '2px', padding: '4px 8px', cursor: 'pointer', color: T.green, fontSize: '13px', fontFamily: "'Cinzel',serif" }}
           >HEAL</button>
         </div>
       )}
@@ -345,7 +345,7 @@ function EnemyTokenRow({ token, instance, sessionId, socket }: {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontFamily: "'Cinzel',serif", fontSize: '8px', letterSpacing: '0.22em', color: T.textDim, marginBottom: '6px', borderBottom: `1px solid ${T.border}`, paddingBottom: '4px' }}>
+    <div style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.22em', color: T.textDim, marginBottom: '6px', borderBottom: `1px solid ${T.border}`, paddingBottom: '4px' }}>
       {children}
     </div>
   );

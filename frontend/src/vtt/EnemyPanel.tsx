@@ -125,13 +125,13 @@ export default function EnemyPanel({ sessionId, enemyInstances, tokens, map, soc
   return (
     <div style={{ padding: '10px' }}>
       {/* Header */}
-      <div style={{ fontFamily: "'Cinzel',serif", fontSize: '8px', letterSpacing: '0.22em', color: T.textDim, marginBottom: '8px', borderBottom: `1px solid ${T.border}`, paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.22em', color: T.textDim, marginBottom: '8px', borderBottom: `1px solid ${T.border}`, paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>ENEMIES</span>
         {/* Roll visibility toggle */}
         <div style={{ display: 'flex', gap: '4px' }}>
           {(['public', 'dm'] as const).map(v => (
             <button key={v} onClick={() => setRollVisibility(v)}
-              style={{ fontFamily: "'Cinzel',serif", fontSize: '7px', letterSpacing: '0.12em', padding: '2px 6px', borderRadius: '2px', cursor: 'pointer', background: rollVisibility === v ? T.gold + '22' : 'transparent', border: `1px solid ${rollVisibility === v ? T.gold : T.border}`, color: rollVisibility === v ? T.gold : T.textDim }}
+              style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.12em', padding: '2px 6px', borderRadius: '2px', cursor: 'pointer', background: rollVisibility === v ? T.gold + '22' : 'transparent', border: `1px solid ${rollVisibility === v ? T.gold : T.border}`, color: rollVisibility === v ? T.gold : T.textDim }}
             >{v.toUpperCase()}</button>
           ))}
         </div>
@@ -142,7 +142,7 @@ export default function EnemyPanel({ sessionId, enemyInstances, tokens, map, soc
         value={search}
         onChange={e => setSearch(e.target.value)}
         placeholder="Search enemies…"
-        style={{ width: '100%', background: T.surface, border: `1px solid ${T.border}`, borderRadius: '2px', padding: '5px 8px', color: T.text, fontSize: '11px', outline: 'none', boxSizing: 'border-box', marginBottom: '6px' }}
+        style={{ width: '100%', background: T.surface, border: `1px solid ${T.border}`, borderRadius: '2px', padding: '5px 8px', color: T.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box', marginBottom: '6px' }}
       />
 
       {/* Enemy list */}
@@ -160,17 +160,17 @@ export default function EnemyPanel({ sessionId, enemyInstances, tokens, map, soc
                 onClick={() => setExpanded(isOpen ? null : enemy.id)}
               >
                 <div>
-                  <span style={{ fontSize: '11px', color: T.text, fontFamily: "'Cinzel',serif", letterSpacing: '0.08em' }}>{enemy.name}</span>
-                  <span style={{ fontSize: '9px', color: classColor[enemy.classification] ?? T.textMuted, marginLeft: '6px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{enemy.classification}</span>
+                  <span style={{ fontSize: '14px', color: T.text, fontFamily: "'Cinzel',serif", letterSpacing: '0.08em' }}>{enemy.name}</span>
+                  <span style={{ fontSize: '12px', color: classColor[enemy.classification] ?? T.textMuted, marginLeft: '6px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{enemy.classification}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {/* Place token button */}
                   <button
                     onClick={e => { e.stopPropagation(); setPlacing(enemy); setPlaceLabel(enemy.name); }}
                     title="Place token on map"
-                    style={{ background: T.gold + '18', border: `1px solid ${T.gold}44`, borderRadius: '2px', padding: '2px 6px', cursor: 'pointer', color: T.gold, fontSize: '9px', fontFamily: "'Cinzel',serif" }}
+                    style={{ background: T.gold + '18', border: `1px solid ${T.gold}44`, borderRadius: '2px', padding: '2px 6px', cursor: 'pointer', color: T.gold, fontSize: '12px', fontFamily: "'Cinzel',serif" }}
                   >+ TOKEN</button>
-                  <span style={{ fontSize: '9px', color: T.textDim }}>{isOpen ? '▲' : '▼'}</span>
+                  <span style={{ fontSize: '12px', color: T.textDim }}>{isOpen ? '▲' : '▼'}</span>
                 </div>
               </div>
 
@@ -181,14 +181,14 @@ export default function EnemyPanel({ sessionId, enemyInstances, tokens, map, soc
                   <div style={{ display: 'flex', gap: '10px', padding: '8px 0 6px', flexWrap: 'wrap' }}>
                     {[['HP', enemy.hp], ['POW', enemy.power], ['AGI', enemy.agility], ['FOC', enemy.focus], ['PRE', enemy.presence]].map(([k, v]) => (
                       <div key={k as string} style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '9px', color: T.textDim, fontFamily: "'Cinzel',serif", letterSpacing: '0.1em' }}>{k}</div>
-                        <div style={{ fontSize: '13px', color: T.text, fontWeight: 700 }}>{v as number}</div>
+                        <div style={{ fontSize: '12px', color: T.textDim, fontFamily: "'Cinzel',serif", letterSpacing: '0.1em' }}>{k}</div>
+                        <div style={{ fontSize: '16px', color: T.text, fontWeight: 700 }}>{v as number}</div>
                       </div>
                     ))}
                   </div>
 
                   {/* Saves */}
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: '8px', letterSpacing: '0.14em', color: T.textDim, marginBottom: '4px' }}>SAVES</div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.14em', color: T.textDim, marginBottom: '4px' }}>SAVES</div>
                   <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
                     {[['POW', enemy.power], ['AGI', enemy.agility], ['FOC', enemy.focus], ['PRE', enemy.presence]].map(([attr, val]) => (
                       <button
@@ -197,7 +197,7 @@ export default function EnemyPanel({ sessionId, enemyInstances, tokens, map, soc
                           const inst = instances[0];
                           rollSave(enemy, inst, attr as string, val as number);
                         }}
-                        style={{ background: T.rp + '18', border: `1px solid ${T.rp}44`, borderRadius: '2px', padding: '3px 8px', cursor: 'pointer', color: T.rp, fontFamily: "'Cinzel',serif", fontSize: '9px', letterSpacing: '0.1em' }}
+                        style={{ background: T.rp + '18', border: `1px solid ${T.rp}44`, borderRadius: '2px', padding: '3px 8px', cursor: 'pointer', color: T.rp, fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.1em' }}
                       >
                         {attr as string} {(Math.floor(((val as number) - 10) / 2) >= 0 ? '+' : '')}{Math.floor(((val as number) - 10) / 2)}
                       </button>
@@ -207,20 +207,20 @@ export default function EnemyPanel({ sessionId, enemyInstances, tokens, map, soc
                   {/* Attacks */}
                   {enemy.attacks.length > 0 && (
                     <>
-                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: '8px', letterSpacing: '0.14em', color: T.textDim, marginBottom: '4px' }}>ATTACKS</div>
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.14em', color: T.textDim, marginBottom: '4px' }}>ATTACKS</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '8px' }}>
                         {enemy.attacks.map((atk, i) => (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: T.surface, borderRadius: '2px', padding: '4px 8px' }}>
                             <div>
-                              <span style={{ fontSize: '10px', color: T.text }}>{atk.name}</span>
-                              <span style={{ fontSize: '9px', color: T.textMuted, marginLeft: '6px' }}>{atk.damage_dice} {atk.damage_type}</span>
+                              <span style={{ fontSize: '13px', color: T.text }}>{atk.name}</span>
+                              <span style={{ fontSize: '12px', color: T.textMuted, marginLeft: '6px' }}>{atk.damage_dice} {atk.damage_type}</span>
                             </div>
                             <button
                               onClick={() => {
                                 const inst = instances[0];
                                 rollAttack(enemy, inst, atk.name, atk.damage_dice, atk.damage_type);
                               }}
-                              style={{ background: T.hp + '18', border: `1px solid ${T.hp}44`, borderRadius: '2px', padding: '2px 8px', cursor: 'pointer', color: T.hp, fontFamily: "'Cinzel',serif", fontSize: '8px', letterSpacing: '0.1em' }}
+                              style={{ background: T.hp + '18', border: `1px solid ${T.hp}44`, borderRadius: '2px', padding: '2px 8px', cursor: 'pointer', color: T.hp, fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.1em' }}
                             >ROLL</button>
                           </div>
                         ))}
@@ -231,9 +231,9 @@ export default function EnemyPanel({ sessionId, enemyInstances, tokens, map, soc
                   {/* Placed instances quick-list */}
                   {instances.length > 0 && (
                     <>
-                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: '8px', letterSpacing: '0.14em', color: T.textDim, marginBottom: '4px' }}>ON MAP</div>
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.14em', color: T.textDim, marginBottom: '4px' }}>ON MAP</div>
                       {instances.map(inst => (
-                        <div key={inst.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px', color: inst.is_defeated ? T.textDim : T.text, marginBottom: '2px' }}>
+                        <div key={inst.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', color: inst.is_defeated ? T.textDim : T.text, marginBottom: '2px' }}>
                           <span>{inst.label}</span>
                           <span style={{ color: inst.is_defeated ? T.hp : T.textMuted }}>{inst.current_hp}/{inst.max_hp} HP</span>
                         </div>
@@ -244,9 +244,9 @@ export default function EnemyPanel({ sessionId, enemyInstances, tokens, map, soc
                   {/* Traits */}
                   {enemy.traits.length > 0 && (
                     <>
-                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: '8px', letterSpacing: '0.14em', color: T.textDim, marginBottom: '4px', marginTop: '4px' }}>TRAITS</div>
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.14em', color: T.textDim, marginBottom: '4px', marginTop: '4px' }}>TRAITS</div>
                       {enemy.traits.map((trait, i) => (
-                        <div key={i} style={{ fontSize: '10px', color: T.textMuted, marginBottom: '4px', lineHeight: '1.5' }}>
+                        <div key={i} style={{ fontSize: '13px', color: T.textMuted, marginBottom: '4px', lineHeight: '1.5' }}>
                           <span style={{ color: T.text, fontFamily: "'Cinzel',serif" }}>{trait.name}:</span> {trait.description}
                         </div>
                       ))}
@@ -267,24 +267,24 @@ export default function EnemyPanel({ sessionId, enemyInstances, tokens, map, soc
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: '4px', padding: '20px', minWidth: '260px' }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: '12px', letterSpacing: '0.14em', color: T.text, marginBottom: '12px' }}>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: '15px', letterSpacing: '0.14em', color: T.text, marginBottom: '12px' }}>
               PLACE — {placing.name}
             </div>
-            <div style={{ fontSize: '11px', color: T.textMuted, marginBottom: '6px' }}>Label (e.g. "Goblin A")</div>
+            <div style={{ fontSize: '14px', color: T.textMuted, marginBottom: '6px' }}>Label (e.g. "Goblin A")</div>
             <input
               value={placeLabel}
               onChange={e => setPlaceLabel(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && placeEnemy()}
               autoFocus
-              style={{ width: '100%', background: T.surface, border: `1px solid ${T.border}`, borderRadius: '2px', padding: '7px 10px', color: T.text, fontSize: '12px', outline: 'none', boxSizing: 'border-box', marginBottom: '12px' }}
+              style={{ width: '100%', background: T.surface, border: `1px solid ${T.border}`, borderRadius: '2px', padding: '7px 10px', color: T.text, fontSize: '15px', outline: 'none', boxSizing: 'border-box', marginBottom: '12px' }}
             />
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
               <button onClick={() => setPlacing(null)}
-                style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: '2px', padding: '6px 14px', cursor: 'pointer', color: T.textMuted, fontFamily: "'Cinzel',serif", fontSize: '10px' }}>
+                style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: '2px', padding: '6px 14px', cursor: 'pointer', color: T.textMuted, fontFamily: "'Cinzel',serif", fontSize: '13px' }}>
                 CANCEL
               </button>
               <button onClick={placeEnemy}
-                style={{ background: T.gold + '22', border: `1px solid ${T.gold}`, borderRadius: '2px', padding: '6px 14px', cursor: 'pointer', color: T.gold, fontFamily: "'Cinzel',serif", fontSize: '10px', letterSpacing: '0.12em' }}>
+                style={{ background: T.gold + '22', border: `1px solid ${T.gold}`, borderRadius: '2px', padding: '6px 14px', cursor: 'pointer', color: T.gold, fontFamily: "'Cinzel',serif", fontSize: '13px', letterSpacing: '0.12em' }}>
                 PLACE TOKEN
               </button>
             </div>
