@@ -2,16 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthStore } from '@/store/authStore';
 import { buildDiceBreakdown, type AdvantageKeep } from '@/lib/diceBreakdown';
-import {
-  buildAnimationSpecFromPhysicsResults,
-  type DiceAnimationFace,
-} from '@/lib/diceAnimationSpec';
+import { buildAnimationSpecFromPhysicsResults } from '@/lib/diceAnimationSpec';
 import type { DiceResult } from '@/vtt/types';
+import { parseDiceFromFormula, summariseDiceNotation } from '@/lib/diceFormula';
 
-/** Remote viewers: “tumble” time before authoritative faces + dice log line appear. */
-const IMMERSIVE_SETTLE_MS = 2000;
-/** After settle, keep the summary card visible before clearing. */
-const IMMERSIVE_HOLD_MS = 2000;
 /** After local physics finishes (`onRollComplete`), keep the dice canvas visible before clearing. */
 const LOCAL_ROLL_SCENE_HOLD_MS = 2000;
 
@@ -91,48 +85,21 @@ function teardownSharedDiceBox(): void {
 }
 
 function summarise(dice: DiceType[]): string {
-  const counts = new Map<DiceType, number>();
-  dice.forEach((die) => counts.set(die, (counts.get(die) ?? 0) + 1));
-  return [...counts.entries()].map(([die, qty]) => `${qty}${die}`).join(' + ');
+  return summariseDiceNotation(dice);
 }
 
-function parseDiceFromFormula(formula?: string): DiceType[] {
-  if (!formula) return [];
-  const out: DiceType[] = [];
-  // Strip breakdown tail (e.g. "2d20 + 4 = 24") — keep only NdS chunks before "="
-  const dicePortion = formula.split('=')[0] ?? formula;
-  const rx = /(\d*)\s*[dD]\s*(4|6|8|10|12|20|100)/g;
-  let match: RegExpExecArray | null;
-  while ((match = rx.exec(dicePortion)) !== null) {
-    const rawQty = match[1];
-    const qty = rawQty === '' ? 1 : Number.parseInt(rawQty, 10);
-    if (!Number.isFinite(qty) || qty < 1) continue;
-    const die = `d${match[2]}` as DiceType;
-    for (let i = 0; i < Math.max(0, Math.min(qty, 30)); i += 1) out.push(die);
-  }
-  return out;
+/** Character sheet view: `/characters/:id` (not `/characters/new`). */
+function isCharacterSheetPagePath(pathname: string): boolean {
+  return /^\/characters\/(?!new$)[^/]+$/.test(pathname);
 }
 
-function deriveRevealFaces(entry: DiceResult): DiceAnimationFace[] {
-  if (entry.animation_spec?.length) return entry.animation_spec;
-  const parsed = parseDiceFromFormula(entry.formula);
-  const fromResults = Array.isArray(entry.results)
-    ? entry.results
-        .filter((v) => Number.isFinite(v))
-        .map((value, i) => {
-          const die = parsed[i] ?? 'd20';
-          const sides = Number.parseInt(die.slice(1), 10);
-          return {
-            sides: Number.isFinite(sides) && sides > 0 ? sides : 20,
-            value,
-          };
-        })
-    : [];
-  if (fromResults.length) return fromResults;
-  return [{ sides: 20, value: entry.total }];
+/** Routes that use dice-box + full-screen / reveal UI (VTT + character wizard). */
+function isImmersiveDiceRoute(pathname: string): boolean {
+  return pathname.startsWith('/vtt/') || pathname === '/characters/new';
 }
 
-function isDiceOverlayRoute(pathname: string): boolean {
+/** Any route that participates in the global dice pipeline (sheet, VTT, wizard). */
+function isDiceRollRoute(pathname: string): boolean {
   return pathname.startsWith('/vtt/')
     || pathname === '/characters/new'
     || /^\/characters\/[^/]+$/.test(pathname);
@@ -149,7 +116,15 @@ export default function GlobalDiceOverlay() {
   const [visibility, setVisibility] = useState<DiceVisibility>('public');
   const [errorMsg, setErrorMsg] = useState('');
   const [queuedExternalRoll, setQueuedExternalRoll] = useState<ExternalRollRequest | null>(null);
-  const [routeEnabled, setRouteEnabled] = useState(() => isDiceOverlayRoute(window.location.pathname));
+  const [diceRollActive, setDiceRollActive] = useState(() => isDiceRollRoute(window.location.pathname));
+  const [immersiveDiceActive, setImmersiveDiceActive] = useState(() =>
+    isImmersiveDiceRoute(window.location.pathname),
+  );
+  const [characterSheetLogOnly, setCharacterSheetLogOnly] = useState(() =>
+    isCharacterSheetPagePath(window.location.pathname),
+  );
+  /** Babylon dice-box loads for VTT / wizard routes and saved character sheets (`/characters/:id`). */
+  const physicsDiceActive = immersiveDiceActive || characterSheetLogOnly;
   /** Dice canvas visible while rolling or shortly after (independent of control panel) */
   const [diceSceneActive, setDiceSceneActive] = useState(false);
   /** Bumped when dice-box (re)initialises so queued sheet rolls retry after StrictMode teardown. */
@@ -157,23 +132,8 @@ export default function GlobalDiceOverlay() {
   const diceSceneTimerRef = useRef<number | null>(null);
   /** This tab’s current physical roll (skip duplicate `dice:roll_start` from the server). */
   const activePhysicsRollIdRef = useRef<string | null>(null);
-  /** Rolls completed locally in 3D; skip network “reveal” for the same `roll_id`. */
+  /** Rolls completed locally in 3D; skip network duplicate handling for the same `roll_id`. */
   const physicsSourceRollIdsRef = useRef<Set<string>>(new Set());
-  const [networkWait, setNetworkWait] = useState<{
-    roll_id: string;
-    label: string;
-    source_label: string | null;
-  } | null>(null);
-  const [networkReveal, setNetworkReveal] = useState<{
-    formula: string;
-    label: string;
-    total: number;
-    source_label: string | null;
-    animation_spec: DiceAnimationFace[];
-    hideNumbers: boolean;
-  } | null>(null);
-  const networkRevealTimerRef = useRef<number | null>(null);
-  const networkRevealDismissTimerRef = useRef<number | null>(null);
   /** Dedupe `velion:dice-log-commit` if the same roll is processed twice. */
   const committedDiceLogIdsRef = useRef<Set<string>>(new Set());
 
@@ -188,10 +148,10 @@ export default function GlobalDiceOverlay() {
 
   const rollingRef = useRef(rolling);
   const statusRef = useRef(status);
-  const routeEnabledRef = useRef(routeEnabled);
+  const diceRollActiveRef = useRef(diceRollActive);
   rollingRef.current = rolling;
   statusRef.current = status;
-  routeEnabledRef.current = routeEnabled;
+  diceRollActiveRef.current = diceRollActive;
 
   const clearDiceSceneTimer = () => {
     if (diceSceneTimerRef.current != null) {
@@ -211,17 +171,6 @@ export default function GlobalDiceOverlay() {
     setResults([]);
   };
 
-  const clearNetworkRevealTimer = () => {
-    if (networkRevealTimerRef.current != null) {
-      window.clearTimeout(networkRevealTimerRef.current);
-      networkRevealTimerRef.current = null;
-    }
-    if (networkRevealDismissTimerRef.current != null) {
-      window.clearTimeout(networkRevealDismissTimerRef.current);
-      networkRevealDismissTimerRef.current = null;
-    }
-  };
-
   const commitDiceLogEntry = (entry: DiceResult) => {
     const key =
       entry.roll_id?.trim() ||
@@ -236,7 +185,10 @@ export default function GlobalDiceOverlay() {
 
   useEffect(() => {
     const syncSession = () => {
-      setRouteEnabled(isDiceOverlayRoute(window.location.pathname));
+      const path = window.location.pathname;
+      setDiceRollActive(isDiceRollRoute(path));
+      setImmersiveDiceActive(isImmersiveDiceRoute(path));
+      setCharacterSheetLogOnly(isCharacterSheetPagePath(path));
     };
 
     syncSession();
@@ -255,87 +207,31 @@ export default function GlobalDiceOverlay() {
     };
   }, []);
 
-  // Another client (or this user’s VTT tab) is rolling — show the same “rolling” dim at the same time
-  useEffect(() => {
-    const onSessionDiceRollStart = (event: Event) => {
-      const d = (event as CustomEvent<{
-        roll_id?: string;
-        roller_id?: string;
-        label?: string;
-        source_label?: string | null;
-      }>).detail;
-      if (!d?.roll_id || !routeEnabledRef.current) return;
-      const me = useAuthStore.getState().user?.id ?? '';
-      if (d.roller_id && me && d.roller_id === me && d.roll_id === activePhysicsRollIdRef.current) {
-        return;
-      }
-      setNetworkWait({ roll_id: d.roll_id, label: d.label || 'Roll', source_label: d.source_label ?? null });
-      setDiceSceneActive(true);
-    };
-    window.addEventListener('velion:session-dice-roll-start', onSessionDiceRollStart as EventListener);
-    return () => window.removeEventListener('velion:session-dice-roll-start', onSessionDiceRollStart as EventListener);
-  }, []);
-
   /**
-   * Single entry point for socket `dice:result`: defer dice log until immersive reveal finishes,
-   * or commit immediately when this tab ran physics / there is nothing to animate.
+   * Socket `dice:result` → `velion:dice-result-pending`: commit to dice log only (no summary overlay).
    */
   useEffect(() => {
     const onDiceResultPending = (event: Event) => {
       const entry = (event as CustomEvent<DiceResult>).detail;
       if (!entry) return;
 
-      if (!routeEnabledRef.current) {
-        commitDiceLogEntry(entry);
-        return;
+      commitDiceLogEntry(entry);
+
+      if (!diceRollActiveRef.current) return;
+
+      const isOwnPhysics = entry.roll_id && physicsSourceRollIdsRef.current.has(entry.roll_id);
+      if (isOwnPhysics) return;
+
+      try {
+        sharedBox?.clear?.();
+      } catch {
+        /* ignore */
       }
-
-      if (entry.roll_id && physicsSourceRollIdsRef.current.has(entry.roll_id)) {
-        if (entry.roll_id) setNetworkWait((w) => (w?.roll_id === entry.roll_id ? null : w));
-        commitDiceLogEntry(entry);
-        return;
-      }
-
-      clearNetworkRevealTimer();
-      if (entry.roll_id) {
-        setNetworkWait((w) => (w?.roll_id === entry.roll_id ? null : w));
-      } else {
-        setNetworkWait(null);
-      }
-      const revealFaces = deriveRevealFaces(entry);
-
-      setNetworkReveal({
-        formula: entry.formula,
-        label: entry.label,
-        total: entry.total,
-        source_label: entry.source_label ?? null,
-        animation_spec: revealFaces,
-        hideNumbers: true,
-      });
-      setDiceSceneActive(true);
-
-      networkRevealTimerRef.current = window.setTimeout(() => {
-        networkRevealTimerRef.current = null;
-        setNetworkReveal((r) => (r ? { ...r, hideNumbers: false } : null));
-        commitDiceLogEntry(entry);
-      }, IMMERSIVE_SETTLE_MS);
-
-      networkRevealDismissTimerRef.current = window.setTimeout(() => {
-        networkRevealDismissTimerRef.current = null;
-        setNetworkReveal(null);
-        setNetworkWait(null);
-        setDiceSceneActive(false);
-        try {
-          sharedBox?.clear?.();
-        } catch {
-          /* ignore */
-        }
-        setResults([]);
-      }, IMMERSIVE_SETTLE_MS + IMMERSIVE_HOLD_MS);
+      setDiceSceneActive(false);
+      setResults([]);
     };
     window.addEventListener('velion:dice-result-pending', onDiceResultPending as EventListener);
     return () => {
-      clearNetworkRevealTimer();
       window.removeEventListener('velion:dice-result-pending', onDiceResultPending as EventListener);
     };
   }, []);
@@ -397,6 +293,21 @@ export default function GlobalDiceOverlay() {
 
     window.dispatchEvent(new CustomEvent('velion:dice-roll-submit', { detail: payload }));
     window.dispatchEvent(new CustomEvent('velion:dice-roll-complete', { detail: payload }));
+
+    if (isCharacterSheetPagePath(window.location.pathname)) {
+      commitDiceLogEntry({
+        roller_id: user?.id ?? '',
+        source_label: payload.source_label ?? null,
+        formula: payload.formula,
+        results: payload.results,
+        total: payload.total,
+        label: payload.label,
+        visibility: payload.visibility as DiceVisibility,
+        animation_spec: payload.animation_spec,
+        physics_notation: payload.physics_notation,
+        roll_id: payload.roll_id,
+      });
+    }
 
     clearDiceSceneTimer();
     diceSceneTimerRef.current = window.setTimeout(() => {
@@ -472,12 +383,20 @@ export default function GlobalDiceOverlay() {
   };
 
   useEffect(() => {
-    if (!routeEnabled) {
+    if (!diceRollActive) {
       setRolling(false);
       setDiceSceneActive(false);
       clearDiceSceneTimer();
       setStatus('loading');
       teardownSharedDiceBox();
+      return;
+    }
+    if (!physicsDiceActive) {
+      setRolling(false);
+      setDiceSceneActive(false);
+      clearDiceSceneTimer();
+      teardownSharedDiceBox();
+      setStatus('ready');
       return;
     }
     void ensureBox();
@@ -504,7 +423,7 @@ export default function GlobalDiceOverlay() {
       setStatus('loading');
       teardownSharedDiceBox();
     };
-  }, [routeEnabled]);
+  }, [diceRollActive, physicsDiceActive]);
 
   const canRoll = useMemo(() => pending.length > 0 && !rolling && status === 'ready', [pending.length, rolling, status]);
 
@@ -582,8 +501,6 @@ export default function GlobalDiceOverlay() {
     if (started) setOpen(false);
   };
 
-  const total = results.reduce((sum, value) => sum + value, 0);
-
   useEffect(() => {
     const handler = (event: Event) => {
       const custom = event as CustomEvent<ExternalRollRequest>;
@@ -596,10 +513,11 @@ export default function GlobalDiceOverlay() {
   }, []);
 
   useEffect(() => {
-    if (!queuedExternalRoll || status !== 'ready' || rolling || !routeEnabled) return;
+    if (!queuedExternalRoll || status !== 'ready' || rolling || !diceRollActive) return;
     const parsed = parseDiceFromFormula(queuedExternalRoll.formula);
     const fallbackCount = 1;
     const diceToRoll = parsed.length ? parsed : Array.from({ length: fallbackCount }, () => 'd20' as DiceType);
+
     const started = startPhysicalRoll(diceToRoll, {
       modifier: queuedExternalRoll.modifier,
       postMultiplier: queuedExternalRoll.postMultiplier,
@@ -613,9 +531,9 @@ export default function GlobalDiceOverlay() {
       if (queuedExternalRoll.visibility) setVisibility(queuedExternalRoll.visibility);
       setQueuedExternalRoll(null);
     }
-  }, [queuedExternalRoll, status, rolling, routeEnabled, boxVersion]);
+  }, [queuedExternalRoll, status, rolling, diceRollActive, boxVersion]);
 
-  if (!routeEnabled) return null;
+  if (!diceRollActive) return null;
 
   return createPortal(
     <>
@@ -636,154 +554,8 @@ export default function GlobalDiceOverlay() {
         <div id="global-dice-canvas-host" style={{ position: 'absolute', inset: 0, opacity: 1, pointerEvents: 'none' }} />
       </div>
 
-      {networkWait && !networkReveal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 24500,
-            pointerEvents: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-            gap: '12px',
-          }}
-        >
-          <span style={{ fontFamily: "'Cinzel',serif", fontSize: '11px', letterSpacing: '0.28em', color: T.gold }}>
-            ROLL IN PROGRESS
-          </span>
-          <span style={{ fontFamily: "'Cinzel',serif", fontSize: '14px', color: T.text }}>
-            {networkWait.source_label?.trim() || 'Player'}
-          </span>
-          <span style={{ fontSize: '12px', color: T.textMuted, maxWidth: 'min(90vw, 420px)', textAlign: 'center' }}>{networkWait.label}</span>
-        </div>
-      )}
-
-      {networkReveal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 25600,
-            pointerEvents: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'radial-gradient(circle at 50% 40%, rgba(0,0,0,0.15), rgba(0,0,0,0.58) 75%)',
-          }}
-        >
-          <style>
-            {`
-            @keyframes velion-dice-tumble {
-              0%, 100% { transform: rotate(-3deg) translateY(0); opacity: 0.7; }
-              50% { transform: rotate(3deg) translateY(-2px); opacity: 1; }
-            }
-            @keyframes velion-dice-land {
-              0% { transform: scale(0.6); opacity: 0; }
-              70% { transform: scale(1.08); }
-              100% { transform: scale(1); opacity: 1; }
-            }
-            `}
-          </style>
-          <div
-            style={{
-              maxWidth: 'min(92vw, 720px)',
-              padding: '20px 22px',
-              background: T.card,
-              border: `1px solid ${T.border}`,
-              borderRadius: '10px',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.55)',
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "'Cinzel',serif",
-                fontSize: '10px',
-                letterSpacing: '0.22em',
-                color: T.gold,
-                marginBottom: '10px',
-              }}
-            >
-              ROLL · {networkReveal.source_label?.trim() || 'Player'}
-            </div>
-            {networkReveal.label && (
-              <div style={{ fontFamily: "'Cinzel',serif", fontSize: '13px', color: T.text, marginBottom: '14px' }}>{networkReveal.label}</div>
-            )}
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '10px',
-                justifyContent: 'center',
-                marginBottom: '14px',
-              }}
-            >
-              {networkReveal.animation_spec.map((f, i) => (
-                <div
-                  key={`${f.sides}-${f.value}-${i}`}
-                  style={{
-                    minWidth: '72px',
-                    padding: '12px 14px',
-                    borderRadius: '8px',
-                    border: `1px solid ${T.gold}44`,
-                    background: 'rgba(196,146,42,0.08)',
-                    textAlign: 'center',
-                  }}
-                >
-                  <div style={{ fontSize: '9px', color: T.textMuted, letterSpacing: '0.12em', marginBottom: '4px' }}>D{f.sides}</div>
-                  <div
-                    style={
-                      networkReveal.hideNumbers
-                        ? {
-                            fontFamily: "'Cinzel',serif",
-                            fontSize: '28px',
-                            fontWeight: 700,
-                            color: T.gold,
-                            animation: 'velion-dice-tumble 0.85s ease-in-out infinite',
-                          }
-                        : {
-                            fontFamily: "'Cinzel',serif",
-                            fontSize: '28px',
-                            fontWeight: 700,
-                            color: T.gold,
-                            animation: 'velion-dice-land 0.5s ease-out 1',
-                          }
-                    }
-                  >
-                    {networkReveal.hideNumbers ? '—' : f.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div
-              style={{
-                fontSize: '11px',
-                color: T.textMuted,
-                textAlign: 'center',
-                borderTop: `1px solid ${T.border}`,
-                paddingTop: '12px',
-                letterSpacing: networkReveal.hideNumbers ? '0.15em' : undefined,
-              }}
-            >
-              {networkReveal.hideNumbers ? '···' : networkReveal.formula}
-            </div>
-            <div
-              style={{
-                marginTop: '8px',
-                fontFamily: "'Cinzel',serif",
-                fontSize: '20px',
-                fontWeight: 700,
-                color: T.text,
-                textAlign: 'center',
-              }}
-            >
-              {networkReveal.hideNumbers ? '···' : networkReveal.total}
-            </div>
-          </div>
-        </div>
-      )}
-
+      {immersiveDiceActive && (
+      <>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -907,11 +679,6 @@ export default function GlobalDiceOverlay() {
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '22px' }}>
             <span style={{ fontSize: '11px', color: T.textMuted }}>{pending.length ? summarise(pending) : '\u00A0'}</span>
-            {results.length > 0 && (
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: '18px', color: T.gold }}>
-                {total}
-              </span>
-            )}
           </div>
 
           <div style={{ display: 'flex', gap: '6px' }}>
@@ -958,6 +725,8 @@ export default function GlobalDiceOverlay() {
 
           {errorMsg && <div style={{ fontSize: '9px', color: T.hp }}>{errorMsg}</div>}
         </div>
+      )}
+      </>
       )}
     </>,
     document.body,

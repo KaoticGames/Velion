@@ -42,26 +42,12 @@ export default function NavBar() {
       flexShrink:    0,
     }}>
       {/* Logo */}
-      <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span style={{
-          fontFamily:    "'Cinzel', serif",
-          fontSize:      '14px',
-          fontWeight:    '700',
-          letterSpacing: '0.2em',
-          color:         T.gold,
-        }}>
-          VELION
-        </span>
-        <span style={{
-          fontFamily:    "'Cinzel', serif",
-          fontSize:      '10px',
-          letterSpacing: '0.18em',
-          color:         T.textMuted,
-          borderLeft:    `1px solid ${T.border}`,
-          paddingLeft:   '10px',
-        }}>
-          MYTHERA
-        </span>
+      <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        <img
+          src="/velion_wordmark.png"
+          alt="Velion Mythera"
+          style={{ display: 'block', height: '50px', width: 'auto' }}
+        />
       </Link>
 
       {/* Nav links — only shown when authenticated or mock mode */}

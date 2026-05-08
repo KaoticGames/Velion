@@ -242,7 +242,11 @@ export default function Compendium() {
 
           {/* Page header */}
           <div style={{ marginBottom: '40px' }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: '13px', letterSpacing: '0.3em', color: T.textDim, marginBottom: '6px' }}>VELION MYTHERA</div>
+            <img
+              src="/velion_wordmark.png"
+              alt="Velion Mythera"
+              style={{ display: 'block', height: '100px', width: 'auto', marginBottom: '8px' }}
+            />
             <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: '32px', letterSpacing: '0.16em', color: T.gold, margin: '0 0 10px', fontWeight: '700' }}>Compendium</h1>
             <p style={{ fontSize: '16px', color: T.textMuted, lineHeight: '1.7', maxWidth: '560px' }}>
               A guide to the mechanics of Velion Mythera. The system exists to serve the story —

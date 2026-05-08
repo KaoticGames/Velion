@@ -182,24 +182,16 @@ export default function Landing() {
           ✦ EARLY ACCESS · SIGN UP BELOW ✦
         </div>
 
-        <h1 style={{
-          fontFamily: "'Cinzel Decorative', 'Cinzel', serif",
-          fontSize: 'clamp(44px, 8vw, 94px)',
-          fontWeight: 900, letterSpacing: '0.1em', lineHeight: 1,
-          color: T.gold,
-          textShadow: `0 0 80px ${T.gold}44, 0 0 160px ${T.gold}18`,
-          margin: 0,
-        }}>
-          VELION
-        </h1>
-        <h1 style={{
-          fontFamily: "'Cinzel Decorative', 'Cinzel', serif",
-          fontSize: 'clamp(44px, 8vw, 94px)',
-          fontWeight: 400, letterSpacing: '0.26em', lineHeight: 1.1,
-          color: T.text, margin: '0 0 8px',
-        }}>
-          MYTHERA
-        </h1>
+        <img
+          src="/velion_full_logo.png"
+          alt="Velion Mythera"
+          style={{
+            width: 'min(760px, 90vw)',
+            height: 'auto',
+            margin: '0 0 8px',
+            filter: 'drop-shadow(0 0 30px #c4922a33)',
+          }}
+        />
 
         <div style={{
           width: '340px', height: '1px', margin: '16px auto 28px',

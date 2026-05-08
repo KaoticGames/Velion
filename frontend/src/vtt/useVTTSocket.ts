@@ -113,7 +113,7 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
     socket.on('ruler:updated', (data: any) => dispatch({ type: 'RULER_UPDATED', ruler: data }));
     socket.on('ruler:cleared', ({ user_id }: any) => dispatch({ type: 'RULER_CLEARED', user_id }));
 
-    // Dice — `dice:result` → `velion:dice-result-pending` (overlay animates, then `velion:dice-log-commit`)
+    // Dice — `dice:result` → `velion:dice-result-pending` → dice log (`velion:dice-log-commit`)
     socket.on('dice:roll_start', (p: any) => {
       if (typeof window === 'undefined') return;
       if (!window.location.pathname.startsWith('/vtt/')) return;

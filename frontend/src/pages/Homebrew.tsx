@@ -795,7 +795,6 @@ export default function Homebrew() {
 
       {/* Header */}
       <div style={{ marginBottom: '28px' }}>
-        <div style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.35em', color: T.goldDim, marginBottom: '6px' }}>◈ VELION MYTHERA</div>
         <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: '26px', fontWeight: '700', color: T.gold, letterSpacing: '0.15em', margin: 0, marginBottom: '6px' }}>HOMEBREW WORKSHOP</h1>
         <p style={{ color: T.textMuted, fontSize: '14px', margin: 0 }}>
           Create and manage custom weapons, armor, gems, enemies, and companions. Public items are visible in character sheet browsers.

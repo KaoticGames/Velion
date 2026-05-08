@@ -130,6 +130,8 @@ export interface DiceResult {
   physics_notation?: string;
   /** Ephemeral: client-generated id to correlate `dice:roll_start` with `dice:result` (not in DB). */
   roll_id?: string;
+  /** Ephemeral: echoed from `authority: 'server'` rolls for sheet / VTT UI (not stored in DB). */
+  request_meta?: unknown;
 }
 
 export interface VTTRollRequestMeta {

@@ -764,8 +764,6 @@ export default function Library() {
         <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between',
           marginBottom:'16px' }}>
           <div>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:'11px', letterSpacing:'0.3em',
-              color: T.textDim, marginBottom:'4px' }}>VELION MYTHERA</div>
             <h1 style={{ fontFamily:"'Cinzel',serif", fontSize:'24px', letterSpacing:'0.16em',
               color: T.gold, margin:'0', fontWeight:'700' }}>Library</h1>
           </div>

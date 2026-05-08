@@ -16,6 +16,7 @@ import {
   mapTokens, sessionEnemyInstances, canvasShapes, diceLogEntries, maps, fogSections,
 } from '../db/schema';
 import { eq, and, isNull }       from 'drizzle-orm';
+import { rollDiceAuthoritative } from '../lib/sessionDiceRoll';
 
 const isJsonColumnInputError = (err: unknown): boolean => {
   const code = (err as { code?: string } | null)?.code;
@@ -233,26 +234,69 @@ export const registerSessionNamespace = (io: Server): void => {
     });
 
     // ── dice:roll ──────────────────────────────────────────────────────
-    // Client rolls 3D dice, sends results here for persist + broadcast
+    // Client 3D dice (physics) submits faces; or `authority: 'server'` rolls here with crypto RNG.
     socket.on('dice:roll', async (payload: {
-      formula: string; label: string; visibility: 'public' | 'private' | 'dm';
-      results: number[]; total: number; source_label?: string;
+      authority?: 'server';
+      formula: string;
+      label: string;
+      visibility: 'public' | 'private' | 'dm';
+      results?: number[];
+      total?: number;
+      source_label?: string;
       animation_spec?: Array<{ sides: number; value: number }>;
       physics_notation?: string;
       roll_id?: string;
+      modifier?: number;
+      postMultiplier?: number;
+      advantageKeep?: 'high' | 'low';
+      /** Echoed on `dice:result` only (not persisted) — correlates client-sheet UI with the roll. */
+      request_meta?: unknown;
     }) => {
       const session_id  = socket.data.session_id as string;
       const campaign_id = socket.data.campaign_id as string;
       const room        = `session:${session_id}`;
-      const animation_spec = Array.isArray(payload.animation_spec) ? payload.animation_spec : undefined;
-      const physics_notation = typeof payload.physics_notation === 'string' && payload.physics_notation.trim()
-        ? payload.physics_notation.trim()
-        : undefined;
+
+      let formulaOut: string;
+      let resultsOut: number[];
+      let totalOut: number;
+      let animation_server: Array<{ sides: number; value: number }> | undefined;
+      let physics_server: string | undefined;
+
+      if (payload.authority === 'server') {
+        try {
+          const rolled = rollDiceAuthoritative({
+            diceExpr: typeof payload.formula === 'string' ? payload.formula : '',
+            modifier: payload.modifier,
+            postMultiplier: payload.postMultiplier,
+            advantageKeep: payload.advantageKeep,
+          });
+          formulaOut = rolled.formula;
+          resultsOut = rolled.results;
+          totalOut = rolled.total;
+          animation_server = rolled.animation_spec;
+          physics_server = rolled.physics_notation;
+        } catch (err) {
+          console.error('[socket] dice:roll server authority error:', err);
+          socket.emit('dice:error', { message: 'Invalid dice roll request.' });
+          return;
+        }
+      } else {
+        if (!Array.isArray(payload.results) || typeof payload.total !== 'number') return;
+        formulaOut = payload.formula;
+        resultsOut = payload.results;
+        totalOut = payload.total;
+        animation_server = Array.isArray(payload.animation_spec) ? payload.animation_spec : undefined;
+        physics_server =
+          typeof payload.physics_notation === 'string' && payload.physics_notation.trim()
+            ? payload.physics_notation.trim()
+            : undefined;
+      }
+
       const row = {
         roller_id:    userId,
-        formula:      payload.formula,
-        results:      payload.results,
-        total:        payload.total,
+        formula:      formulaOut,
+        results:      resultsOut,
+        total:        totalOut,
         label:        payload.label,
         visibility:   payload.visibility,
         source_label: payload.source_label ?? null,
@@ -262,10 +306,11 @@ export const registerSessionNamespace = (io: Server): void => {
       catch (err) { console.error('[socket] dice:roll persist error:', err); }
 
       const extras: Record<string, unknown> = {};
-      if (animation_spec?.length) extras.animation_spec = animation_spec;
-      if (physics_notation) extras.physics_notation = physics_notation;
+      if (animation_server?.length) extras.animation_spec = animation_server;
+      if (physics_server) extras.physics_notation = physics_server;
       const roll_id = typeof payload.roll_id === 'string' && payload.roll_id.trim() ? payload.roll_id.trim() : undefined;
       if (roll_id) extras.roll_id = roll_id;
+      if (payload.request_meta !== undefined) extras.request_meta = payload.request_meta;
       const broadcastEntry = Object.keys(extras).length ? { ...row, ...extras } : row;
 
       if (payload.visibility === 'public') {

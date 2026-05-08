@@ -89,41 +89,16 @@ export default function Landing() {
           background: 'radial-gradient(ellipse 60% 50% at 50% 40%, #c4922a0a 0%, transparent 70%)',
         }} />
 
-        {/* Decorative horizontal rule */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '16px',
-          marginBottom: '32px', width: '100%', maxWidth: '480px',
-        }}>
-          <div style={{ flex: 1, height: '1px', background: `linear-gradient(to right, transparent, ${T.gold}55)` }} />
-          <span style={{ fontFamily: "'Cinzel', serif", fontSize: '10px', letterSpacing: '0.3em', color: T.goldDim }}>
-            ✦ VELION MYTHERA ✦
-          </span>
-          <div style={{ flex: 1, height: '1px', background: `linear-gradient(to left, transparent, ${T.gold}55)` }} />
-        </div>
-
-        <h1 style={{
-          fontFamily:    "'Cinzel', serif",
-          fontSize:      'clamp(36px, 6vw, 72px)',
-          fontWeight:    '900',
-          letterSpacing: '0.08em',
-          lineHeight:    '1.1',
-          color:         T.gold,
-          marginBottom:  '8px',
-          textShadow:    `0 0 60px ${T.gold}33`,
-        }}>
-          VELION
-        </h1>
-        <h1 style={{
-          fontFamily:    "'Cinzel', serif",
-          fontSize:      'clamp(36px, 6vw, 72px)',
-          fontWeight:    '400',
-          letterSpacing: '0.22em',
-          lineHeight:    '1.1',
-          color:         T.text,
-          marginBottom:  '32px',
-        }}>
-          MYTHERA
-        </h1>
+        <img
+          src="/velion_full_logo.png"
+          alt="Velion Mythera"
+          style={{
+            width: 'min(760px, 90vw)',
+            height: 'auto',
+            marginBottom: '32px',
+            filter: 'drop-shadow(0 0 30px #c4922a33)',
+          }}
+        />
 
         <p style={{
           maxWidth:     '560px',
