@@ -84,9 +84,10 @@ type ArtworkSlotProps = {
   style?:        React.CSSProperties;
   fade?:         'bottom' | 'right' | 'left' | 'none';
   imageOpacity?: number;
+  className?:    string;
 };
 
-function ArtworkSlot({ src, alt, intent, atmosphere, style = {}, fade = 'bottom', imageOpacity = 1 }: ArtworkSlotProps) {
+function ArtworkSlot({ src, alt, intent, atmosphere, style = {}, fade = 'bottom', imageOpacity = 1, className }: ArtworkSlotProps) {
   const fadeGradients: Record<string, string> = {
     bottom: `linear-gradient(to bottom, transparent 30%, ${T.bg} 100%)`,
     right:  `linear-gradient(to right,  transparent 40%, ${T.bg} 100%)`,
@@ -98,7 +99,7 @@ function ArtworkSlot({ src, alt, intent, atmosphere, style = {}, fade = 'bottom'
 
   if (src) {
     return (
-      <div style={base}>
+      <div className={className} style={base}>
         <img src={src} alt={alt ?? intent}
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: imageOpacity }} />
         {fade !== 'none' && <div style={{ position: 'absolute', inset: 0, background: fadeOverlay }} />}
@@ -107,7 +108,7 @@ function ArtworkSlot({ src, alt, intent, atmosphere, style = {}, fade = 'bottom'
   }
 
   return (
-    <div style={{ ...base, background: atmosphere, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+    <div className={className} style={{ ...base, background: atmosphere, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.04,
         backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 3px, ${T.gold} 3px, ${T.gold} 4px)` }} />
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
@@ -124,46 +125,15 @@ function ArtworkSlot({ src, alt, intent, atmosphere, style = {}, fade = 'bottom'
 }
 
 // ── AbsentCard ────────────────────────────────────────────────────────────────
-// Desktop: hover dims the poster and reveals the description overlay.
-// Mobile:  description is always visible below the image.
+// Desktop (fine pointer + hover): CSS :hover dims poster and shows overlay.
+// Touch / coarse pointer: no dim; description is only in .absent-mobile-note below the image.
 function AbsentCard({ image, note }: { image: string; note: string }) {
-  const [hovered, setHovered] = useState(false);
-
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ position: 'relative', cursor: 'default' }}
-    >
-      {/* Poster */}
-      <img
-        src={image}
-        alt=""
-        style={{
-          width: '100%', display: 'block',
-          transition: 'opacity 0.35s ease',
-          opacity: hovered ? 0.2 : 1,
-        }}
-      />
+    <div className="absent-card">
+      <img className="absent-card-poster" src={image} alt="" />
 
-      {/* Hover overlay — desktop */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '24px',
-        opacity: hovered ? 1 : 0,
-        transition: 'opacity 0.35s ease',
-        pointerEvents: 'none',
-        background: `${T.bg}33`,
-      }}>
-        <p style={{
-          fontFamily: "'EB Garamond', serif",
-          fontSize: 'clamp(13px, 1.1vw, 16px)',
-          color: T.text, lineHeight: 1.75,
-          textAlign: 'center', margin: 0,
-        }}>
-          {note}
-        </p>
+      <div className="absent-card-hover-overlay" aria-hidden>
+        <p>{note}</p>
       </div>
 
       {/* Mobile fallback — hidden on desktop via media query */}
@@ -420,7 +390,62 @@ export default function Landing() {
         }
         @media (min-width: 961px) {
           .landing-hero-inner .landing-early-access-card {
-            margin-left: clamp(200px, 3.5vw, 64px);
+            margin-left: clamp(20px, 3.5vw, 64px);
+          }
+        }
+        /* WHAT IS VELION MYTHERA — narrow viewports: keep copy on the right over the fade, not on the art */
+        @media (max-width: 768px) {
+          .landing-what-is-fade {
+            background: linear-gradient(to right, transparent 0%, transparent 6%, ${T.bg}88 36%, ${T.bg}d8 48%, ${T.bg} 58%) !important;
+          }
+          .landing-what-is .landing-what-is-slot img {
+            object-position: 24% center;
+          }
+          .landing-what-is-copy {
+            justify-content: flex-end !important;
+            padding-top: 44px !important;
+            padding-bottom: 44px !important;
+            padding-right: clamp(10px, 3.5vw, 20px) !important;
+            padding-left: clamp(26vw, 32vw, 200px) !important;
+          }
+          /* RP ECONOMY — copy stays left; solid surface on left, art on right */
+          .landing-rp-economy-fade {
+            background: linear-gradient(to right, ${T.surface} 0%, ${T.surface}ee 28%, ${T.surface}cc 40%, ${T.surface}88 52%, transparent 76%, transparent 100%) !important;
+          }
+          .landing-rp-economy .landing-rp-economy-slot img {
+            object-position: 78% center;
+          }
+          .landing-rp-economy-copy {
+            justify-content: flex-start !important;
+            padding-top: 44px !important;
+            padding-bottom: 44px !important;
+            padding-left: clamp(10px, 3.5vw, 20px) !important;
+            padding-right: clamp(26vw, 32vw, 200px) !important;
+          }
+          /* BUILT FOR THE TABLE — copy stays right; solid bg on right, art on left */
+          .landing-built-for-fade {
+            background: linear-gradient(to right, transparent 0%, transparent 6%, ${T.bg}88 36%, ${T.bg}d8 48%, ${T.bg} 58%) !important;
+          }
+          .landing-built-for-table .landing-built-for-slot img {
+            object-position: 72% center;
+          }
+          .landing-built-for-copy {
+            justify-content: flex-end !important;
+            padding-top: 44px !important;
+            padding-bottom: 44px !important;
+            padding-right: clamp(10px, 3.5vw, 20px) !important;
+            padding-left: clamp(26vw, 32vw, 200px) !important;
+          }
+          /* CHARACTER SHEETS flagship — copy stays left; solid surface on left, sheet on right */
+          .landing-platform-sheet-fade {
+            background: linear-gradient(to right, ${T.surface} 0%, ${T.surface}ee 26%, ${T.surface}dd 38%, ${T.surface}bb 48%, ${T.surface}99 56%, transparent 78%, transparent 100%) !important;
+          }
+          .landing-platform-sheet-copy {
+            padding-top: 32px !important;
+            padding-bottom: 32px !important;
+            padding-left: clamp(10px, 3.5vw, 20px) !important;
+            padding-right: clamp(26vw, 32vw, 200px) !important;
+            max-width: min(440px, 100%) !important;
           }
         }
         @media (max-width: 960px) {
@@ -431,6 +456,43 @@ export default function Landing() {
           .landing-hero-inner .landing-early-access-card {
             justify-self: start;
             max-width: 420px;
+          }
+        }
+        /* AbsentCard — poster dim + overlay only when real hover is available (desktop mouse) */
+        .absent-card {
+          position: relative;
+        }
+        .absent-card-poster {
+          width: 100%;
+          display: block;
+          transition: opacity 0.35s ease;
+        }
+        .absent-card-hover-overlay {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          opacity: 0;
+          transition: opacity 0.35s ease;
+          pointer-events: none;
+          background: ${T.bg}33;
+        }
+        .absent-card-hover-overlay p {
+          font-family: 'EB Garamond', serif;
+          font-size: clamp(13px, 1.1vw, 16px);
+          color: ${T.text};
+          line-height: 1.75;
+          text-align: center;
+          margin: 0;
+        }
+        @media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+          .absent-card:hover .absent-card-poster {
+            opacity: 0.2;
+          }
+          .absent-card:hover .absent-card-hover-overlay {
+            opacity: 1;
           }
         }
         @media (hover: none), (max-width: 768px) {
@@ -504,8 +566,9 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════════════════════════════
           WHAT IS VELION MYTHERA
       ══════════════════════════════════════════════════════════════════════ */}
-      <section style={{ position: 'relative', minHeight: '680px', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+      <section className="landing-what-is" style={{ position: 'relative', minHeight: '680px', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
         <ArtworkSlot
+          className="landing-what-is-slot"
           src="/about_what-is-velion.png"
           intent="Hulky mage in star-covered robes — calm, composed, impossible build. Purple robes, dark background."
           atmosphere={`radial-gradient(ellipse at 30% 50%, #1a0c2a 0%, #0e0818 45%, ${T.bg} 100%)`}
@@ -513,13 +576,16 @@ export default function Landing() {
           imageOpacity={1}
           style={{ position: 'absolute', inset: 0, borderRadius: 0 }}
         />
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: `linear-gradient(to right, transparent 0%, transparent 35%, ${T.bg}cc 55%, ${T.bg} 75%)`,
-          pointerEvents: 'none',
-        }} />
-        <div style={{ position: 'relative', zIndex: 1, width: '100%', display: 'flex', justifyContent: 'flex-end', padding: '0 120px 0 0' }}>
-          <div style={{ maxWidth: '500px' }}>
+        <div
+          className="landing-what-is-fade"
+          style={{
+            position: 'absolute', inset: 0,
+            background: `linear-gradient(to right, transparent 0%, transparent 35%, ${T.bg}cc 55%, ${T.bg} 75%)`,
+            pointerEvents: 'none',
+          }}
+        />
+        <div className="landing-what-is-copy" style={{ position: 'relative', zIndex: 1, width: '100%', display: 'flex', justifyContent: 'flex-end', padding: '0 120px 0 0' }}>
+          <div className="landing-what-is-copy-inner" style={{ maxWidth: '500px' }}>
             <SectionLabel>WHAT IS VELION MYTHERA</SectionLabel>
             <Rule />
             <SectionHead>Not a Reskin.<br />A New System.</SectionHead>
@@ -571,9 +637,10 @@ export default function Landing() {
           Replace atmosphere with src="/about_rp-economy.png" when ready.
           Intent: two figures in combat — high contrast, motion blur, tension.
       ══════════════════════════════════════════════════════════════════════ */}
-      <section style={{ position: 'relative', minHeight: '680px', display: 'flex', alignItems: 'center', overflow: 'hidden', background: T.surface }}>
+      <section className="landing-rp-economy" style={{ position: 'relative', minHeight: '680px', display: 'flex', alignItems: 'center', overflow: 'hidden', background: T.surface }}>
         {/* Full-bleed artwork */}
         <ArtworkSlot
+          className="landing-rp-economy-slot"
           src="/about_rp_economy.png"
           intent="Two figures in combat — high contrast, motion blur, physical tension. Combat image that backs the pull quote."
           atmosphere={`radial-gradient(ellipse at 70% 50%, #1a0808 0%, #0e0606 45%, ${T.surface} 100%)`}
@@ -581,14 +648,17 @@ export default function Landing() {
           style={{ position: 'absolute', inset: 0, borderRadius: 0 }}
         />
         {/* Right-to-left gradient — image lives right, text lives left */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: `linear-gradient(to left, transparent 0%, transparent 35%, ${T.surface}cc 55%, ${T.surface} 75%)`,
-          pointerEvents: 'none',
-        }} />
+        <div
+          className="landing-rp-economy-fade"
+          style={{
+            position: 'absolute', inset: 0,
+            background: `linear-gradient(to left, transparent 0%, transparent 35%, ${T.surface}cc 55%, ${T.surface} 75%)`,
+            pointerEvents: 'none',
+          }}
+        />
         {/* Copy anchored to the left */}
-        <div style={{ position: 'relative', zIndex: 1, width: '100%', display: 'flex', justifyContent: 'flex-start', padding: '0 0 0 120px' }}>
-          <div style={{ maxWidth: '500px' }}>
+        <div className="landing-rp-economy-copy" style={{ position: 'relative', zIndex: 1, width: '100%', display: 'flex', justifyContent: 'flex-start', padding: '0 0 0 120px' }}>
+          <div className="landing-rp-economy-copy-inner" style={{ maxWidth: '500px' }}>
             <SectionLabel>THE RESOURCE POINT ECONOMY</SectionLabel>
             <Rule />
             <div style={{
@@ -613,14 +683,14 @@ export default function Landing() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          BUILT FOR THE TABLE — full-bleed artwork, characters right, text left
-          Image fades right-to-left. Characters anchor right, copy sits left.
+          BUILT FOR THE TABLE — full-bleed artwork, characters right, copy right
+          Image fades left-to-right into T.bg so copy sits in clean space on the right.
           objectPosition shifts focus toward the characters, cropping the owl.
           Replace atmosphere with src="/about_built-for-table.png" when ready.
       ══════════════════════════════════════════════════════════════════════ */}
-      <section style={{ position: 'relative', minHeight: '680px', display: 'flex', alignItems: 'center', overflow: 'hidden', background: T.bg }}>
+      <section className="landing-built-for-table" style={{ position: 'relative', minHeight: '680px', display: 'flex', alignItems: 'center', overflow: 'hidden', background: T.bg }}>
         {/* Full-bleed artwork — objectPosition pushes focus right, crops owl */}
-        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+        <div className="landing-built-for-slot" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
           <img
             src="/about_built-for-table.png"
             alt="A diverse party of fantasy characters laughing around a candlelit table covered in maps and dice."
@@ -632,14 +702,17 @@ export default function Landing() {
           />
         </div>
         {/* Left-to-right gradient — image lives left, text lives right */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: `linear-gradient(to right, transparent 0%, transparent 30%, ${T.bg}cc 52%, ${T.bg} 70%)`,
-          pointerEvents: 'none',
-        }} />
+        <div
+          className="landing-built-for-fade"
+          style={{
+            position: 'absolute', inset: 0,
+            background: `linear-gradient(to right, transparent 0%, transparent 30%, ${T.bg}cc 52%, ${T.bg} 70%)`,
+            pointerEvents: 'none',
+          }}
+        />
         {/* Copy anchored to the right */}
-        <div style={{ position: 'relative', zIndex: 1, width: '100%', display: 'flex', justifyContent: 'flex-end', padding: '0 120px 0 0' }}>
-          <div style={{ maxWidth: '500px' }}>
+        <div className="landing-built-for-copy" style={{ position: 'relative', zIndex: 1, width: '100%', display: 'flex', justifyContent: 'flex-end', padding: '0 120px 0 0' }}>
+          <div className="landing-built-for-copy-inner" style={{ maxWidth: '500px' }}>
             <SectionLabel>BUILT FOR THE TABLE</SectionLabel>
             <Rule />
             <SectionHead>Less Overhead.<br />More Story.</SectionHead>
@@ -686,7 +759,7 @@ export default function Landing() {
             100% { transform: translateY(-84%); }
           }
         `}</style>
-        <div style={{ position: 'relative', height: '560px', overflow: 'hidden', marginBottom: '2px' }}>
+        <div className="landing-platform-sheet" style={{ position: 'relative', height: '560px', overflow: 'hidden', marginBottom: '2px' }}>
           {/* Panning screenshot */}
           <img
             src="/about_platform-hero.png"
@@ -697,16 +770,22 @@ export default function Landing() {
             }}
           />
           {/* Deep fade on left so copy sits cleanly, sheet lives on the right */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: `linear-gradient(to right, ${T.surface} 0%, ${T.surface}ee 30%, ${T.surface}88 60%, transparent 70%)`,
-          }} />
+          <div
+            className="landing-platform-sheet-fade"
+            style={{
+              position: 'absolute', inset: 0,
+              background: `linear-gradient(to right, ${T.surface} 0%, ${T.surface}ee 30%, ${T.surface}88 60%, transparent 70%)`,
+            }}
+          />
           {/* Copy over the left side */}
-          <div style={{
-            position: 'absolute', top: 0, bottom: 0, left: 0,
-            display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            padding: '0 0 0 120px', maxWidth: '440px',
-          }}>
+          <div
+            className="landing-platform-sheet-copy"
+            style={{
+              position: 'absolute', top: 0, bottom: 0, left: 0,
+              display: 'flex', flexDirection: 'column', justifyContent: 'center',
+              padding: '0 0 0 120px', maxWidth: '440px',
+            }}
+          >
             <SectionLabel>CHARACTER SHEETS</SectionLabel>
             <Rule />
             <SectionHead>Built for<br />the System.</SectionHead>
