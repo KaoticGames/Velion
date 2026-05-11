@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db }                        from '../db';
 import { earlyAccessSignups }        from '../db/schema';
-import { eq }                        from 'drizzle-orm';
+import { count }                     from 'drizzle-orm';
 
 const router = Router();
 
@@ -39,8 +39,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 // Public — returns total signup count for social proof on landing page
 router.get('/count', async (_req: Request, res: Response): Promise<void> => {
   try {
-    const rows = await db.select({ id: earlyAccessSignups.id }).from(earlyAccessSignups);
-    res.json({ count: rows.length });
+    const [row] = await db.select({ n: count() }).from(earlyAccessSignups);
+    res.json({ count: Number(row?.n ?? 0) });
   } catch {
     res.json({ count: 0 });
   }

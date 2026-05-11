@@ -45,7 +45,7 @@ export default function Characters() {
             </span>
           )}
           <Link
-            to={atCharLimit ? '/account/subscription' : '/characters/new'}
+            to={atCharLimit ? '/account' : '/characters/new'}
             style={{
               fontFamily:     "'Cinzel', serif",
               fontSize: '14px',

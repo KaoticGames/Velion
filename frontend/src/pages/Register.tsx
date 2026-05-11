@@ -31,7 +31,7 @@ export default function Register() {
         } else {
           await refreshSession();
         }
-        navigate('/characters', { replace: true });
+        navigate('/home', { replace: true });
       } catch (err) {
         setError(extractApiError(err).message);
       } finally {
@@ -49,7 +49,7 @@ export default function Register() {
     setLoading(true);
     try {
       await register(email, password, displayName);
-      navigate('/characters', { replace: true });
+      navigate('/home', { replace: true });
     } catch (err) {
       setError(extractApiError(err).message);
     } finally {

@@ -61,6 +61,18 @@ html, body, #root {
   width: 100%;
 }
 
+/* One vertical scroll: app content scrolls inside <main>, not the document */
+html, body {
+  overflow: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 body {
   background-color: var(--bg);
   color: var(--text);

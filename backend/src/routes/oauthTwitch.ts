@@ -223,6 +223,6 @@ export function attachTwitchOAuthRoutes(router: Router): void {
       return;
     }
 
-    res.redirect(`${frontendOrigin}/characters`);
+    res.redirect(`${frontendOrigin}/home`);
   });
 }

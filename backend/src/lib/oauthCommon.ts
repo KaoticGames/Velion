@@ -32,6 +32,8 @@ export const userPublic = (u: typeof users.$inferSelect) => ({
   email:             u.email,
   display_name:      u.display_name,
   avatar_url:        u.avatar_url,
+  bio:               u.bio,
+  social_handle:     u.social_handle,
   subscription_tier: u.subscription_tier,
   beta_access:       u.beta_access,
 });

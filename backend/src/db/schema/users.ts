@@ -7,6 +7,10 @@ export const users = pgTable('users', {
   password_hash:     text('password_hash'),
   display_name:      text('display_name').notNull(),
   avatar_url:        text('avatar_url'),
+  /** Public profile / directory (optional). */
+  bio:               text('bio'),
+  /** Single social handle (e.g. @name or URL fragment), optional. */
+  social_handle:     text('social_handle'),
   subscription_tier: text('subscription_tier').notNull().default('free'),
   /** When BETA_GATE_ENABLED, must be true to log in / refresh (set manually or true on successful gated register). */
   beta_access:       boolean('beta_access').notNull().default(true),

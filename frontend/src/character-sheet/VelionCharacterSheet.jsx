@@ -1678,7 +1678,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* ══ TITLE ════════════════════════════════════════════════════════ */}
       <div style={{textAlign:'center',marginBottom:'14px',paddingBottom:'14px',borderBottom:`1px solid ${T.border}`}}>
         <img
-          src="/velion_wordmark.png"
+          src="/start freemark.png"
           alt="Velion Mythera"
           style={{display:'block',height:'50px',width:'auto',margin:'0 auto 4px'}}
         />

@@ -210,6 +210,6 @@ export function attachGoogleOAuthRoutes(router: Router): void {
       return;
     }
 
-    res.redirect(`${frontendOrigin}/characters`);
+    res.redirect(`${frontendOrigin}/home`);
   });
 }

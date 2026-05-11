@@ -26,8 +26,8 @@ router.post('/checkout', requireAuth, async (req: Request, res: Response): Promi
   const url = await createCheckoutSession(
     customerId,
     price_id,
-    `${FRONTEND}/account/subscription?success=true`,
-    `${FRONTEND}/account/subscription?canceled=true`,
+    `${FRONTEND}/account?checkout=success`,
+    `${FRONTEND}/account?checkout=canceled`,
   );
 
   res.json({ checkout_url: url });
@@ -40,7 +40,7 @@ router.post('/portal', requireAuth, async (req: Request, res: Response): Promise
     res.status(400).json({ error: { code: 'NO_STRIPE_CUSTOMER', message: 'No billing account found.', status: 400 } });
     return;
   }
-  const url = await createPortalSession(user.stripe_customer_id, `${FRONTEND}/account/subscription`);
+  const url = await createPortalSession(user.stripe_customer_id, `${FRONTEND}/account`);
   res.json({ portal_url: url });
 });
 

@@ -21,6 +21,8 @@ export interface AuthUser {
   email:             string;
   display_name:      string;
   avatar_url:        string | null;
+  bio?:              string | null;
+  social_handle?:    string | null;
   subscription_tier: SubscriptionTier;
   /** From API; when beta gate is on, server requires this to be true to log in / refresh. */
   beta_access?:      boolean;

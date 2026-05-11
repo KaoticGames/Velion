@@ -31,17 +31,19 @@ function AuthGate() {
   }, [hydrate, mockAuth]);
 
   return (
-    <>
+    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
       <RouterProvider router={router} />
       <GlobalDiceOverlay />
-    </>
+    </div>
   );
 }
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthGate />
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <AuthGate />
+      </div>
     </QueryClientProvider>
   );
 }

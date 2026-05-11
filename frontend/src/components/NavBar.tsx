@@ -42,7 +42,7 @@ export default function NavBar() {
       flexShrink:    0,
     }}>
       {/* Logo */}
-      <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+      <Link to={user ? '/home' : '/'} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
         <img
           src="/velion_wordmark.png"
           alt="Velion Mythera"
@@ -50,19 +50,26 @@ export default function NavBar() {
         />
       </Link>
 
-      {/* Nav links — only shown when authenticated or mock mode */}
-      {(user || mockAuth) && (
-        <div style={{ display: 'flex', gap: '28px', alignItems: 'center' }}>
-          <NavLink to="/characters" style={navLinkStyle}>CHARACTERS</NavLink>
-          <NavLink to="/campaigns"  style={navLinkStyle}>CAMPAIGNS</NavLink>
-          <NavLink to="/library/weapons" style={navLinkStyle}>LIBRARY</NavLink>
-          <NavLink to="/homebrew"   style={navLinkStyle}>WORKSHOP</NavLink>
-          <NavLink to="/compendium" style={navLinkStyle}>COMPENDIUM</NavLink>
-        </div>
-      )}
+      {/* Center nav when signed in */}
+      <div style={{
+        display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center',
+        gap: '28px', flexWrap: 'wrap', minWidth: 0,
+      }}>
+        {user && <NavLink to="/home" end style={navLinkStyle}>HOME</NavLink>}
+        {user && (
+          <>
+            <NavLink to="/account" style={navLinkStyle}>ACCOUNT</NavLink>
+            <NavLink to="/characters" style={navLinkStyle}>CHARACTERS</NavLink>
+            <NavLink to="/campaigns" style={navLinkStyle}>CAMPAIGNS</NavLink>
+            <NavLink to="/library/weapons" style={navLinkStyle}>LIBRARY</NavLink>
+            <NavLink to="/homebrew" style={navLinkStyle}>WORKSHOP</NavLink>
+            <NavLink to="/compendium" style={navLinkStyle}>COMPENDIUM</NavLink>
+          </>
+        )}
+      </div>
 
       {/* Right side */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
         {!user && (
           <Link to="/login" style={{
             fontFamily:     "'Cinzel', serif",

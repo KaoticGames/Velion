@@ -3,16 +3,19 @@ import bcrypt                          from 'bcrypt';
 import { eq, and, isNull, gt }         from 'drizzle-orm';
 import { v4 as uuidv4 }               from 'uuid';
 import { db }                          from '../db';
-import { users, refreshTokens, earlyAccessSignups } from '../db/schema';
+import { users, refreshTokens, earlyAccessSignups, oauthAccounts } from '../db/schema';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../lib/jwt';
 import {
   refreshCookieClearOptions,
   setRefreshTokenCookie,
 } from '../lib/refreshCookie';
 import { requireAuth }                 from '../middleware/auth';
+import { getPresignedUploadUrl, getPublicUrl, userAvatarKey } from '../lib/r2';
 import { attachGoogleOAuthRoutes }     from './oauthGoogle';
 import { attachTwitchOAuthRoutes }     from './oauthTwitch';
 import { attachDiscordOAuthRoutes }    from './oauthDiscord';
+
+const AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
 
 const router = Router();
 const BCRYPT_ROUNDS = 12;
@@ -26,6 +29,8 @@ const userPublic = (u: typeof users.$inferSelect) => ({
   email:             u.email,
   display_name:      u.display_name,
   avatar_url:        u.avatar_url,
+  bio:               u.bio,
+  social_handle:     u.social_handle,
   subscription_tier: u.subscription_tier,
   beta_access:       u.beta_access,
 });
@@ -259,7 +264,7 @@ router.patch('/password', requireAuth, async (req: Request, res: Response): Prom
     res.status(422).json({
       error: {
         code:    'NO_PASSWORD_SET',
-        message: 'This account uses social sign-in. Use Google or Twitch to manage access, or contact support to add a password.',
+        message: 'This account uses social sign-in. Link a password below, or manage access through your linked provider.',
         status:  422,
       },
     });
@@ -277,6 +282,227 @@ router.patch('/password', requireAuth, async (req: Request, res: Response): Prom
   await db.update(refreshTokens).set({ revoked_at: new Date() }).where(eq(refreshTokens.user_id, userId));
 
   res.clearCookie('refresh_token', refreshCookieClearOptions());
+  res.json({ success: true });
+});
+
+// ── GET /auth/account ─────────────────────────────────────────────────────
+router.get('/account', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.user_id;
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: { code: 'USER_NOT_FOUND', message: 'Account not found.', status: 404 } });
+    return;
+  }
+  const links = await db
+    .select({ provider: oauthAccounts.provider })
+    .from(oauthAccounts)
+    .where(eq(oauthAccounts.user_id, userId));
+  const oauth_providers = [...new Set(links.map((r) => r.provider))].sort();
+  res.json({
+    user:            userPublic(user),
+    has_password:    Boolean(user.password_hash),
+    oauth_providers: oauth_providers,
+  });
+});
+
+// ── POST /auth/avatar/upload-url ──────────────────────────────────────────
+router.post('/avatar/upload-url', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.user_id;
+  const { filename, content_type } = req.body as { filename?: string; content_type?: string };
+  const ct = content_type === 'image/jpg' ? 'image/jpeg' : content_type;
+  if (!filename?.trim() || !ct || !AVATAR_TYPES.includes(ct as (typeof AVATAR_TYPES)[number])) {
+    res.status(422).json({
+      error: { code: 'INVALID_FILE_TYPE', message: 'filename and a valid image type (PNG, JPEG, WEBP) are required.', status: 422 },
+    });
+    return;
+  }
+  try {
+    const ext   = filename.split('.').pop() ?? 'jpg';
+    const key   = userAvatarKey(userId, `${uuidv4()}.${ext}`);
+    const upload_url = await getPresignedUploadUrl(key, ct);
+    const public_url = getPublicUrl(key);
+    res.json({ upload_url, public_url, key });
+  } catch (e) {
+    console.error('[auth/avatar/upload-url]', e);
+    res.status(503).json({
+      error: { code: 'STORAGE_UNAVAILABLE', message: 'File storage is not configured or unavailable.', status: 503 },
+    });
+  }
+});
+
+// ── PATCH /auth/profile ───────────────────────────────────────────────────
+router.patch('/profile', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.user_id;
+  const body = req.body as Partial<{
+    display_name:   string;
+    bio:            string | null;
+    social_handle:  string | null;
+    avatar_url:     string | null;
+  }>;
+
+  const patch: {
+    display_name?:   string;
+    bio?:            string | null;
+    social_handle?:  string | null;
+    avatar_url?:     string | null;
+  } = {};
+
+  if (body.display_name !== undefined) {
+    const name = typeof body.display_name === 'string' ? body.display_name.trim() : '';
+    if (!name || name.length > 120) {
+      res.status(422).json({
+        error: { code: 'INVALID_DISPLAY_NAME', message: 'Display name must be 1–120 characters.', status: 422 },
+      });
+      return;
+    }
+    patch.display_name = name;
+  }
+
+  if (body.bio !== undefined) {
+    if (body.bio === null) {
+      patch.bio = null;
+    } else if (typeof body.bio === 'string') {
+      const t = body.bio.trim();
+      patch.bio = t.length ? t.slice(0, 2000) : null;
+    } else {
+      res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'bio must be a string or null.', status: 422 } });
+      return;
+    }
+  }
+
+  if (body.social_handle !== undefined) {
+    if (body.social_handle === null) {
+      patch.social_handle = null;
+    } else if (typeof body.social_handle === 'string') {
+      const t = body.social_handle.trim();
+      patch.social_handle = t.length ? t.slice(0, 80) : null;
+    } else {
+      res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'social_handle must be a string or null.', status: 422 } });
+      return;
+    }
+  }
+
+  if (body.avatar_url !== undefined) {
+    if (body.avatar_url === null) {
+      patch.avatar_url = null;
+    } else if (typeof body.avatar_url === 'string') {
+      const u = body.avatar_url.trim();
+      if (!u) {
+        patch.avatar_url = null;
+      } else if (u.length > 512 || (!u.startsWith('https://') && !u.startsWith('http://'))) {
+        res.status(422).json({
+          error: { code: 'INVALID_AVATAR_URL', message: 'Avatar URL must be an http(s) URL.', status: 422 },
+        });
+        return;
+      } else {
+        patch.avatar_url = u;
+      }
+    } else {
+      res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'avatar_url must be a string or null.', status: 422 } });
+      return;
+    }
+  }
+
+  if (Object.keys(patch).length === 0) {
+    res.status(422).json({
+      error: { code: 'NO_FIELDS', message: 'Provide at least one of: display_name, bio, social_handle, avatar_url.', status: 422 },
+    });
+    return;
+  }
+
+  const [updated] = await db.update(users).set(patch).where(eq(users.id, userId)).returning();
+  if (!updated) {
+    res.status(404).json({ error: { code: 'USER_NOT_FOUND', message: 'Account not found.', status: 404 } });
+    return;
+  }
+  res.json({ user: userPublic(updated) });
+});
+
+const emailLooksValid = (raw: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw);
+
+// ── PATCH /auth/email ─────────────────────────────────────────────────────
+router.patch('/email', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.user_id;
+  const { new_email, current_password } = req.body as { new_email?: string; current_password?: string };
+
+  const next = typeof new_email === 'string' ? new_email.trim().toLowerCase() : '';
+  if (!next || !emailLooksValid(next)) {
+    res.status(422).json({ error: { code: 'INVALID_EMAIL', message: 'A valid new email is required.', status: 422 } });
+    return;
+  }
+
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: { code: 'USER_NOT_FOUND', message: 'Account not found.', status: 404 } });
+    return;
+  }
+
+  if (!user.password_hash) {
+    res.status(422).json({
+      error: {
+        code:    'PASSWORD_REQUIRED_FOR_EMAIL',
+        message: 'Add a password to this account before changing email, or contact support.',
+        status:  422,
+      },
+    });
+    return;
+  }
+
+  const valid = await bcrypt.compare(current_password ?? '', user.password_hash);
+  if (!valid) {
+    res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Current password is incorrect.', status: 401 } });
+    return;
+  }
+
+  if (next === user.email.toLowerCase()) {
+    res.status(422).json({ error: { code: 'SAME_EMAIL', message: 'That is already your email address.', status: 422 } });
+    return;
+  }
+
+  const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.email, next)).limit(1);
+  if (taken) {
+    res.status(422).json({ error: { code: 'EMAIL_TAKEN', message: 'Another account already uses this email.', status: 422 } });
+    return;
+  }
+
+  const [updated] = await db.update(users).set({ email: next }).where(eq(users.id, userId)).returning();
+  if (!updated) {
+    res.status(404).json({ error: { code: 'USER_NOT_FOUND', message: 'Account not found.', status: 404 } });
+    return;
+  }
+
+  res.json({ user: userPublic(updated) });
+});
+
+// ── POST /auth/password/create ──────────────────────────────────────────────
+/** For OAuth-only accounts: set an email/password login without revoking the current session. */
+router.post('/password/create', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const { new_password } = req.body as { new_password: string };
+  const userId = req.user!.user_id;
+
+  if (!new_password || new_password.length < 8) {
+    res.status(422).json({ error: { code: 'PASSWORD_TOO_SHORT', message: 'Password must be at least 8 characters.', status: 422 } });
+    return;
+  }
+
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: { code: 'USER_NOT_FOUND', message: 'Account not found.', status: 404 } });
+    return;
+  }
+  if (user.password_hash) {
+    res.status(422).json({
+      error: {
+        code:    'PASSWORD_ALREADY_SET',
+        message: 'This account already has a password. Use “Change password” instead.',
+        status:  422,
+      },
+    });
+    return;
+  }
+
+  const new_hash = await bcrypt.hash(new_password, BCRYPT_ROUNDS);
+  await db.update(users).set({ password_hash: new_hash }).where(eq(users.id, userId));
   res.json({ success: true });
 });
 

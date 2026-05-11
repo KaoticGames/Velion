@@ -220,7 +220,7 @@ export function attachDiscordOAuthRoutes(router: Router): void {
       return;
     }
 
-    res.redirect(`${frontendOrigin}/characters`);
+    res.redirect(`${frontendOrigin}/home`);
   });
 }
 

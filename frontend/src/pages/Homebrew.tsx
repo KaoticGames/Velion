@@ -712,7 +712,7 @@ function TabContent({
             <div style={{ fontFamily: "'Cinzel', serif", fontSize: '14px', color: T.gold, letterSpacing: '0.14em', marginBottom: '4px' }}>PLAYER OR DM SUBSCRIPTION REQUIRED</div>
             <div style={{ fontSize: '16px', color: T.textMuted }}>Homebrew creation requires a paid plan. Browsing public homebrew is always free.</div>
           </div>
-          <Link to="/account/subscription" style={{ ...Btn(T.gold, `${T.gold}15`), textDecoration: 'none', padding: '8px 18px', whiteSpace: 'nowrap' }}>UPGRADE</Link>
+          <Link to="/account" style={{ ...Btn(T.gold, `${T.gold}15`), textDecoration: 'none', padding: '8px 18px', whiteSpace: 'nowrap' }}>UPGRADE</Link>
         </div>
       )}
 

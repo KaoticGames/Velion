@@ -63,5 +63,8 @@ export const tokenArtworkKey  = (entityId: string, filename: string) =>
 export const portraitKey      = (characterId: string, filename: string) =>
   `portraits/${characterId}/${filename}`;
 
+export const userAvatarKey    = (userId: string, filename: string) =>
+  `avatars/${userId}/${filename}`;
+
 export const campaignAssetKey = (campaignId: string, assetId: string, filename: string) =>
   `campaign-assets/${campaignId}/${assetId}/${filename}`;

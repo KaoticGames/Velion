@@ -19,7 +19,7 @@ export default function Login() {
   const { login, refreshSession, bootstrapSession } = useAuthStore();
   const navigate  = useNavigate();
   const location  = useLocation();
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/characters';
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/home';
 
   useGoogleOAuthCompletion(
     async (msg) => {

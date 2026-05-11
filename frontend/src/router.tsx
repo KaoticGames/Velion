@@ -1,11 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import Layout          from '@/components/Layout';
 import ProtectedRoute  from '@/components/ProtectedRoute';
-import Landing         from '@/pages/Landing';
-import LandingLive     from '@/pages/Landing-live';
-
-const betaGate = import.meta.env.VITE_BETA_GATE_ENABLED !== 'false';
-const LandingPage = betaGate ? Landing : LandingLive;
 import Login           from '@/pages/Login';
 import Register        from '@/pages/Register';
 import Characters      from '@/pages/Characters';
@@ -18,6 +13,10 @@ import JoinCampaign from '@/pages/JoinCampaign';
 import Library from '@/pages/Library';
 import Compendium from '@/pages/Compendium';
 import Homebrew from '@/pages/Homebrew';
+import HomeAuthenticated from '@/pages/HomeAuthenticated';
+import Account from '@/pages/Account';
+import IndexGate from '@/pages/IndexGate';
+import About from '@/pages/About';
 import VTT from '@/vtt/VTT';
 
 export const router = createBrowserRouter([
@@ -32,9 +31,20 @@ export const router = createBrowserRouter([
     children: [
 
       // ── Public ────────────────────────────────────────────────────────
-      { index:   true,            element: <LandingPage /> },
+      { index:   true,            element: <IndexGate /> },
       { path:    'login',         element: <Login /> },
       { path:    'register',      element: <Register /> },
+      { path:    'about',         element: <About /> },
+
+      // ── Protected: logged-in home (hub) ────────────────────────────────
+      {
+        path:    'home',
+        element: <ProtectedRoute><HomeAuthenticated /></ProtectedRoute>,
+      },
+      {
+        path:    'account',
+        element: <ProtectedRoute><Account /></ProtectedRoute>,
+      },
 
       // ── Protected: character routes ────────────────────────────────────
       {
