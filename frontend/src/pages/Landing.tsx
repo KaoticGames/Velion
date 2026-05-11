@@ -390,7 +390,7 @@ export default function Landing() {
         }
         @media (min-width: 961px) {
           .landing-hero-inner .landing-early-access-card {
-            margin-left: clamp(20px, 3.5vw, 64px);
+            margin-left: clamp(200px, 3.5vw, 64px);
           }
         }
         /* WHAT IS VELION MYTHERA — narrow viewports: keep copy on the right over the fade, not on the art */
