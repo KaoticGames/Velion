@@ -42,7 +42,7 @@ const T = {
 };
 
 // ── Props ──────────────────────────────────────────────────────────────────
-interface Props {
+export interface MapCanvasProps {
   map:             VTTMap;
   tokens:          MapToken[];
   enemyInstances:  EnemyInstance[];
@@ -117,10 +117,18 @@ const imgCache = new Map<string, HTMLImageElement>();
 function loadImage(src: string): Promise<HTMLImageElement> {
   if (imgCache.has(src)) return Promise.resolve(imgCache.get(src)!);
   return new Promise((res, rej) => {
+    const shouldCache = !src.startsWith('blob:');
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload  = () => { imgCache.set(src, img); res(img); };
-    img.onerror = rej;
+    img.onload  = () => { if (shouldCache) imgCache.set(src, img); res(img); };
+    img.onerror = () => {
+      // Public R2 domains can lack CORS in production. The current 2D canvas only
+      // needs to display these images, so fall back to an opaque image load.
+      const fallback = new Image();
+      fallback.onload = () => { if (shouldCache) imgCache.set(src, fallback); res(fallback); };
+      fallback.onerror = rej;
+      fallback.src = src;
+    };
     img.src = src;
   });
 }
@@ -154,7 +162,7 @@ const miniInputSt: React.CSSProperties = {
 };
 
 // ── Component ──────────────────────────────────────────────────────────────
-export default function MapCanvas(props: Props) {
+export default function MapCanvas(props: MapCanvasProps) {
   const {
     map, tokens, enemyInstances, fogSections, activeFogLayerId, fogBrushMode, shapes, rulers,
     isDM, activeTool, toolColor, fogBrushSize, fogBrushShape,
@@ -198,12 +206,41 @@ export default function MapCanvas(props: Props) {
 
   const mapImgRef  = useRef<HTMLImageElement | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapLoadError, setMapLoadError] = useState('');
+  const mapObjectUrlRef = useRef<string | null>(null);
 
   // Per-section offscreen canvases keyed by section id
   const layerCanvases = useRef<Map<string, HTMLCanvasElement>>(new Map());
 
   useEffect(() => {
-    loadImage(map.image_url).then(img => {
+    let cancelled = false;
+    mapImgRef.current = null;
+    setMapLoaded(false);
+    setMapLoadError('');
+    if (mapObjectUrlRef.current) {
+      URL.revokeObjectURL(mapObjectUrlRef.current);
+      mapObjectUrlRef.current = null;
+    }
+
+    const load = async () => {
+      let src = map.image_url;
+      try {
+        const { data } = await api.get<Blob>(`/vtt/campaigns/${map.campaign_id}/maps/${map.id}/image`, {
+          responseType: 'blob',
+        });
+        const objectUrl = URL.createObjectURL(data);
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+          return;
+        }
+        mapObjectUrlRef.current = objectUrl;
+        src = objectUrl;
+      } catch {
+        // Fall back to the stored URL for older deployments or non-R2 map rows.
+      }
+
+      const img = await loadImage(src);
+      if (cancelled) return;
       mapImgRef.current = img;
       setMapLoaded(true);
       const c = containerRef.current;
@@ -215,8 +252,22 @@ export default function MapCanvas(props: Props) {
       }
       // Clear per-section canvases on map change
       layerCanvases.current.clear();
-    }).catch(console.error);
-  }, [map.image_url]);
+    };
+
+    load().catch((err) => {
+      if (cancelled) return;
+      console.error('[vtt] map image load failed:', err);
+      setMapLoadError('Map image failed to load. Check the storage URL or R2/CORS configuration.');
+    });
+
+    return () => {
+      cancelled = true;
+      if (mapObjectUrlRef.current) {
+        URL.revokeObjectURL(mapObjectUrlRef.current);
+        mapObjectUrlRef.current = null;
+      }
+    };
+  }, [map.campaign_id, map.id, map.image_url]);
 
   // Tracks which image_data string is currently loaded into each layer canvas.
   // We only reload the canvas when image_data actually changes — NOT on is_hidden toggling.
@@ -938,6 +989,17 @@ export default function MapCanvas(props: Props) {
         onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp}
         onWheel={onWheel} onMouseLeave={onMouseLeave} onContextMenu={e => e.preventDefault()}
       />
+
+      {mapLoadError && (
+        <div style={{
+          position:'absolute', left:'50%', top:'18px', transform:'translateX(-50%)',
+          maxWidth:'520px', padding:'10px 14px', borderRadius:'4px',
+          background:T.card, border:`1px solid ${T.hp}66`, color:T.hp,
+          fontSize:'14px', zIndex:35, boxShadow:'0 8px 24px rgba(0,0,0,0.35)',
+        }}>
+          {mapLoadError}
+        </div>
+      )}
 
       {/* Shape action bar */}
       {selShape && delBtnPos && !transforming.current && (

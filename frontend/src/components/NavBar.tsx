@@ -57,7 +57,6 @@ export default function NavBar() {
         gap: '28px', flexWrap: 'wrap', minWidth: 0, overflow: 'visible',
       }}>
         {user && <NavLink to="/home" end style={navLinkStyle}>HOME</NavLink>}
-        <NavLink to="/pricing" style={navLinkStyle}>PRICING</NavLink>
         {user && (
           <>
             <NavLink to="/characters" style={navLinkStyle}>CHARACTERS</NavLink>

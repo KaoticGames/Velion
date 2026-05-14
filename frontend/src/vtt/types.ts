@@ -132,6 +132,10 @@ export interface DiceResult {
   roll_id?: string;
   /** Ephemeral: echoed from `authority: 'server'` rolls for sheet / VTT UI (not stored in DB). */
   request_meta?: unknown;
+  /** Ephemeral: backend timestamp for synchronizing remote roll visuals. */
+  server_started_at?: string;
+  /** Ephemeral: backend timestamp for final roll result broadcast. */
+  server_result_at?: string;
 }
 
 export interface VTTRollRequestMeta {

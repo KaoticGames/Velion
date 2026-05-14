@@ -11,6 +11,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import { Readable } from 'stream';
 import { eq, and, isNull, sql }           from 'drizzle-orm';
 import { db }                        from '../db';
 import {
@@ -24,6 +25,28 @@ const router = Router();
 router.use(requireAuth);
 
 const param = (p: string | string[]): string => Array.isArray(p) ? p[0] : p;
+
+const parseR2Key = (rawUrl: string | undefined): string | null => {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('r2://')) {
+    const key = trimmed.slice('r2://'.length);
+    return key || null;
+  }
+  try {
+    const u = new URL(trimmed);
+    let path = u.pathname.startsWith('/') ? u.pathname.slice(1) : u.pathname;
+    if (!path) return null;
+    const bucket = process.env.R2_BUCKET_NAME;
+    if (bucket && path.startsWith(`${bucket}/`)) {
+      path = path.slice(bucket.length + 1);
+    }
+    return path || null;
+  } catch {
+    return null;
+  }
+};
 
 const isJsonColumnInputError = (err: unknown): boolean => {
   const code = (err as { code?: string } | null)?.code;
@@ -239,14 +262,64 @@ router.post('/campaigns/:campaignId/maps', requireDM, async (req: Request, res: 
   if (!campaign) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Campaign not found.', status: 404 } }); return; }
   if (campaign.dm_user_id !== userId) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Not your campaign.', status: 403 } }); return; }
 
-  const { name, image_url, grid_cell_size = 70, width_cells = 20, height_cells = 20 } = req.body as {
+  const { name, image_url, grid_cell_size = 70, width_cells = 20, height_cells = 20, feet_per_cell = 5 } = req.body as {
     name: string; image_url: string;
-    grid_cell_size?: number; width_cells?: number; height_cells?: number;
+    grid_cell_size?: number; width_cells?: number; height_cells?: number; feet_per_cell?: number;
   };
   if (!name || !image_url) { res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'name and image_url required.', status: 422 } }); return; }
 
-  const [map] = await db.insert(maps).values({ campaign_id: campaignId, name, image_url, grid_cell_size, width_cells, height_cells }).returning();
+  const [map] = await db.insert(maps).values({ campaign_id: campaignId, name, image_url, grid_cell_size, width_cells, height_cells, feet_per_cell: Math.max(1, feet_per_cell) }).returning();
   res.status(201).json(map);
+});
+
+// ── GET /vtt/campaigns/:campaignId/maps/:mapId/image ──────────────────────
+// Authenticated image proxy for R2 maps. This avoids production public-domain
+// CORS issues and gives renderers a same-origin blob source after axios fetch.
+router.get('/campaigns/:campaignId/maps/:mapId/image', async (req: Request, res: Response): Promise<void> => {
+  const userId     = req.user!.user_id;
+  const campaignId = param(req.params.campaignId);
+  const mapId      = param(req.params.mapId);
+
+  const [campaign] = await db.select().from(campaigns)
+    .where(and(eq(campaigns.id, campaignId), isNull(campaigns.deleted_at))).limit(1);
+  if (!campaign) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Campaign not found.', status: 404 } }); return; }
+
+  const isDM = campaign.dm_user_id === userId;
+  if (!isDM) {
+    const [membership] = await db.select().from(campaignCharacters)
+      .where(and(eq(campaignCharacters.campaign_id, campaignId), eq(campaignCharacters.user_id, userId), isNull(campaignCharacters.removed_at))).limit(1);
+    if (!membership) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Not part of this campaign.', status: 403 } }); return; }
+  }
+
+  const [map] = await db.select().from(maps).where(and(eq(maps.id, mapId), eq(maps.campaign_id, campaignId))).limit(1);
+  if (!map) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Map not found.', status: 404 } }); return; }
+
+  const key = parseR2Key(map.image_url);
+  if (!key) {
+    res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'Map URL is not a recognized R2 object path.', status: 422 } });
+    return;
+  }
+
+  try {
+    const { getObject } = await import('../lib/r2');
+    const object = await getObject(key);
+    if (object.ContentType) res.setHeader('Content-Type', object.ContentType);
+    res.setHeader('Cache-Control', 'private, max-age=900');
+    const body = object.Body;
+    if (body && typeof (body as Readable).pipe === 'function') {
+      (body as Readable).pipe(res);
+      return;
+    }
+    if (body && typeof (body as { transformToByteArray?: () => Promise<Uint8Array> }).transformToByteArray === 'function') {
+      const bytes = await (body as { transformToByteArray: () => Promise<Uint8Array> }).transformToByteArray();
+      res.end(Buffer.from(bytes));
+      return;
+    }
+    res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Map image not found.', status: 404 } });
+  } catch (err) {
+    console.error('[vtt] map image proxy error:', err);
+    res.status(502).json({ error: { code: 'STORAGE_READ_FAILED', message: 'Failed to read map image from storage.', status: 502 } });
+  }
 });
 
 // ── PATCH /vtt/campaigns/:campaignId/maps/:mapId ──────────────────────────

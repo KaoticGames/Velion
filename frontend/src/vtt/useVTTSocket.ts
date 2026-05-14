@@ -250,16 +250,21 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
   }, [emit]);
 
   const rollDice = useCallback((payload: {
+    authority?:    'server';
     formula:      string;
     label:        string;
     visibility:   DiceVisibility;
-    results:      number[];
-    total:        number;
+    results?:     number[];
+    total?:       number;
     source_label?: string;
     animation_spec?: Array<{ sides: number; value: number }>;
     /** Same dice toss as the tray (e.g. `2d20 + 1d6`) for remote 3D replay. */
     physics_notation?: string;
     roll_id?:     string;
+    modifier?:    number;
+    postMultiplier?: number;
+    advantageKeep?: 'high' | 'low';
+    request_meta?: unknown;
   }) => {
     emit('dice:roll', payload);
   }, [emit]);

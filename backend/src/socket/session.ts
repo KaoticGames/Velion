@@ -9,6 +9,7 @@
  */
 
 import { Server, Socket }        from 'socket.io';
+import { randomUUID }            from 'node:crypto';
 import { verifyAccessToken }     from '../lib/jwt';
 import { db }                    from '../db';
 import {
@@ -17,6 +18,8 @@ import {
 } from '../db/schema';
 import { eq, and, isNull }       from 'drizzle-orm';
 import { rollDiceAuthoritative } from '../lib/sessionDiceRoll';
+
+const SERVER_DICE_RESULT_DELAY_MS = 1400;
 
 const isJsonColumnInputError = (err: unknown): boolean => {
   const code = (err as { code?: string } | null)?.code;
@@ -221,6 +224,7 @@ export const registerSessionNamespace = (io: Server): void => {
         label:        payload.label,
         visibility:   payload.visibility,
         source_label: payload.source_label ?? null,
+        server_started_at: new Date().toISOString(),
       };
       if (payload.visibility === 'public') {
         ns.to(room).emit('dice:roll_start', broadcast);
@@ -255,12 +259,24 @@ export const registerSessionNamespace = (io: Server): void => {
       const session_id  = socket.data.session_id as string;
       const campaign_id = socket.data.campaign_id as string;
       const room        = `session:${session_id}`;
+      const emitDiceEvent = (eventName: 'dice:roll_start' | 'dice:result', data: Record<string, unknown>) => {
+        if (payload.visibility === 'public') {
+          ns.to(room).emit(eventName, data);
+          ns.to(`obs:${campaign_id}:dice_log`).emit(eventName, data);
+        } else if (payload.visibility === 'dm') {
+          socket.emit(eventName, data);
+          if (!socket.data.is_dm) socket.to(`${room}:dm`).emit(eventName, data);
+        } else {
+          socket.emit(eventName, data);
+        }
+      };
 
       let formulaOut: string;
       let resultsOut: number[];
       let totalOut: number;
       let animation_server: Array<{ sides: number; value: number }> | undefined;
       let physics_server: string | undefined;
+      let rollId = typeof payload.roll_id === 'string' && payload.roll_id.trim() ? payload.roll_id.trim() : undefined;
 
       if (payload.authority === 'server') {
         try {
@@ -275,6 +291,7 @@ export const registerSessionNamespace = (io: Server): void => {
           totalOut = rolled.total;
           animation_server = rolled.animation_spec;
           physics_server = rolled.physics_notation;
+          rollId = rollId ?? randomUUID();
         } catch (err) {
           console.error('[socket] dice:roll server authority error:', err);
           socket.emit('dice:error', { message: 'Invalid dice roll request.' });
@@ -302,26 +319,50 @@ export const registerSessionNamespace = (io: Server): void => {
         source_label: payload.source_label ?? null,
       };
 
+      if (payload.authority === 'server') {
+        const server_started_at = new Date().toISOString();
+        const startPayload = {
+          ...row,
+          roll_id: rollId,
+          animation_spec: animation_server ?? [],
+          physics_notation: physics_server,
+          request_meta: payload.request_meta,
+          server_started_at,
+        };
+        emitDiceEvent('dice:roll_start', startPayload);
+
+        setTimeout(() => {
+          void (async () => {
+            try { await db.insert(diceLogEntries).values({ session_id, ...row }); }
+            catch (err) { console.error('[socket] dice:roll persist error:', err); }
+
+            const resultPayload = {
+              ...row,
+              roll_id: rollId,
+              animation_spec: animation_server ?? [],
+              physics_notation: physics_server,
+              request_meta: payload.request_meta,
+              server_started_at,
+              server_result_at: new Date().toISOString(),
+            };
+            emitDiceEvent('dice:result', resultPayload);
+          })();
+        }, SERVER_DICE_RESULT_DELAY_MS);
+        return;
+      }
+
       try { await db.insert(diceLogEntries).values({ session_id, ...row }); }
       catch (err) { console.error('[socket] dice:roll persist error:', err); }
 
       const extras: Record<string, unknown> = {};
       if (animation_server?.length) extras.animation_spec = animation_server;
       if (physics_server) extras.physics_notation = physics_server;
-      const roll_id = typeof payload.roll_id === 'string' && payload.roll_id.trim() ? payload.roll_id.trim() : undefined;
-      if (roll_id) extras.roll_id = roll_id;
+      if (rollId) extras.roll_id = rollId;
       if (payload.request_meta !== undefined) extras.request_meta = payload.request_meta;
+      extras.server_result_at = new Date().toISOString();
       const broadcastEntry = Object.keys(extras).length ? { ...row, ...extras } : row;
 
-      if (payload.visibility === 'public') {
-        ns.to(room).emit('dice:result', broadcastEntry);
-        ns.to(`obs:${campaign_id}:dice_log`).emit('dice:result', broadcastEntry);
-      } else if (payload.visibility === 'dm') {
-        socket.emit('dice:result', broadcastEntry);
-        if (!socket.data.is_dm) socket.to(`${room}:dm`).emit('dice:result', broadcastEntry);
-      } else {
-        socket.emit('dice:result', broadcastEntry);
-      }
+      emitDiceEvent('dice:result', broadcastEntry);
     });
 
     // ── attack:rolled ──────────────────────────────────────────────────

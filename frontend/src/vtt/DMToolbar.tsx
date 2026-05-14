@@ -516,6 +516,38 @@ function MapModal({ campaignId, campaignMaps, activeMapId, sessionId, fogSection
   const maps: VTTMap[] = mapsData ?? [];
   const activeMap = maps.find(m => m.id === activeMapId) ?? null;
 
+  const canLoadImageUrl = (url: string): Promise<boolean> => new Promise((resolve) => {
+    if (!url) { resolve(false); return; }
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+
+  const deriveUnsignedR2ObjectUrl = (uploadUrl: string): string => {
+    try {
+      const u = new URL(uploadUrl);
+      const p = u.pathname.startsWith('/') ? u.pathname.slice(1) : u.pathname;
+      return p ? `${u.origin}/${p}` : '';
+    } catch {
+      return '';
+    }
+  };
+
+  const resolveMapPublicUrl = async (presign: { public_url?: string; upload_url?: string }): Promise<string> => {
+    const candidates: string[] = [];
+    if (typeof presign.public_url === 'string' && presign.public_url.trim()) {
+      candidates.push(presign.public_url.trim());
+    }
+    const fallback = deriveUnsignedR2ObjectUrl(presign.upload_url || '');
+    if (fallback && !candidates.includes(fallback)) candidates.push(fallback);
+
+    for (const url of candidates) {
+      if (await canLoadImageUrl(url)) return url;
+    }
+    return candidates[0] || '';
+  };
+
   const openEdit = () => {
     if (!activeMap) return;
     setEditName(activeMap.name);
@@ -567,15 +599,19 @@ function MapModal({ campaignId, campaignMaps, activeMapId, sessionId, fogSection
       setProgress('Preparing upload…');
       const { data: urlData } = await api.post(`/vtt/campaigns/${campaignId}/maps/upload-url`, { filename: file.name, content_type: file.type || 'image/jpeg' });
       setProgress('Uploading image…');
-      await fetch(urlData.upload_url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type || 'image/jpeg' } });
+      const putRes = await fetch(urlData.upload_url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type || 'image/jpeg' } });
+      if (!putRes.ok) throw new Error(`Storage upload failed (${putRes.status})`);
+      const publicUrl = await resolveMapPublicUrl(urlData);
+      if (!publicUrl) throw new Error('No usable map URL returned from storage.');
       setProgress('Saving map…');
-      const { data: map } = await api.post(`/vtt/campaigns/${campaignId}/maps`, { name: mapName.trim(), image_url: urlData.public_url, grid_cell_size: gridSize, feet_per_cell: feetPerCell, width_cells, height_cells });
+      const { data: map } = await api.post(`/vtt/campaigns/${campaignId}/maps`, { name: mapName.trim(), image_url: publicUrl, grid_cell_size: gridSize, feet_per_cell: feetPerCell, width_cells, height_cells });
       await refetch();
       dispatch({ type: 'MAP_CHANGED', map, tokens: [], shapes: [], fogCells: [], fogSections: [] });
+      socket.changeMap(map.id);
       setTab('maps'); setMapName(''); setFile(null); setPreview(null); setImgDims(null);
       if (fileRef.current) fileRef.current.value = '';
     } catch (e: any) {
-      setError(e?.response?.data?.error?.message ?? 'Upload failed. Please try again.');
+      setError(e?.response?.data?.error?.message ?? e?.message ?? 'Upload failed. Please try again.');
     }
     setUploading(false); setProgress('');
   };

@@ -10,7 +10,7 @@
  * Players in state 2 see a holding screen.
  */
 
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore }    from '@/store/authStore';
@@ -43,6 +43,8 @@ const T = {
 // ── Heartbeat interval ────────────────────────────────────────────────────
 
 const HEARTBEAT_MS = 90_000; // 90 seconds
+const VTT_RENDERER = import.meta.env.VITE_VTT_RENDERER === 'pixi' ? 'pixi' : 'canvas';
+const PixiMapCanvas = lazy(() => import('./PixiMapCanvas'));
 
 // ── Component ─────────────────────────────────────────────────────────────
 
@@ -111,6 +113,24 @@ export default function VTT() {
   }, [sessionEnded]);
 
   useEffect(() => {
+    const onAuthorityRoll = (event: Event) => {
+      const custom = event as CustomEvent<{
+        authority: 'server';
+        formula: string;
+        label: string;
+        visibility: 'public' | 'private' | 'dm';
+        roll_id: string;
+        source_label?: string;
+        modifier?: number;
+        postMultiplier?: number;
+        advantageKeep?: 'high' | 'low';
+        request_meta?: unknown;
+      }>;
+      const payload = custom.detail;
+      if (!payload) return;
+      event.preventDefault();
+      socket.rollDice(payload);
+    };
     const onGlobalRoll = (event: Event) => {
       const custom = event as CustomEvent<{
         formula: string;
@@ -126,8 +146,12 @@ export default function VTT() {
       const { requestMeta: _rm, ...rest } = payload;
       socket.rollDice(rest);
     };
+    window.addEventListener('velion:dice-roll-authority-request', onAuthorityRoll as EventListener);
     window.addEventListener('velion:dice-roll-submit', onGlobalRoll as EventListener);
-    return () => window.removeEventListener('velion:dice-roll-submit', onGlobalRoll as EventListener);
+    return () => {
+      window.removeEventListener('velion:dice-roll-authority-request', onAuthorityRoll as EventListener);
+      window.removeEventListener('velion:dice-roll-submit', onGlobalRoll as EventListener);
+    };
   }, [socket]);
 
   // ── Loading ──────────────────────────────────────────────────────────
@@ -261,6 +285,29 @@ export default function VTT() {
           )}
 
           {activeMap ? (
+            VTT_RENDERER === 'pixi' ? (
+            <Suspense fallback={<NoMapPlaceholder isDM={isDM} />}>
+              <PixiMapCanvas
+                map={activeMap}
+                tokens={tokens}
+                enemyInstances={enemyInstances}
+                fogSections={fogSections}
+                activeFogLayerId={activeFogLayerId}
+                fogBrushMode={fogBrushMode}
+                shapes={shapes}
+                rulers={rulers}
+                isDM={isDM}
+                activeTool={activeTool}
+                toolColor={toolColor}
+                fogBrushSize={fogBrushSize}
+                fogBrushShape={fogBrushShape}
+                userId={user?.id ?? ''}
+                sessionId={sessionId!}
+                socket={socket}
+                dispatch={dispatch}
+              />
+            </Suspense>
+            ) : (
             <MapCanvas
               map={activeMap}
               tokens={tokens}
@@ -280,6 +327,7 @@ export default function VTT() {
               socket={socket}
               dispatch={dispatch}
             />
+            )
           ) : (
             <NoMapPlaceholder isDM={isDM} />
           )}

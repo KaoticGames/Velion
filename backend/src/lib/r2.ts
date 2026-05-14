@@ -43,6 +43,13 @@ export const getPresignedReadUrl = async (
   return getSignedUrl(r2, command, { expiresIn });
 };
 
+/** Fetch an object through the backend when direct public/CORS reads are unreliable. */
+export const getObject = async (key: string) =>
+  r2.send(new GetObjectCommand({
+    Bucket: BUCKET,
+    Key:    key,
+  }));
+
 /** Public URL for a stored object (no signing needed for public buckets) */
 export const getPublicUrl = (key: string): string =>
   `${PUBLIC}/${key}`;

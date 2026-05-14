@@ -576,6 +576,27 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       if (sock?.connected) sock.emit('dice:roll_start', d);
     };
     window.addEventListener('velion:dice-roll-network-start', onNetworkRollStart);
+    const onAuthorityRollRequest = (event) => {
+      const payload = event?.detail;
+      if (!payload || !sessionId) return;
+      event.preventDefault();
+      const sock = rollSocketRef.current;
+      const queueIfNeeded = () => {
+        if (pendingSessionDiceRollRef.current.length < 32) {
+          pendingSessionDiceRollRef.current.push(payload);
+        }
+      };
+      if (!sock) {
+        queueIfNeeded();
+        return;
+      }
+      if (sock.connected && sessionDiceReadyRef.current) {
+        sock.emit('dice:roll', payload);
+      } else {
+        queueIfNeeded();
+      }
+    };
+    window.addEventListener('velion:dice-roll-authority-request', onAuthorityRollRequest);
     const onGlobalRollSubmit = (event) => {
       const payload = event?.detail;
       if (!payload || !sessionId) return;
@@ -599,6 +620,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     window.addEventListener('velion:dice-roll-submit', onGlobalRollSubmit);
     return () => {
       window.removeEventListener('velion:dice-roll-network-start', onNetworkRollStart);
+      window.removeEventListener('velion:dice-roll-authority-request', onAuthorityRollRequest);
       window.removeEventListener('velion:dice-roll-submit', onGlobalRollSubmit);
       sessionDiceReadyRef.current = false;
       pendingSessionDiceRollRef.current = [];
