@@ -40,6 +40,7 @@ export default function NavBar() {
       top:            0,
       zIndex:        100,
       flexShrink:    0,
+      overflow:      'visible',
     }}>
       {/* Logo */}
       <Link to={user ? '/home' : '/'} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
@@ -53,12 +54,12 @@ export default function NavBar() {
       {/* Center nav when signed in */}
       <div style={{
         display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center',
-        gap: '28px', flexWrap: 'wrap', minWidth: 0,
+        gap: '28px', flexWrap: 'wrap', minWidth: 0, overflow: 'visible',
       }}>
         {user && <NavLink to="/home" end style={navLinkStyle}>HOME</NavLink>}
+        <NavLink to="/pricing" style={navLinkStyle}>PRICING</NavLink>
         {user && (
           <>
-            <NavLink to="/account" style={navLinkStyle}>ACCOUNT</NavLink>
             <NavLink to="/characters" style={navLinkStyle}>CHARACTERS</NavLink>
             <NavLink to="/campaigns" style={navLinkStyle}>CAMPAIGNS</NavLink>
             <NavLink to="/library/weapons" style={navLinkStyle}>LIBRARY</NavLink>
@@ -100,14 +101,17 @@ export default function NavBar() {
         )}
         {user && (
           <>
-            <span style={{
+            <Link to="/account" style={{
               fontFamily:    "'Cinzel', serif",
               fontSize: '13px',
               letterSpacing: '0.1em',
               color:         T.textMuted,
+              textDecoration:'none',
+              borderBottom:  '1px solid transparent',
+              transition:    'color 0.15s, border-color 0.15s',
             }}>
               {user.display_name}
-            </span>
+            </Link>
             <span style={{
               fontFamily:    "'Cinzel', serif",
               fontSize: '12px',

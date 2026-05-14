@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate, useSearchParams } from 'react-router-dom';
 import Layout          from '@/components/Layout';
 import ProtectedRoute  from '@/components/ProtectedRoute';
 import Login           from '@/pages/Login';
@@ -17,7 +17,18 @@ import HomeAuthenticated from '@/pages/HomeAuthenticated';
 import Account from '@/pages/Account';
 import IndexGate from '@/pages/IndexGate';
 import About from '@/pages/About';
+import Pricing from '@/pages/Pricing';
+import SubscribeCheckout from '@/pages/SubscribeCheckout';
 import VTT from '@/vtt/VTT';
+
+function BillingToAccountRedirect() {
+  const [sp] = useSearchParams();
+  const next = new URLSearchParams();
+  next.set('section', 'billing');
+  const checkout = sp.get('checkout');
+  if (checkout) next.set('checkout', checkout);
+  return <Navigate to={`/account?${next.toString()}`} replace />;
+}
 
 export const router = createBrowserRouter([
   // ── VTT — fullscreen, no Layout wrapper ───────────────────────────────
@@ -35,6 +46,11 @@ export const router = createBrowserRouter([
       { path:    'login',         element: <Login /> },
       { path:    'register',      element: <Register /> },
       { path:    'about',         element: <About /> },
+      { path:    'pricing',       element: <Pricing /> },
+      {
+        path:    'subscribe',
+        element: <ProtectedRoute><SubscribeCheckout /></ProtectedRoute>,
+      },
 
       // ── Protected: logged-in home (hub) ────────────────────────────────
       {
@@ -44,6 +60,14 @@ export const router = createBrowserRouter([
       {
         path:    'account',
         element: <ProtectedRoute><Account /></ProtectedRoute>,
+      },
+      {
+        path:    'billing',
+        element: (
+          <ProtectedRoute>
+            <BillingToAccountRedirect />
+          </ProtectedRoute>
+        ),
       },
 
       // ── Protected: character routes ────────────────────────────────────

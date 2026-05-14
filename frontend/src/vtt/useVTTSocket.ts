@@ -21,15 +21,33 @@ const SOCKET_URL = (import.meta as any).env.VITE_SOCKET_URL as string;
 
 export function useVTTSocket(sessionId: string | undefined, characterId?: string) {
   const socketRef = useRef<Socket | null>(null);
+  const characterIdRef = useRef<string | undefined>(characterId);
   const accessToken = useAuthStore(s => s.accessToken);
+  const hasAccessToken = !!accessToken;
   const dispatch    = useVTTStore(s => s.dispatch);
+
+  useEffect(() => {
+    characterIdRef.current = characterId;
+  }, [characterId]);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    const auth = typeof socket.auth === 'object' && socket.auth !== null ? socket.auth : {};
+    socket.auth = { ...auth, token: accessToken };
+  }, [accessToken]);
 
   // ── Connect ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!sessionId || !accessToken) return;
+    if (!sessionId || !hasAccessToken) return;
+
+    const token = useAuthStore.getState().accessToken;
+    if (!token) return;
 
     const socket = io(`${SOCKET_URL}/session`, {
-      auth:          { token: accessToken },
+      auth:          { token },
       reconnection:  true,
       reconnectionAttempts: 10,
       reconnectionDelay:    1500,
@@ -40,7 +58,7 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
     socket.on('connect', () => {
       console.log('[vtt] socket connected');
       dispatch({ type: 'SET_CONNECTED', connected: true });
-      socket.emit('session:join', { session_id: sessionId, character_id: characterId });
+      socket.emit('session:join', { session_id: sessionId, character_id: characterIdRef.current });
     });
 
     socket.on('disconnect', () => {
@@ -127,10 +145,10 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
 
     return () => {
       socket.disconnect();
-      socketRef.current = null;
+      if (socketRef.current === socket) socketRef.current = null;
       dispatch({ type: 'SET_CONNECTED', connected: false });
     };
-  }, [sessionId, accessToken, dispatch]);
+  }, [sessionId, hasAccessToken, dispatch]);
 
   /** If `character_id` resolves after connect (e.g. campaign fetch), join again so the server stores it. */
   useEffect(() => {

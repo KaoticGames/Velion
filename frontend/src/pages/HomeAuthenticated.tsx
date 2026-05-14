@@ -142,7 +142,7 @@ export default function HomeAuthenticated() {
             <div style={{ ...ctaCardStyle, borderTopColor: `${T.gold}88` }}>
               <span style={ctaGlyph}>⬡</span>
               <div style={ctaTitle}>Account</div>
-              <p style={ctaDesc}>Profile, sign-in methods, subscription, and Stripe billing portal.</p>
+              <p style={ctaDesc}>Profile, sign-in, subscription upgrades, and billing (cards, plans, invoices).</p>
             </div>
           </Link>
         </div>

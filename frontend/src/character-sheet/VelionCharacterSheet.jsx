@@ -1678,7 +1678,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       {/* ══ TITLE ════════════════════════════════════════════════════════ */}
       <div style={{textAlign:'center',marginBottom:'14px',paddingBottom:'14px',borderBottom:`1px solid ${T.border}`}}>
         <img
-          src="/start freemark.png"
+          src="/velion_wordmark.png"
           alt="Velion Mythera"
           style={{display:'block',height:'50px',width:'auto',margin:'0 auto 4px'}}
         />
@@ -3051,12 +3051,14 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         </ModalWrap>
       )}
 
-      {diceLogCollapsed ? (
+      {/* Portaled to document.body so position:fixed is viewport-relative (ancestor .page-enter uses transform from pageFadeIn). */}
+      {typeof document !== 'undefined' && createPortal(
+      diceLogCollapsed ? (
         <div
           style={{
             position: 'fixed',
             right: '16px',
-            top: '72px',
+            top: '86px',
             zIndex: 980,
             display: 'flex',
             flexDirection: 'column',
@@ -3146,7 +3148,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           style={{
             position: 'fixed',
             right: '16px',
-            top: '72px',
+            top: '86px',
             width: '300px',
             maxHeight: 'min(60vh, 440px)',
             zIndex: 980,
@@ -3200,7 +3202,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             <DiceLog entries={sessionDiceLog} userId={rollUserId} isDM={false} />
           </div>
         </div>
-      )}
+      )
+      , document.body)}
 
       {/* ── Context Menu ─────────────────────────────────────────────── */}
       {ctxMenu&&(

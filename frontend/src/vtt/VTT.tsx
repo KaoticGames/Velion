@@ -131,7 +131,7 @@ export default function VTT() {
   }, [socket]);
 
   // ── Loading ──────────────────────────────────────────────────────────
-  if (!connected || !session) {
+  if (!session) {
     return (
       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:T.bg, flexDirection:'column', gap:'16px' }}>
         <div style={{ width:'32px', height:'32px', border:`2px solid ${T.border}`, borderTop:`2px solid ${T.gold}`, borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
