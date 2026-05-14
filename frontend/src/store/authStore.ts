@@ -14,6 +14,60 @@ import { create } from 'zustand';
 import api, { setTokenAccessors } from '@/lib/api';
 import { setSessionKickHandler, scheduleProactiveAccessRefresh } from '@/lib/authSession';
 
+const AUTH_SYNC_CHANNEL = 'velion-auth-sync';
+const AUTH_SYNC_STORAGE_KEY = 'velion:auth-sync';
+const authSyncSourceId =
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+type AuthSyncEvent = {
+  id: string;
+  sourceId: string;
+  type: 'login' | 'logout';
+  at: number;
+};
+
+function createAuthSyncEvent(type: AuthSyncEvent['type']): AuthSyncEvent {
+  const at = Date.now();
+  return {
+    id: `${authSyncSourceId}:${type}:${at}`,
+    sourceId: authSyncSourceId,
+    type,
+    at,
+  };
+}
+
+function broadcastAuthSync(type: AuthSyncEvent['type']) {
+  if (typeof window === 'undefined') return;
+
+  const event = createAuthSyncEvent(type);
+
+  if ('BroadcastChannel' in window) {
+    const channel = new BroadcastChannel(AUTH_SYNC_CHANNEL);
+    channel.postMessage(event);
+    channel.close();
+  }
+
+  try {
+    localStorage.setItem(AUTH_SYNC_STORAGE_KEY, JSON.stringify(event));
+    localStorage.removeItem(AUTH_SYNC_STORAGE_KEY);
+  } catch {
+    // Some privacy modes block localStorage; BroadcastChannel is enough when available.
+  }
+}
+
+function isAuthSyncEvent(value: unknown): value is AuthSyncEvent {
+  if (!value || typeof value !== 'object') return false;
+  const event = value as Partial<AuthSyncEvent>;
+  return (
+    typeof event.id === 'string' &&
+    typeof event.sourceId === 'string' &&
+    (event.type === 'login' || event.type === 'logout') &&
+    typeof event.at === 'number'
+  );
+}
+
 export type SubscriptionTier = 'free' | 'player' | 'dm';
 
 export interface AuthUser {
@@ -64,6 +118,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       password,
     });
     set({ user: data.user, accessToken: data.access_token });
+    broadcastAuthSync('login');
   },
 
   // ── Register ───────────────────────────────────────────────────────────
@@ -74,6 +129,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       display_name: displayName,
     });
     set({ user: data.user, accessToken: data.access_token });
+    broadcastAuthSync('login');
   },
 
   // ── Logout ─────────────────────────────────────────────────────────────
@@ -84,6 +140,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Best-effort — clear local state regardless
     }
     set({ user: null, accessToken: null });
+    broadcastAuthSync('logout');
   },
 
   refreshSession: async () => {
@@ -93,6 +150,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   bootstrapSession: (access_token, user) => {
     set({ accessToken: access_token, user });
+    broadcastAuthSync('login');
   },
 
   touchSession: async () => {
@@ -142,6 +200,40 @@ void store;
 setSessionKickHandler(() => {
   useAuthStore.getState()._clearAuth();
 });
+
+const handledAuthSyncEventIds = new Set<string>();
+
+function handleAuthSyncEvent(value: unknown) {
+  if (!isAuthSyncEvent(value)) return;
+  if (value.sourceId === authSyncSourceId) return;
+  if (handledAuthSyncEventIds.has(value.id)) return;
+  handledAuthSyncEventIds.add(value.id);
+
+  if (value.type === 'logout') {
+    useAuthStore.getState()._clearAuth();
+    return;
+  }
+
+  void useAuthStore.getState().refreshSession().catch(() => {
+    // Another tab may have emitted before the cookie was visible here; leave this tab unchanged.
+  });
+}
+
+if (typeof window !== 'undefined') {
+  if ('BroadcastChannel' in window) {
+    const channel = new BroadcastChannel(AUTH_SYNC_CHANNEL);
+    channel.addEventListener('message', (event) => handleAuthSyncEvent(event.data));
+  }
+
+  window.addEventListener('storage', (event) => {
+    if (event.key !== AUTH_SYNC_STORAGE_KEY || !event.newValue) return;
+    try {
+      handleAuthSyncEvent(JSON.parse(event.newValue) as unknown);
+    } catch {
+      // Ignore malformed cross-tab notifications.
+    }
+  });
+}
 
 let lastScheduledAccessToken: string | null | undefined = undefined;
 useAuthStore.subscribe((state) => {

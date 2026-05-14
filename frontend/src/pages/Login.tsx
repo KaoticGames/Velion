@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { extractApiError } from '@/lib/api';
@@ -16,10 +16,14 @@ export default function Login() {
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
 
-  const { login, refreshSession, bootstrapSession } = useAuthStore();
+  const { login, refreshSession, bootstrapSession, user } = useAuthStore();
   const navigate  = useNavigate();
   const location  = useLocation();
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/home';
+
+  useEffect(() => {
+    if (user) navigate(from, { replace: true });
+  }, [from, navigate, user]);
 
   useGoogleOAuthCompletion(
     async (msg) => {
