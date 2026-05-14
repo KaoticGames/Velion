@@ -1,5 +1,6 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
+import { BETA_GATE_ENABLED } from '@/lib/betaGate';
 
 const T = {
   bg: '#06070c', border: '#1c2030', gold: '#c4922a',
@@ -82,7 +83,7 @@ export default function NavBar() {
             borderRadius:   '3px',
             transition:     'background 0.15s',
           }}>
-            ENTER
+            {BETA_GATE_ENABLED ? 'BETA ENTRY' : 'ENTER'}
           </Link>
         )}
         {mockAuth && !user && (

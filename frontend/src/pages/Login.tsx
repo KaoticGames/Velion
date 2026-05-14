@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/authStore';
 import { extractApiError } from '@/lib/api';
 import { SocialAuthIconRow } from '@/components/SocialAuthIconRow';
 import { useGoogleOAuthCompletion } from '@/hooks/useGoogleOAuthCompletion';
+import { BETA_GATE_ENABLED } from '@/lib/betaGate';
 
 const T = {
   bg: '#06070c', surface: '#0a0c14', card: '#0d1018', border: '#1c2030',
@@ -88,7 +89,7 @@ export default function Login() {
             VELION MYTHERA
           </div>
           <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: '25px', color: T.gold, letterSpacing: '0.14em', fontWeight: '600' }}>
-            ENTER THE WORLD
+            {BETA_GATE_ENABLED ? 'BETA ENTRY' : 'ENTER THE WORLD'}
           </h1>
           <SocialAuthIconRow disabled={loading} />
         </div>
@@ -152,21 +153,25 @@ export default function Login() {
               opacity:       loading ? 0.6 : 1,
             }}
           >
-            {loading ? 'ENTERING...' : 'ENTER'}
+            {loading
+              ? (BETA_GATE_ENABLED ? 'SIGNING IN...' : 'ENTERING...')
+              : (BETA_GATE_ENABLED ? 'SIGN IN' : 'ENTER')}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '24px' }}>
-          <span style={{ color: T.textMuted, fontSize: '17px', fontFamily: "'EB Garamond', serif" }}>
-            No account?{' '}
-          </span>
-          <Link to="/register" style={{
-            color: T.gold, fontFamily: "'Cinzel', serif",
-            fontSize: '14px', letterSpacing: '0.1em', textDecoration: 'none',
-          }}>
-            REGISTER
-          </Link>
-        </div>
+        {!BETA_GATE_ENABLED && (
+          <div style={{ textAlign: 'center', marginTop: '24px' }}>
+            <span style={{ color: T.textMuted, fontSize: '17px', fontFamily: "'EB Garamond', serif" }}>
+              No account?{' '}
+            </span>
+            <Link to="/register" style={{
+              color: T.gold, fontFamily: "'Cinzel', serif",
+              fontSize: '14px', letterSpacing: '0.1em', textDecoration: 'none',
+            }}>
+              REGISTER
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

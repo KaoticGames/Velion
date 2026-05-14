@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate, useSearchParams } from 'react-router-dom';
+import { BETA_GATE_ENABLED } from '@/lib/betaGate';
 import Layout          from '@/components/Layout';
 import ProtectedRoute  from '@/components/ProtectedRoute';
 import Login           from '@/pages/Login';
@@ -20,6 +21,11 @@ import About from '@/pages/About';
 import Pricing from '@/pages/Pricing';
 import SubscribeCheckout from '@/pages/SubscribeCheckout';
 import VTT from '@/vtt/VTT';
+
+function RegisterRoute() {
+  if (BETA_GATE_ENABLED) return <Navigate to="/login" replace />;
+  return <Register />;
+}
 
 function BillingToAccountRedirect() {
   const [sp] = useSearchParams();
@@ -44,7 +50,7 @@ export const router = createBrowserRouter([
       // ── Public ────────────────────────────────────────────────────────
       { index:   true,            element: <IndexGate /> },
       { path:    'login',         element: <Login /> },
-      { path:    'register',      element: <Register /> },
+      { path:    'register',      element: <RegisterRoute /> },
       { path:    'about',         element: <About /> },
       { path:    'pricing',       element: <Pricing /> },
       {

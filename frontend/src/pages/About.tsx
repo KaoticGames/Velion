@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BETA_GATE_ENABLED } from '@/lib/betaGate';
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const T = {
@@ -274,23 +275,36 @@ export default function About() {
               A fully original tabletop RPG system — and the platform built to play it.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '14px' }}>
-              <Link to="/register" style={{
-                fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.18em',
-                color: T.bg, background: T.gold, padding: '12px 28px',
-                borderRadius: '3px', textDecoration: 'none', fontWeight: 600,
-                display: 'inline-block',
-              }}>
-                Create Account
-              </Link>
-              <div style={{
-                fontFamily: "'EB Garamond', serif", fontSize: '15px',
-                color: T.textDim, fontStyle: 'italic',
-              }}>
-                Already have an account?{' '}
-                <Link to="/login" style={{ color: T.textMuted, textDecoration: 'none', borderBottom: `1px solid ${T.textDim}` }}>
-                  Log in
+              {BETA_GATE_ENABLED ? (
+                <Link to="/login" style={{
+                  fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.18em',
+                  color: T.bg, background: T.gold, padding: '12px 28px',
+                  borderRadius: '3px', textDecoration: 'none', fontWeight: 600,
+                  display: 'inline-block',
+                }}>
+                  BETA ENTRY
                 </Link>
-              </div>
+              ) : (
+                <>
+                  <Link to="/register" style={{
+                    fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.18em',
+                    color: T.bg, background: T.gold, padding: '12px 28px',
+                    borderRadius: '3px', textDecoration: 'none', fontWeight: 600,
+                    display: 'inline-block',
+                  }}>
+                    Create Account
+                  </Link>
+                  <div style={{
+                    fontFamily: "'EB Garamond', serif", fontSize: '15px',
+                    color: T.textDim, fontStyle: 'italic',
+                  }}>
+                    Already have an account?{' '}
+                    <Link to="/login" style={{ color: T.textMuted, textDecoration: 'none', borderBottom: `1px solid ${T.textDim}` }}>
+                      Log in
+                    </Link>
+                  </div>
+                </>
+              )}
             </div>
           </Inner>
         </div>
@@ -532,37 +546,52 @@ export default function About() {
       ══════════════════════════════════════════════════════════════════════ */}
       <section style={{ background: T.bg, padding: '20px 0', borderTop: `1px solid ${T.border}` }}>
         <Inner style={{ textAlign: 'center' }}>
-          <SectionLabel>READY TO BEGIN?</SectionLabel>
+          <SectionLabel>{BETA_GATE_ENABLED ? 'CLOSED BETA' : 'READY TO BEGIN?'}</SectionLabel>
           <h2 style={{
             fontFamily: "'Cinzel', serif", fontSize: 'clamp(22px, 3vw, 34px)',
             letterSpacing: '0.1em', color: T.text, fontWeight: 600, margin: '0 0 16px',
           }}>
-            Sign Up Now.
+            {BETA_GATE_ENABLED ? 'Beta access only.' : 'Sign Up Now.'}
           </h2>
           <p style={{
             fontFamily: "'EB Garamond', serif", fontSize: '18px',
             color: T.textMuted, lineHeight: 1.75, maxWidth: '400px',
             margin: '0 auto 28px', fontStyle: 'italic',
           }}>
-            Create your account and bring the system to the table.
+            {BETA_GATE_ENABLED
+              ? 'If you have been invited, sign in with the account that was granted access.'
+              : 'Create your account and bring the system to the table.'}
           </p>
-          <Link to="/register" style={{
-            fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.18em',
-            color: T.bg, background: T.gold, padding: '12px 36px',
-            borderRadius: '3px', textDecoration: 'none', fontWeight: 600,
-            display: 'inline-block', marginBottom: '16px',
-          }}>
-            Create Account
-          </Link>
-          <div style={{
-            fontFamily: "'EB Garamond', serif", fontSize: '15px',
-            color: T.textDim, fontStyle: 'italic',
-          }}>
-            Already have an account?{' '}
-            <Link to="/login" style={{ color: T.textMuted, textDecoration: 'none', borderBottom: `1px solid ${T.textDim}` }}>
-              Sign in
+          {BETA_GATE_ENABLED ? (
+            <Link to="/login" style={{
+              fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.18em',
+              color: T.bg, background: T.gold, padding: '12px 36px',
+              borderRadius: '3px', textDecoration: 'none', fontWeight: 600,
+              display: 'inline-block', marginBottom: '16px',
+            }}>
+              BETA ENTRY
             </Link>
-          </div>
+          ) : (
+            <>
+              <Link to="/register" style={{
+                fontFamily: "'Cinzel', serif", fontSize: '14px', letterSpacing: '0.18em',
+                color: T.bg, background: T.gold, padding: '12px 36px',
+                borderRadius: '3px', textDecoration: 'none', fontWeight: 600,
+                display: 'inline-block', marginBottom: '16px',
+              }}>
+                Create Account
+              </Link>
+              <div style={{
+                fontFamily: "'EB Garamond', serif", fontSize: '15px',
+                color: T.textDim, fontStyle: 'italic',
+              }}>
+                Already have an account?{' '}
+                <Link to="/login" style={{ color: T.textMuted, textDecoration: 'none', borderBottom: `1px solid ${T.textDim}` }}>
+                  Sign in
+                </Link>
+              </div>
+            </>
+          )}
         </Inner>
       </section>
  

@@ -2,9 +2,9 @@ import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import Landing from '@/pages/Landing';
 import LandingLive from '@/pages/Landing-live';
+import { BETA_GATE_ENABLED } from '@/lib/betaGate';
 
-const betaGate = import.meta.env.VITE_BETA_GATE_ENABLED !== 'false';
-const PublicLanding = betaGate ? Landing : LandingLive;
+const PublicLanding = BETA_GATE_ENABLED ? Landing : LandingLive;
 
 /**
  * `/` — public marketing landing when logged out; redirects authenticated users to `/home`.
