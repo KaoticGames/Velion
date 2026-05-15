@@ -63,6 +63,8 @@ api.interceptors.response.use(
         return new Promise((resolve, reject) => {
           refreshQueue.push((newToken) => {
             original.headers.Authorization = `Bearer ${newToken}`;
+            // Retries must not reuse an AbortSignal that may already be aborted (e.g. React StrictMode cleanup).
+            delete original.signal;
             resolve(api(original));
           });
           // If refresh fails, reject all queued requests
@@ -84,6 +86,7 @@ api.interceptors.response.use(
         refreshQueue = [];
 
         original.headers.Authorization = `Bearer ${newToken}`;
+        delete original.signal;
         return api(original);
       } catch {
         refreshQueue = [];

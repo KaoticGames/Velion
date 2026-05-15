@@ -296,30 +296,6 @@ function StableNumInput({ value, onChange, min=0, max=Infinity, style={}, placeh
   );
 }
 
-/** How long the collapsed dice-log chip shows a preview of the latest roll (ms). */
-const DICE_LOG_PEEK_MS = 6500;
-
-function formatDiceLogPeek(entry, userIdForYou) {
-  const who =
-    (typeof entry.source_label === 'string' && entry.source_label.trim()) ||
-    (entry.roller_id && entry.roller_id === userIdForYou ? 'You' : 'Player');
-  const lab = typeof entry.label === 'string' ? entry.label.trim() : '';
-  const title = lab ? `${who} · ${lab}` : who;
-  let detail = '';
-  if (typeof entry.formula === 'string' && entry.formula.includes('=')) {
-    detail = entry.formula;
-  } else if (Array.isArray(entry.results) && entry.results.length) {
-    detail = `${entry.results.join(', ')} = ${entry.total}`;
-  } else if (typeof entry.formula === 'string' && entry.formula.trim()) {
-    const f = entry.formula.trim();
-    detail = entry.total != null && !Number.isNaN(Number(entry.total)) ? `${f} (${entry.total})` : f;
-  } else {
-    detail = String(entry.total ?? '');
-  }
-  return { title, detail };
-}
-
-// ── Main ──────────────────────────────────────────────────────────────────
 export default function VelionSheet({ characterId = undefined, initialData = undefined, sessionId = undefined }) {
   const armorOverrides =
     initialData?.sheet_armor_overrides &&
@@ -341,10 +317,6 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const [sessionDiceLog, setSessionDiceLog] = useState([]);
   /** false = expanded roll log panel; true = upper-right dock chip only */
   const [diceLogCollapsed, setDiceLogCollapsed] = useState(true);
-  const diceLogCollapsedRef = useRef(true);
-  /** Latest roll snippet under the collapsed “Dice log” chip (hidden when expanded). */
-  const [diceLogPeek, setDiceLogPeek] = useState(null);
-  const diceLogPeekTimerRef = useRef(null);
   const rollQueueRef = useRef([]);
   const rollLockRef = useRef(false);
   /** Set after `session:state` — do not emit `dice:roll` before join completes */
@@ -493,41 +465,16 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   };
 
   useEffect(() => {
-    diceLogCollapsedRef.current = diceLogCollapsed;
-  }, [diceLogCollapsed]);
-
-  const clearDiceLogPeek = () => {
-    if (diceLogPeekTimerRef.current != null) {
-      window.clearTimeout(diceLogPeekTimerRef.current);
-      diceLogPeekTimerRef.current = null;
-    }
-    setDiceLogPeek(null);
-  };
-
-  useEffect(() => {
     const onDiceLogCommit = (e) => {
       const entry = e?.detail;
       if (!entry) return;
       setSessionDiceLog((prev) => [entry, ...prev].slice(0, 120));
-      if (!diceLogCollapsedRef.current) return;
-      setDiceLogPeek(formatDiceLogPeek(entry, rollUserId));
-      if (diceLogPeekTimerRef.current != null) {
-        window.clearTimeout(diceLogPeekTimerRef.current);
-      }
-      diceLogPeekTimerRef.current = window.setTimeout(() => {
-        diceLogPeekTimerRef.current = null;
-        setDiceLogPeek(null);
-      }, DICE_LOG_PEEK_MS);
     };
     window.addEventListener('velion:dice-log-commit', onDiceLogCommit);
     return () => {
       window.removeEventListener('velion:dice-log-commit', onDiceLogCommit);
-      if (diceLogPeekTimerRef.current != null) {
-        window.clearTimeout(diceLogPeekTimerRef.current);
-        diceLogPeekTimerRef.current = null;
-      }
     };
-  }, [rollUserId]);
+  }, []);
 
   useEffect(() => {
     if (!sessionId || !accessToken || !SOCKET_URL) return;
@@ -3092,7 +3039,6 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           <button
             type="button"
             onClick={() => {
-              clearDiceLogPeek();
               setDiceLogCollapsed(false);
             }}
             title="Expand dice log"
@@ -3123,47 +3069,6 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               Dice log
             </span>
           </button>
-          {diceLogPeek && (
-            <div
-              role="status"
-              aria-live="polite"
-              style={{
-                width: '100%',
-                padding: '8px 10px',
-                background: '#111520f0',
-                border: `1px solid ${T.gold}33`,
-                borderRadius: '6px',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.4)',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: '12px',
-                  letterSpacing: '0.06em',
-                  color: T.textMuted,
-                  fontFamily: "'Cinzel',serif",
-                  marginBottom: '4px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {diceLogPeek.title}
-              </div>
-              <div
-                style={{
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: T.text,
-                  fontFamily: "'Cinzel',serif",
-                  lineHeight: 1.35,
-                  wordBreak: 'break-word',
-                }}
-              >
-                {diceLogPeek.detail}
-              </div>
-            </div>
-          )}
         </div>
       ) : (
         <div
@@ -3186,7 +3091,6 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           <button
             type="button"
             onClick={() => {
-              clearDiceLogPeek();
               setDiceLogCollapsed(true);
             }}
             title="Collapse dice log"

@@ -3,19 +3,69 @@ import { eq }                        from 'drizzle-orm';
 import { db }                        from '../db';
 import { users, subscriptions, stripeEvents } from '../db/schema';
 import { requireAuth }               from '../middleware/auth';
-import { stripe, createSetupIntentForCustomer, createSubscriptionForElementsPayment, constructWebhookEvent, tierFromPriceId, isAllowedCheckoutPriceId, PRICE_IDS, setSubscriptionCancelAtPeriodEnd, updateSubscriptionPrice } from '../lib/stripe';
+import {
+  stripe,
+  createSetupIntentForCustomer,
+  createSubscriptionForElementsPayment,
+  createCustomerSessionForPaymentElement,
+  constructWebhookEvent,
+  tierFromPriceId,
+  isAllowedCheckoutPriceId,
+  PRICE_IDS,
+  setSubscriptionCancelAtPeriodEnd,
+  updateSubscriptionPrice,
+} from '../lib/stripe';
 
 const router = Router();
 
+/** True if Stripe says this customer id does not exist on the current account (e.g. after switching STRIPE_SECRET_KEY). */
+function isStripeMissingCustomer(err: unknown): boolean {
+  const e = err as { code?: string; statusCode?: number; message?: string } | null;
+  if (!e) return false;
+  if (e.code === 'resource_missing') return true;
+  if (e.statusCode === 404 && typeof e.message === 'string' && e.message.includes('No such customer')) return true;
+  return false;
+}
+
+/**
+ * Returns the user's Stripe customer id if it exists on the current Stripe account.
+ * If the DB id is stale (wrong account / deleted test data), clears it and returns null.
+ * Does not create a customer — use {@link ensureStripeCustomerId} for flows that need one.
+ */
+async function stripeCustomerIdForUser(userId: string): Promise<string | null> {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user?.stripe_customer_id) return null;
+
+  try {
+    const c = await stripe().customers.retrieve(user.stripe_customer_id);
+    if (typeof c === 'string') {
+      await db.update(users).set({ stripe_customer_id: null }).where(eq(users.id, userId));
+      return null;
+    }
+    if ('deleted' in c && c.deleted) {
+      await db.update(users).set({ stripe_customer_id: null }).where(eq(users.id, userId));
+      return null;
+    }
+    return user.stripe_customer_id;
+  } catch (err) {
+    if (isStripeMissingCustomer(err)) {
+      console.warn(`[billing] clearing unknown stripe_customer_id for user ${userId} (wrong Stripe account or deleted customer).`);
+      await db.update(users).set({ stripe_customer_id: null }).where(eq(users.id, userId));
+      return null;
+    }
+    throw err;
+  }
+}
+
 async function ensureStripeCustomerId(userId: string): Promise<{ customerId: string }> {
+  const existing = await stripeCustomerIdForUser(userId);
+  if (existing) return { customerId: existing };
+
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (!user) throw new Error('User not found');
-  let customerId = user.stripe_customer_id;
-  if (!customerId) {
-    const customer = await stripe().customers.create({ email: user.email, name: user.display_name });
-    customerId = customer.id;
-    await db.update(users).set({ stripe_customer_id: customerId }).where(eq(users.id, userId));
-  }
+  const customer = await stripe().customers.create({ email: user.email, name: user.display_name });
+  const customerId = customer.id;
+  await db.update(users).set({ stripe_customer_id: customerId }).where(eq(users.id, userId));
   return { customerId };
 }
 
@@ -51,9 +101,36 @@ router.post('/elements-subscription', requireAuth, async (req: Request, res: Res
 
   try {
     const { clientSecret, subscriptionId } = await createSubscriptionForElementsPayment(customerId, price_id);
-    res.json({ client_secret: clientSecret, subscription_id: subscriptionId });
+    let customer_session_client_secret: string | null = null;
+    try {
+      const cs = await createCustomerSessionForPaymentElement(customerId);
+      customer_session_client_secret = cs.clientSecret;
+    } catch (csErr) {
+      console.warn('[billing] customer session (saved payment methods in Elements) failed:', csErr);
+    }
+    res.json({
+      client_secret: clientSecret,
+      subscription_id: subscriptionId,
+      customer_session_client_secret,
+    });
   } catch (err) {
     console.error('[billing] elements-subscription failed:', err);
+    const se = err as { type?: string; statusCode?: number; message?: string; code?: string };
+    if (
+      typeof se.statusCode === 'number'
+      && se.statusCode >= 400
+      && se.statusCode < 500
+      && typeof se.message === 'string'
+    ) {
+      res.status(se.statusCode).json({
+        error: {
+          code:    se.code ?? 'STRIPE_REQUEST_ERROR',
+          message: se.message,
+          status:  se.statusCode,
+        },
+      });
+      return;
+    }
     res.status(502).json({
       error: {
         code:    'STRIPE_SUBSCRIPTION_ERROR',
@@ -91,18 +168,18 @@ router.post('/payment-methods/default', requireAuth, async (req: Request, res: R
     res.status(400).json({ error: { code: 'INVALID_BODY', message: 'payment_method_id is required.', status: 400 } });
     return;
   }
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (!user.stripe_customer_id) {
+  const customerId = await stripeCustomerIdForUser(userId);
+  if (!customerId) {
     res.status(400).json({ error: { code: 'NO_STRIPE_CUSTOMER', message: 'No billing account found.', status: 400 } });
     return;
   }
   try {
     const pm = await stripe().paymentMethods.retrieve(payment_method_id);
-    if (pm.customer !== user.stripe_customer_id) {
+    if (pm.customer !== customerId) {
       res.status(403).json({ error: { code: 'FORBIDDEN', message: 'That payment method does not belong to your account.', status: 403 } });
       return;
     }
-    await stripe().customers.update(user.stripe_customer_id, {
+    await stripe().customers.update(customerId, {
       invoice_settings: { default_payment_method: payment_method_id },
     });
     const [subRow] = await db.select().from(subscriptions).where(eq(subscriptions.user_id, userId)).limit(1);
@@ -131,14 +208,14 @@ router.post('/payment-methods/detach', requireAuth, async (req: Request, res: Re
     res.status(400).json({ error: { code: 'INVALID_BODY', message: 'payment_method_id is required.', status: 400 } });
     return;
   }
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (!user.stripe_customer_id) {
+  const customerId = await stripeCustomerIdForUser(userId);
+  if (!customerId) {
     res.status(400).json({ error: { code: 'NO_STRIPE_CUSTOMER', message: 'No billing account found.', status: 400 } });
     return;
   }
   try {
     const pm = await stripe().paymentMethods.retrieve(payment_method_id);
-    if (pm.customer !== user.stripe_customer_id) {
+    if (pm.customer !== customerId) {
       res.status(403).json({ error: { code: 'FORBIDDEN', message: 'That payment method does not belong to your account.', status: 403 } });
       return;
     }
@@ -212,14 +289,15 @@ router.post('/subscription/change-price', requireAuth, async (req: Request, res:
 
 // ── GET /billing/invoices ─────────────────────────────────────────────────
 router.get('/invoices', requireAuth, async (req: Request, res: Response): Promise<void> => {
-  const [user] = await db.select().from(users).where(eq(users.id, req.user!.user_id)).limit(1);
-  if (!user.stripe_customer_id) {
-    res.json({ invoices: [] });
-    return;
-  }
+  const userId = req.user!.user_id;
   try {
+    const customerId = await stripeCustomerIdForUser(userId);
+    if (!customerId) {
+      res.json({ invoices: [] });
+      return;
+    }
     const list = await stripe().invoices.list({
-      customer: user.stripe_customer_id,
+      customer: customerId,
       limit:    30,
     });
     res.json({
@@ -244,21 +322,24 @@ router.get('/invoices', requireAuth, async (req: Request, res: Response): Promis
 
 // ── GET /billing/payment-profile (customer + saved cards) ────────────────
 router.get('/payment-profile', requireAuth, async (req: Request, res: Response): Promise<void> => {
-  const [user] = await db.select().from(users).where(eq(users.id, req.user!.user_id)).limit(1);
-  if (!user.stripe_customer_id) {
-    res.json({
-      customer_email:           user.email,
-      stripe_balance_cents:     0,
-      stripe_balance_currency:  null as string | null,
-      default_payment_method_id: null as string | null,
-      payment_methods:          [] as Array<{
-        id: string; brand: string | null; last4: string | null; exp_month: number | null; exp_year: number | null; is_default: boolean;
-      }>,
-    });
-    return;
-  }
+  const userId = req.user!.user_id;
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   try {
-    const customer = await stripe().customers.retrieve(user.stripe_customer_id, {
+    const customerId = await stripeCustomerIdForUser(userId);
+    if (!customerId) {
+      res.json({
+        customer_email:           user.email,
+        stripe_balance_cents:     0,
+        stripe_balance_currency:  null as string | null,
+        default_payment_method_id: null as string | null,
+        payment_methods:          [] as Array<{
+          id: string; brand: string | null; last4: string | null; exp_month: number | null; exp_year: number | null; is_default: boolean;
+        }>,
+      });
+      return;
+    }
+
+    const customer = await stripe().customers.retrieve(customerId, {
       expand: ['invoice_settings.default_payment_method'],
     });
     if (typeof customer === 'string' || customer.deleted) {
@@ -284,7 +365,7 @@ router.get('/payment-profile', requireAuth, async (req: Request, res: Response):
     }
 
     const pmList = await stripe().paymentMethods.list({
-      customer: user.stripe_customer_id,
+      customer: customerId,
       type:     'card',
     });
 
@@ -310,14 +391,26 @@ router.get('/payment-profile', requireAuth, async (req: Request, res: Response):
 
 // ── GET /billing/subscription ─────────────────────────────────────────────
 router.get('/subscription', requireAuth, async (req: Request, res: Response): Promise<void> => {
-  const [user] = await db.select().from(users).where(eq(users.id, req.user!.user_id)).limit(1);
+  const userId = req.user!.user_id;
+  await stripeCustomerIdForUser(userId);
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   const [sub]  = await db.select().from(subscriptions).where(eq(subscriptions.user_id, user.id)).limit(1);
 
   let cancel_at_period_end = false;
+  /** Prefer live Stripe values so the UI (e.g. cancel at period end) matches Stripe even if the DB row lags webhooks. */
+  let liveStatus:         string | null = null;
+  let livePriceId:        string | null = null;
+  let livePeriodEndIso:   string | null = null;
   if (sub) {
     try {
       const ss = await stripe().subscriptions.retrieve(sub.stripe_subscription_id);
       cancel_at_period_end = Boolean(ss.cancel_at_period_end);
+      liveStatus = ss.status;
+      const rawPrice = ss.items.data[0]?.price;
+      livePriceId = typeof rawPrice === 'string' ? rawPrice : rawPrice?.id ?? null;
+      if (typeof ss.current_period_end === 'number') {
+        livePeriodEndIso = new Date(ss.current_period_end * 1000).toISOString();
+      }
     } catch (err) {
       console.error('[billing] Stripe subscription retrieve failed:', err);
     }
@@ -327,9 +420,9 @@ router.get('/subscription', requireAuth, async (req: Request, res: Response): Pr
     tier:               user.subscription_tier,
     subscription:       sub
       ? {
-          status:               sub.status,
-          stripe_price_id:      sub.stripe_price_id,
-          current_period_end:   sub.current_period_end.toISOString(),
+          status:               liveStatus ?? sub.status,
+          stripe_price_id:      livePriceId ?? sub.stripe_price_id,
+          current_period_end:   livePeriodEndIso ?? sub.current_period_end.toISOString(),
           cancel_at_period_end,
         }
       : null,

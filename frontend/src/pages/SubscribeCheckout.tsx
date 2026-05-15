@@ -1,14 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
+import axios from 'axios';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import api, { extractApiError } from '@/lib/api';
 import { stripeBillingReturnUrl, pathAccountBilling } from '@/lib/accountUrls';
+import { stripeBrowserPromise } from '@/lib/stripeBrowser';
 import { velionStripeElementsAppearance } from '@/lib/stripeVelionAppearance';
 import { useAuthStore } from '@/store/authStore';
-
-const pk = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined)?.trim();
-const stripePromise = pk ? loadStripe(pk) : null;
 
 const T = {
   bg: '#06070c', surface: '#0a0c14', card: '#0d1018', border: '#1c2030',
@@ -19,6 +18,7 @@ function SubscribePaymentForm() {
   const stripe   = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
+  const userEmail = useAuthStore((s) => s.user?.email);
   const [busy, setBusy] = useState(false);
   const [err, setErr]   = useState('');
 
@@ -58,11 +58,25 @@ function SubscribePaymentForm() {
         background: T.surface,
         border: `1px solid ${T.border}`,
         borderRadius: '6px',
-        minHeight: '120px',
+        minHeight: '280px',
         width:     '100%',
         boxSizing: 'border-box',
       }}>
-        <PaymentElement options={{ layout: 'tabs' }} />
+        <PaymentElement
+          options={{
+            layout:             'tabs',
+            paymentMethodOrder: ['card'],
+            wallets:            { applePay: 'never', googlePay: 'never' },
+            fields: {
+              billingDetails: {
+                name:    'auto',
+                email:   userEmail ? 'never' : 'auto',
+                phone:   'never',
+                address: 'auto',
+              },
+            },
+          }}
+        />
       </div>
       {err && (
         <div style={{
@@ -96,9 +110,14 @@ export default function SubscribeCheckout() {
   const [searchParams] = useSearchParams();
   const navigate       = useNavigate();
   const user            = useAuthStore((s) => s.user);
+  const isReady         = useAuthStore((s) => s.isReady);
+  const accessToken     = useAuthStore((s) => s.accessToken);
   const priceId        = searchParams.get('price_id')?.trim() ?? '';
+  const mockAuth        = import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true';
 
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  /** From Customer Session — required for Payment Element to list saved cards for this Stripe customer. */
+  const [customerSessionClientSecret, setCustomerSessionClientSecret] = useState<string | null>(null);
   const [bootErr, setBootErr]           = useState('');
   const [loading, setLoading]           = useState(true);
 
@@ -109,35 +128,60 @@ export default function SubscribeCheckout() {
       const t = setTimeout(() => navigate('/pricing', { replace: true }), 1800);
       return () => clearTimeout(t);
     }
-    if (!stripePromise) {
+    if (!stripeBrowserPromise) {
       setBootErr('Stripe is not configured for this app build (missing publishable key).');
       setLoading(false);
       return;
     }
 
-    let alive = true;
+    if (!mockAuth) {
+      if (!isReady) return;
+      if (!accessToken) {
+        setBootErr('Your session is not available. Sign in again, then return to checkout.');
+        setLoading(false);
+        return;
+      }
+    }
+
+    const ac = new AbortController();
     setLoading(true);
     setBootErr('');
     setClientSecret(null);
+    setCustomerSessionClientSecret(null);
 
     void (async () => {
       try {
-        const { data } = await api.post<{ client_secret: string }>('/billing/elements-subscription', { price_id: priceId });
-        if (!alive) return;
+        const { data } = await api.post<{
+          client_secret: string;
+          customer_session_client_secret?: string | null;
+        }>(
+          '/billing/elements-subscription',
+          { price_id: priceId },
+          { signal: ac.signal },
+        );
+        if (ac.signal.aborted) return;
         if (!data.client_secret) setBootErr('Could not start checkout.');
-        else setClientSecret(data.client_secret);
+        else {
+          setClientSecret(data.client_secret);
+          setCustomerSessionClientSecret(
+            typeof data.customer_session_client_secret === 'string' && data.customer_session_client_secret
+              ? data.customer_session_client_secret
+              : null,
+          );
+        }
       } catch (e) {
-        if (alive) setBootErr(extractApiError(e).message);
+        if (axios.isAxiosError(e) && e.code === 'ERR_CANCELED') return;
+        if (!ac.signal.aborted) setBootErr(extractApiError(e).message);
       } finally {
-        if (alive) setLoading(false);
+        if (!ac.signal.aborted) setLoading(false);
       }
     })();
 
-    return () => { alive = false; };
-  }, [priceId, navigate]);
+    return () => ac.abort();
+  }, [priceId, navigate, isReady, accessToken, mockAuth]);
 
   return (
-    <div className="page-enter" style={{
+    <div className="page-enter-opacity" style={{
       background: T.bg, color: T.text, minHeight: 'calc(100vh - 75px)',
       fontFamily: "'EB Garamond', serif", padding: '40px 24px 64px',
     }}>
@@ -170,7 +214,7 @@ export default function SubscribeCheckout() {
           </div>
         )}
         <p style={{ color: T.textMuted, fontSize: '17px', lineHeight: 1.65, margin: '0 0 28px' }}>
-          Enter your payment details below. After a successful charge you will return to Account → Billing, where you can manage your plan, cards, and invoice history.
+          Use a card you already saved on Velion, or add a new one. After a successful charge you will return to Account → Billing, where you can manage your plan, cards, and invoice history.
         </p>
 
         {loading && (
@@ -179,18 +223,45 @@ export default function SubscribeCheckout() {
         {!loading && bootErr && (
           <div style={{ color: T.danger, marginBottom: '16px' }}>{bootErr}</div>
         )}
-        {!loading && clientSecret && stripePromise && (
-          <Elements
-            key={clientSecret}
-            stripe={stripePromise}
-            options={{
-              clientSecret,
-              loader: 'auto',
-              appearance: velionStripeElementsAppearance,
+        {/* Mount Elements under document.body so Stripe iframes are not inside Layout <main> (scroll/stacking)
+            or other ancestors that break iframe focus / sizing in some browsers. */}
+        {!loading && clientSecret && stripeBrowserPromise && typeof document !== 'undefined' && createPortal(
+          <div
+            style={{
+              position:       'fixed',
+              top:            '75px',
+              left:           0,
+              right:          0,
+              bottom:         0,
+              zIndex:         26000,
+              overflowY:      'auto',
+              WebkitOverflowScrolling: 'touch',
+              background:     T.bg,
+              padding:        '28px 24px 48px',
+              boxSizing:      'border-box',
             }}
           >
-            <SubscribePaymentForm />
-          </Elements>
+            <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+              <Elements
+                key={`${clientSecret}:${customerSessionClientSecret ?? ''}`}
+                stripe={stripeBrowserPromise}
+                options={{
+                  clientSecret,
+                  ...(customerSessionClientSecret
+                    ? { customerSessionClientSecret: customerSessionClientSecret }
+                    : {}),
+                  loader:     'auto',
+                  appearance: velionStripeElementsAppearance,
+                  ...(user?.email
+                    ? { defaultValues: { billingDetails: { email: user.email } } }
+                    : {}),
+                }}
+              >
+                <SubscribePaymentForm />
+              </Elements>
+            </div>
+          </div>,
+          document.body,
         )}
       </div>
     </div>

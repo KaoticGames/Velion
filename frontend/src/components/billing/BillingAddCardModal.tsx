@@ -1,10 +1,10 @@
 import { type FormEvent, useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
+import { createPortal } from 'react-dom';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import { stripeBrowserPromise } from '@/lib/stripeBrowser';
 import { velionStripeElementsAppearance } from '@/lib/stripeVelionAppearance';
 
-const pk = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined)?.trim();
-export const billingStripePromise = pk ? loadStripe(pk) : null;
+export const billingStripePromise = stripeBrowserPromise;
 
 const T = {
   bg: '#06070c', surface: '#0a0c14', card: '#0d1018', border: '#1c2030',
@@ -47,11 +47,17 @@ function SetupForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: () 
         background: T.surface,
         border: `1px solid ${T.border}`,
         borderRadius: '6px',
-        minHeight: '100px',
+        minHeight: '220px',
         width: '100%',
         boxSizing: 'border-box',
       }}>
-        <PaymentElement options={{ layout: 'tabs' }} />
+        <PaymentElement
+          options={{
+            layout:               'tabs',
+            paymentMethodOrder:   ['card'],
+            wallets:              { applePay: 'never', googlePay: 'never' },
+          }}
+        />
       </div>
       {err && (
         <div style={{
@@ -97,19 +103,31 @@ type Props = {
 };
 
 export default function BillingAddCardModal({ clientSecret, onClose, onSuccess }: Props) {
-  if (!billingStripePromise) return null;
+  if (!billingStripePromise || typeof document === 'undefined') return null;
 
-  return (
+  const overlay = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="billing-add-card-title"
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, zIndex: 2000,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        minHeight: '100dvh',
+        zIndex: 26000,
+        boxSizing: 'border-box',
         background: 'rgba(6,7,12,0.82)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         padding: '24px',
+        overflow: 'auto',
+        overscrollBehavior: 'contain',
       }}
     >
       <div
@@ -163,4 +181,6 @@ export default function BillingAddCardModal({ clientSecret, onClose, onSuccess }
       </div>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }

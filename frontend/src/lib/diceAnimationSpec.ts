@@ -113,3 +113,61 @@ export function physicsNotationToDiceBoxRoll(notation: string): { rollArg: DiceB
     .filter((p) => p.qty > 0);
   return { rollArg, d100Count };
 }
+
+/** Pairs a d100 total (1–100) into the two physics dice values dice-box uses (matches `GlobalDiceOverlay` merge). */
+export function splitD100ForDiceBox(total: number): [percentileValue: number, onesValue: number] {
+  const v = Math.max(1, Math.min(100, Math.floor(total)));
+  if (v === 100) return [0, 10];
+  const tens = Math.floor(v / 10) * 10;
+  const rem = v % 10;
+  if (rem === 0) return [v, 10];
+  return [tens, rem];
+}
+
+/**
+ * dice-box string so physics animates then settles on predetermined faces (`NdX@a,b,...`).
+ * Uses **linear** `animation_spec` order (same as server `rolledFaces`). Do not use grouped
+ * `physics_notation` (e.g. `2d20 + 1d6`) for @ mapping — it can reorder dice vs roll order
+ * when types interleave (`1d20+1d6+1d20`).
+ * @see https://github.com/3d-dice/dice-box-threejs/issues/3
+ */
+export function buildDeterministicDiceBoxNotationFromAnimationSpec(animationSpec: DiceAnimationFace[]): string | null {
+  if (!animationSpec.length) return null;
+  const parts: string[] = [];
+  const atValues: number[] = [];
+  let i = 0;
+  while (i < animationSpec.length) {
+    const face = animationSpec[i];
+    if (!face || !Number.isFinite(face.sides) || !Number.isFinite(face.value)) return null;
+
+    if (face.sides === 100) {
+      const v = face.value;
+      if (v < 1 || v > 100) return null;
+      parts.push('1d100+1d10');
+      const [p, u] = splitD100ForDiceBox(v);
+      atValues.push(p, u);
+      i += 1;
+      continue;
+    }
+
+    if (face.sides < 2 || face.value < 1 || face.value > face.sides) return null;
+
+    let qty = 1;
+    let j = i + 1;
+    while (j < animationSpec.length && animationSpec[j].sides === face.sides) {
+      const f = animationSpec[j];
+      if (f.value < 1 || f.value > f.sides) return null;
+      qty += 1;
+      j += 1;
+    }
+    parts.push(`${qty}d${face.sides}`);
+    for (let k = i; k < j; k += 1) {
+      atValues.push(animationSpec[k].value);
+    }
+    i = j;
+  }
+
+  const base = parts.join('+');
+  if (!atValues.length) return null;
+  return `${base}@${atValues.join(',')}`;
+}

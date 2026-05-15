@@ -19,7 +19,7 @@ import {
 import { eq, and, isNull }       from 'drizzle-orm';
 import { rollDiceAuthoritative } from '../lib/sessionDiceRoll';
 
-const SERVER_DICE_RESULT_DELAY_MS = 1400;
+const SERVER_DICE_RESULT_DELAY_MS = 3200;
 
 const isJsonColumnInputError = (err: unknown): boolean => {
   const code = (err as { code?: string } | null)?.code;

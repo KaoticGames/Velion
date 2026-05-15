@@ -109,6 +109,16 @@ body {
   animation: pageFadeIn 0.25s ease-out both;
 }
 
+/* Fade-in without transform — Stripe Payment Element iframes do not receive input
+   reliably when an ancestor uses transform (see SubscribeCheckout, BillingAddCardModal). */
+@keyframes pageFadeInOpacity {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.page-enter-opacity {
+  animation: pageFadeInOpacity 0.28s ease-out both;
+}
+
 /* ── Gold shimmer ───────────────────────────────────────────────────────── */
 @keyframes goldPulse {
   0%, 100% { opacity: 1; }

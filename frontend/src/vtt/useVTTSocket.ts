@@ -134,7 +134,6 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
     // Dice — `dice:result` → `velion:dice-result-pending` → dice log (`velion:dice-log-commit`)
     socket.on('dice:roll_start', (p: any) => {
       if (typeof window === 'undefined') return;
-      if (!window.location.pathname.startsWith('/vtt/')) return;
       window.dispatchEvent(new CustomEvent('velion:session-dice-roll-start', { detail: p }));
     });
 

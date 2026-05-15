@@ -10,7 +10,10 @@ const getStripe = (): Stripe => {
     if (!key || key.includes('REPLACE')) {
       throw new Error('Stripe is not configured. Set STRIPE_SECRET_KEY in .env.development to use billing features.');
     }
-    _stripe = new Stripe(key, { apiVersion: '2025-02-24.acacia' });
+    // Pin to Dashboard / webhook version. Installed `stripe` types may not list this literal yet.
+    _stripe = new Stripe(key, {
+      apiVersion: '2026-03-25.dahlia' as unknown as Stripe.StripeConfig['apiVersion'],
+    });
   }
   return _stripe;
 };
@@ -98,6 +101,31 @@ export const createSetupIntentForCustomer = async (customerId: string): Promise<
   });
   if (!si.client_secret) throw new Error('Stripe did not return a setup intent client secret.');
   return { clientSecret: si.client_secret };
+};
+
+/**
+ * Single-use secret for Elements so the Payment Element can **list** saved payment methods for this customer.
+ * Without this, checkout only shows “add new card” even when the same `customer` is on the PaymentIntent.
+ */
+export const createCustomerSessionForPaymentElement = async (
+  customerId: string,
+): Promise<{ clientSecret: string }> => {
+  const session = await getStripe().customerSessions.create({
+    customer: customerId,
+    components: {
+      payment_element: {
+        enabled: true,
+        features: {
+          payment_method_redisplay:             'enabled',
+          payment_method_allow_redisplay_filters: ['always', 'limited', 'unspecified'],
+        },
+      },
+    },
+  });
+  if (!session.client_secret) {
+    throw new Error('Stripe did not return a customer session client secret.');
+  }
+  return { clientSecret: session.client_secret };
 };
 
 /** Swap the subscription’s single item to a new catalog price (prorates). */

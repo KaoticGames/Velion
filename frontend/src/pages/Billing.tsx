@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api, { extractApiError } from '@/lib/api';
 import { displayPlanPriceLabel, paidPlanStripePriceId, type PaidSubscribeTier } from '@/lib/billingPlanDisplay';
 import BillingAddCardModal, { billingStripePromise } from '@/components/billing/BillingAddCardModal';
+import BillingPaymentMethodsModal from '@/components/billing/BillingPaymentMethodsModal';
 import { useBillingPriceCatalog } from '@/hooks/useBillingPriceCatalog';
 import { useAuthStore, type AuthUser } from '@/store/authStore';
 
@@ -125,6 +126,7 @@ export default function Billing({ embedded = false }: { embedded?: boolean }) {
   const [loadErr, setLoadErr]       = useState('');
   const [busy, setBusy]             = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [paymentMethodsModalOpen, setPaymentMethodsModalOpen] = useState(false);
   const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null);
   const [defaultingPm, setDefaultingPm]           = useState<string | null>(null);
   const [detachingPm, setDetachingPm]             = useState<string | null>(null);
@@ -175,7 +177,8 @@ export default function Billing({ embedded = false }: { embedded?: boolean }) {
 
   const tier = (billing?.tier ?? user?.subscription_tier ?? 'free') as AuthUser['subscription_tier'];
 
-  const subActiveStates = new Set(['active', 'trialing', 'past_due']);
+  /** Stripe statuses where the subscription still exists and cancel-at-period-end / resume apply. */
+  const subActiveStates = new Set(['active', 'trialing', 'past_due', 'unpaid', 'paused']);
   const canManageStripeSubscription = Boolean(
     billing?.subscription && subActiveStates.has(billing.subscription.status),
   );
@@ -360,19 +363,27 @@ export default function Billing({ embedded = false }: { embedded?: boolean }) {
       ) : (
         <>
           <section style={sectionBox}>
-            <h2 style={sectionTitle}>Plan & subscription</h2>
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px 20px',
+              marginBottom: '14px',
+            }}>
+              <h2 style={{ ...sectionTitle, margin: 0, flex: '1 1 200px', minWidth: 0 }}>Plan & subscription</h2>
+              <p style={{ margin: 0, fontSize: '20px', color: T.text, flexShrink: 0 }}>
+                Current Tier:{' '}
+                <strong style={{ color: tier === 'dm' ? T.gold : T.text }}>{capTier(tier)}</strong>
+              </p>
+            </div>
             <p style={{ color: T.textMuted, fontSize: '17px', lineHeight: 1.65, marginTop: 0 }}>
               Your tier, billing period, plan changes, and cancellation — proration applies when you switch prices on an active subscription. To start a new paid plan from scratch, use checkout below.
             </p>
 
-            <div style={{ marginTop: '20px' }}>
-              <div style={{ ...sectionTitle, marginBottom: '10px', fontSize: '12px' }}>CURRENT PLAN</div>
-              <p style={{ margin: '0 0 8px', fontSize: '20px', color: T.text }}>
-                Tier:{' '}
-                <strong style={{ color: tier === 'dm' ? T.gold : T.text }}>{capTier(tier)}</strong>
-              </p>
-              {billing.subscription ? (
-                <ul style={{ color: T.textMuted, fontSize: '17px', lineHeight: 1.65, paddingLeft: '20px', margin: '12px 0 0' }}>
+            {billing.subscription && (
+              <div style={{ marginTop: '18px' }}>
+                <ul style={{ color: T.textMuted, fontSize: '17px', lineHeight: 1.65, paddingLeft: '20px', margin: 0 }}>
                   <li>Status: {billing.subscription.status}</li>
                   {billing.subscription.cancel_at_period_end && (
                     <li style={{ color: T.goldDim }}>
@@ -387,12 +398,8 @@ export default function Billing({ embedded = false }: { embedded?: boolean }) {
                     })}
                   </li>
                 </ul>
-              ) : (
-                <p style={{ color: T.textMuted, fontSize: '17px', margin: '12px 0 0' }}>
-                  You are on the free tier. Choose Player or DM and monthly or yearly below, then continue to checkout.
-                </p>
-              )}
-            </div>
+              </div>
+            )}
 
             {canManageStripeSubscription && catalogComplete && planOptions.length > 0 && billing.subscription && (
               <div style={{ marginTop: '22px', paddingTop: '22px', borderTop: `1px solid ${T.border}` }}>
@@ -432,240 +439,208 @@ export default function Billing({ embedded = false }: { embedded?: boolean }) {
 
             {canManageStripeSubscription && catalogReady && !catalogComplete && (
               <p style={{ color: T.textDim, fontSize: '16px', marginTop: '18px', fontStyle: 'italic' }}>
-                Plan changes require all four Stripe prices to be configured on the server. You can still add and manage cards in Payment methods below.
+                Plan changes require all four Stripe prices to be configured on the server. You can still open Change Payment Method next to Change subscription to add or manage cards.
               </p>
             )}
 
-            <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: `1px solid ${T.border}` }}>
-              <div style={{ ...sectionTitle, marginBottom: '10px', fontSize: '12px' }}>NEW SUBSCRIPTION</div>
-              <p style={{ color: T.textMuted, fontSize: '17px', lineHeight: 1.65, marginTop: 0 }}>
-                Pick a tier and billing interval. Price updates as you change options. Checkout runs on the next page with Stripe.
-              </p>
-
-              <div style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.14em', color: T.textDim, marginTop: '16px', marginBottom: '8px' }}>
-                TIER
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {(['player', 'dm'] as const).map((t) => {
-                  const active = subscribePaidTier === t;
-                  const accent = t === 'dm' ? T.gold : T.rp;
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setSubscribePaidTier(t)}
-                      style={{
-                        fontFamily: "'Cinzel', serif",
-                        fontSize: '13px',
-                        letterSpacing: '0.12em',
-                        padding: '10px 20px',
-                        borderRadius: '4px',
-                        border: `1px solid ${active ? accent : T.border}`,
-                        background: active ? `${accent}22` : 'transparent',
-                        color: active ? accent : T.textMuted,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {t === 'player' ? 'Player' : 'Dungeon Master'}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.14em', color: T.textDim, marginTop: '18px', marginBottom: '8px' }}>
-                BILLING
-              </div>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '12px',
-                background: T.surface, border: `1px solid ${T.border}`, borderRadius: '4px', padding: '6px 14px',
-              }}>
-                <span style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.1em', color: subscribeAnnual ? T.textDim : T.text }}>
-                  Monthly
-                </span>
-                <button
-                  type="button"
-                  aria-pressed={subscribeAnnual}
-                  onClick={() => setSubscribeAnnual((a) => !a)}
-                  disabled={busy}
-                  style={{
-                    width: '40px', height: '20px', borderRadius: '10px', border: 'none',
-                    cursor: busy ? 'not-allowed' : 'pointer',
-                    background: subscribeAnnual ? T.gold : T.border,
-                    position: 'relative', transition: 'background 0.2s ease',
-                  }}
-                >
-                  <span style={{
-                    position: 'absolute', top: '2px',
-                    left: subscribeAnnual ? '20px' : '2px',
-                    width: '16px', height: '16px', borderRadius: '50%',
-                    background: T.bg, transition: 'left 0.2s ease',
-                    display: 'block',
-                  }} />
-                </button>
-                <span style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.1em', color: subscribeAnnual ? T.text : T.textDim }}>
-                  Annual
-                </span>
-              </div>
-
-              <p style={{
-                fontSize: 'clamp(20px, 2.5vw, 26px)',
-                color: T.gold,
-                margin: '18px 0 4px',
-                fontFamily: "'Cinzel', serif",
-                letterSpacing: '0.06em',
-                fontWeight: 600,
-              }}>
-                {catalogComplete ? displayPlanPriceLabel(subscribePaidTier, subscribeAnnual) : '—'}
-              </p>
-              {catalogReady && !catalogComplete && (
-                <p style={{ color: T.textDim, fontSize: '15px', fontStyle: 'italic', margin: '0 0 12px' }}>
-                  All four Stripe price IDs must be configured on the server before checkout is available.
+            <div style={{
+              marginTop: '20px',
+              paddingTop: '20px',
+              borderTop: `1px solid ${T.border}`,
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '28px',
+              alignItems: 'stretch',
+            }}>
+              <div style={{ flex: '1 1 300px', minWidth: 0 }}>
+                <div style={{ ...sectionTitle, marginBottom: '10px', fontSize: '12px' }}>CHANGE SUBSCRIPTION</div>
+                <p style={{ color: T.textMuted, fontSize: '17px', lineHeight: 1.65, marginTop: 0 }}>
+                  Pick a tier and billing interval. Price updates as you change options. Checkout runs on the next page with Stripe.
                 </p>
-              )}
 
-              <div style={{ marginTop: '8px' }}>
-                <button
-                  type="button"
-                  disabled={newCheckoutDisabled}
-                  onClick={() => {
-                    if (!selectedSubscribePriceId) return;
-                    navigate(`/subscribe?price_id=${encodeURIComponent(selectedSubscribePriceId)}`);
-                  }}
-                  style={primaryBtn}
-                >
-                  Continue to checkout
-                </button>
-              </div>
-              {canManageStripeSubscription && (
-                <p style={{ color: T.textDim, fontSize: '15px', marginTop: '12px', fontStyle: 'italic', marginBottom: 0 }}>
-                  You already have an active subscription. Use Change billing plan above to switch your price — starting checkout again may create a second subscription in Stripe.
-                </p>
-              )}
-            </div>
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.14em', color: T.textDim, marginTop: '16px', marginBottom: '8px' }}>
+                  TIER
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {(['player', 'dm'] as const).map((t) => {
+                    const active = subscribePaidTier === t;
+                    const accent = t === 'dm' ? T.gold : T.rp;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setSubscribePaidTier(t)}
+                        style={{
+                          fontFamily: "'Cinzel', serif",
+                          fontSize: '13px',
+                          letterSpacing: '0.12em',
+                          padding: '10px 20px',
+                          borderRadius: '4px',
+                          border: `1px solid ${active ? accent : T.border}`,
+                          background: active ? `${accent}22` : 'transparent',
+                          color: active ? accent : T.textMuted,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {t === 'player' ? 'Player' : 'Dungeon Master'}
+                      </button>
+                    );
+                  })}
+                </div>
 
-            <div style={{ marginTop: '22px', paddingTop: '22px', borderTop: `1px solid ${T.border}` }}>
-              <div style={{ ...sectionTitle, marginBottom: '10px', fontSize: '12px' }}>CANCEL SUBSCRIPTION</div>
-              <p style={{ color: T.textMuted, fontSize: '17px', lineHeight: 1.65, marginTop: 0 }}>
-                Cancelling schedules the end of your paid access at the close of the current billing period (you are not charged again for that plan).
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '14px' }}>
-                {showResumeButton && (
-                  <button type="button" disabled={busy} onClick={() => void resumeSub()} style={primaryBtn}>
-                    Keep subscription
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.14em', color: T.textDim, marginTop: '18px', marginBottom: '8px' }}>
+                  BILLING
+                </div>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '12px',
+                  background: T.surface, border: `1px solid ${T.border}`, borderRadius: '4px', padding: '6px 14px',
+                }}>
+                  <span style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.1em', color: subscribeAnnual ? T.textDim : T.text }}>
+                    Monthly
+                  </span>
+                  <button
+                    type="button"
+                    aria-pressed={subscribeAnnual}
+                    onClick={() => setSubscribeAnnual((a) => !a)}
+                    disabled={busy}
+                    style={{
+                      width: '40px', height: '20px', borderRadius: '10px', border: 'none',
+                      cursor: busy ? 'not-allowed' : 'pointer',
+                      background: subscribeAnnual ? T.gold : T.border,
+                      position: 'relative', transition: 'background 0.2s ease',
+                    }}
+                  >
+                    <span style={{
+                      position: 'absolute', top: '2px',
+                      left: subscribeAnnual ? '20px' : '2px',
+                      width: '16px', height: '16px', borderRadius: '50%',
+                      background: T.bg, transition: 'left 0.2s ease',
+                      display: 'block',
+                    }} />
                   </button>
+                  <span style={{ fontFamily: "'Cinzel', serif", fontSize: '12px', letterSpacing: '0.1em', color: subscribeAnnual ? T.text : T.textDim }}>
+                    Annual
+                  </span>
+                </div>
+
+                <p style={{
+                  fontSize: 'clamp(20px, 2.5vw, 26px)',
+                  color: T.gold,
+                  margin: '18px 0 4px',
+                  fontFamily: "'Cinzel', serif",
+                  letterSpacing: '0.06em',
+                  fontWeight: 600,
+                }}>
+                  {catalogComplete ? displayPlanPriceLabel(subscribePaidTier, subscribeAnnual) : '—'}
+                </p>
+                {catalogReady && !catalogComplete && (
+                  <p style={{ color: T.textDim, fontSize: '15px', fontStyle: 'italic', margin: '0 0 12px' }}>
+                    All four Stripe price IDs must be configured on the server before checkout is available.
+                  </p>
                 )}
-                {showCancelFlow && !showCancelConfirm && (
+
+                <div style={{ marginTop: '8px' }}>
+                  <button
+                    type="button"
+                    disabled={newCheckoutDisabled}
+                    onClick={() => {
+                      if (!selectedSubscribePriceId) return;
+                      navigate(`/subscribe?price_id=${encodeURIComponent(selectedSubscribePriceId)}`);
+                    }}
+                    style={primaryBtn}
+                  >
+                    Continue to checkout
+                  </button>
+                </div>
+                {canManageStripeSubscription && (
+                  <p style={{ color: T.textDim, fontSize: '15px', marginTop: '12px', fontStyle: 'italic', marginBottom: 0 }}>
+                    You already have an active subscription. Use Change billing plan above to switch your price — starting checkout again may create a second subscription in Stripe.
+                  </p>
+                )}
+              </div>
+
+              <aside style={{
+                flex: '1 1 260px',
+                maxWidth: '100%',
+                minWidth: 'min(100%, 240px)',
+                display: 'flex',
+                flexDirection: 'column',
+                background: T.surface,
+                border: `1px solid ${T.border}`,
+                borderRadius: '6px',
+                padding: '18px 18px 20px',
+              }}>
+                <div style={{ marginBottom: '18px', paddingBottom: '18px', borderBottom: `1px solid ${T.border}` }}>
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => { setShowCancelConfirm(true); setLoadErr(''); }}
-                    style={dangerOutlineBtn}
+                    onClick={() => { setPaymentMethodsModalOpen(true); setLoadErr(''); }}
+                    style={{ ...primaryBtn, width: '100%' }}
                   >
-                    Cancel subscription
+                    Change Payment Method
                   </button>
-                )}
-              </div>
-              {showCancelFlow && showCancelConfirm && billing.subscription && (
-                <div style={{
-                  marginTop: '16px', padding: '16px 18px',
-                  background: T.surface, border: `1px solid ${T.danger}44`, borderRadius: '4px',
-                }}>
-                  <p style={{ margin: '0 0 12px', fontSize: '17px', lineHeight: 1.55 }}>
-                    End your paid plan after{' '}
-                    <strong>{new Date(billing.subscription.current_period_end).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</strong>?
-                  </p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                    <button type="button" disabled={busy} onClick={() => void scheduleCancel()} style={{ ...primaryBtn, background: T.danger, color: T.text }}>
-                      Yes, cancel at period end
-                    </button>
-                    <button type="button" disabled={busy} onClick={() => { setShowCancelConfirm(false); setLoadErr(''); }} style={secondaryBtn}>
-                      Never mind
-                    </button>
-                  </div>
                 </div>
-              )}
+                <div style={{ ...sectionTitle, marginBottom: '10px', fontSize: '12px' }}>CANCEL SUBSCRIPTION</div>
+                <p style={{ color: T.textMuted, fontSize: '17px', lineHeight: 1.65, marginTop: 0 }}>
+                  Cancelling schedules the end of your paid access at the close of the current billing period (you are not charged again for that plan).
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '18px' }}>
+                  {showResumeButton && (
+                    <button type="button" disabled={busy} onClick={() => void resumeSub()} style={{ ...primaryBtn, width: '100%' }}>
+                      Keep subscription
+                    </button>
+                  )}
+                  {showCancelFlow && !showCancelConfirm && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => { setShowCancelConfirm(true); setLoadErr(''); }}
+                      style={{ ...dangerOutlineBtn, width: '100%', paddingTop: '12px', paddingBottom: '12px', fontWeight: 700 }}
+                    >
+                      Cancel subscription
+                    </button>
+                  )}
+                </div>
+                {showCancelFlow && showCancelConfirm && billing.subscription && (
+                  <div style={{
+                    marginTop: '16px', padding: '16px 18px',
+                    background: T.card, border: `1px solid ${T.danger}44`, borderRadius: '4px',
+                  }}>
+                    <p style={{ margin: '0 0 12px', fontSize: '17px', lineHeight: 1.55 }}>
+                      End your paid plan after{' '}
+                      <strong>{new Date(billing.subscription.current_period_end).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</strong>?
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <button type="button" disabled={busy} onClick={() => void scheduleCancel()} style={{ ...primaryBtn, width: '100%', background: T.danger, color: T.text }}>
+                        Yes, cancel at period end
+                      </button>
+                      <button type="button" disabled={busy} onClick={() => { setShowCancelConfirm(false); setLoadErr(''); }} style={{ ...secondaryBtn, width: '100%' }}>
+                        Never mind
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </aside>
             </div>
-          </section>
 
-          <section style={sectionBox}>
-            <h2 style={sectionTitle}>Billing profile</h2>
-            <dl style={{ margin: 0, display: 'grid', gap: '10px', fontSize: '17px', color: T.textMuted }}>
-              <div><dt style={{ display: 'inline', color: T.textDim }}>Receipt email</dt>{' '}
-                <dd style={{ display: 'inline', margin: 0, color: T.text }}>{profile.customer_email}</dd></div>
-              {profile.stripe_balance_cents !== 0 && profile.stripe_balance_currency && (
-                <div><dt style={{ display: 'inline', color: T.textDim }}>Account balance</dt>{' '}
-                  <dd style={{ display: 'inline', margin: 0, color: T.text }}>
-                    {formatMoney(profile.stripe_balance_cents, profile.stripe_balance_currency)}
-                  </dd></div>
-              )}
-            </dl>
-          </section>
-
-          <section style={sectionBox}>
-            <h2 style={sectionTitle}>Payment methods</h2>
-            <p style={{ color: T.textMuted, fontSize: '17px', lineHeight: 1.65, marginTop: 0 }}>
-              Add a card, choose which one is charged by default for renewals, or remove cards you no longer use.
-            </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginTop: '16px', marginBottom: '18px' }}>
-              <button type="button" disabled={busy || !billingStripePromise} onClick={() => void startAddCard()} style={primaryBtn}>
-                Add card
-              </button>
-              {!billingStripePromise && (
-                <span style={{ color: T.textDim, fontSize: '15px' }}>Publishable key missing — card form unavailable.</span>
-              )}
-            </div>
-            {profile.payment_methods.length === 0 ? (
-              <p style={{ color: T.textMuted, margin: '0 0 8px' }}>No cards on file yet. Add one with the button above, or save a card when you subscribe.</p>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '16px', color: T.textMuted }}>
-                <thead>
-                  <tr style={{ borderBottom: `1px solid ${T.border}`, textAlign: 'left' }}>
-                    <th style={{ padding: '8px 6px', fontFamily: "'Cinzel', serif", fontSize: '11px', letterSpacing: '0.12em', color: T.textDim }}>CARD</th>
-                    <th style={{ padding: '8px 6px', fontFamily: "'Cinzel', serif", fontSize: '11px', letterSpacing: '0.12em', color: T.textDim }}>EXPIRES</th>
-                    <th style={{ padding: '8px 6px', fontFamily: "'Cinzel', serif", fontSize: '11px', letterSpacing: '0.12em', color: T.textDim }}>DEFAULT</th>
-                    <th style={{ padding: '8px 6px', fontFamily: "'Cinzel', serif", fontSize: '11px', letterSpacing: '0.12em', color: T.textDim }}>ACTIONS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {profile.payment_methods.map((pm) => (
-                    <tr key={pm.id} style={{ borderBottom: `1px solid ${T.border}` }}>
-                      <td style={{ padding: '10px 6px', color: T.text }}>
-                        {(pm.brand ?? 'Card').toUpperCase()} ···· {pm.last4 ?? '—'}
-                      </td>
-                      <td style={{ padding: '10px 6px' }}>
-                        {pm.exp_month && pm.exp_year ? `${pm.exp_month}/${pm.exp_year}` : '—'}
-                      </td>
-                      <td style={{ padding: '10px 6px' }}>{pm.is_default ? 'Yes' : '—'}</td>
-                      <td style={{ padding: '10px 6px' }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                          {!pm.is_default && (
-                            <button
-                              type="button"
-                              disabled={Boolean(defaultingPm) || Boolean(detachingPm)}
-                              onClick={() => void setDefaultPm(pm.id)}
-                              style={{ ...secondaryBtn, padding: '6px 10px', fontSize: '11px' }}
-                            >
-                              {defaultingPm === pm.id ? '…' : 'Set default'}
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            disabled={Boolean(defaultingPm) || Boolean(detachingPm)}
-                            onClick={() => void detachPm(pm.id)}
-                            style={{ ...dangerOutlineBtn, padding: '6px 10px', fontSize: '11px' }}
-                          >
-                            {detachingPm === pm.id ? '…' : 'Remove'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {showCancelFlow && !showCancelConfirm && (
+              <div style={{ marginTop: '22px', paddingTop: '22px', borderTop: `1px solid ${T.border}` }}>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => { setShowCancelConfirm(true); setLoadErr(''); }}
+                  style={{
+                    ...dangerOutlineBtn,
+                    width: '100%',
+                    paddingTop: '12px',
+                    paddingBottom: '12px',
+                    fontWeight: 700,
+                  }}
+                >
+                  Cancel subscription
+                </button>
+              </div>
             )}
-            <p style={{ color: T.textDim, fontSize: '15px', marginTop: '14px', fontStyle: 'italic', marginBottom: 0 }}>
-              Default is used for subscription renewals. Removing a card cannot undo pending invoices — check invoice history if a charge is due.
-            </p>
           </section>
 
           <section style={sectionBox}>
@@ -712,6 +687,21 @@ export default function Billing({ embedded = false }: { embedded?: boolean }) {
             )}
           </section>
         </>
+      )}
+
+      {profile && (
+        <BillingPaymentMethodsModal
+          open={paymentMethodsModalOpen}
+          onClose={() => setPaymentMethodsModalOpen(false)}
+          paymentMethods={profile.payment_methods}
+          busy={busy}
+          defaultingPm={defaultingPm}
+          detachingPm={detachingPm}
+          stripeReady={Boolean(billingStripePromise)}
+          onAddCard={startAddCard}
+          onSetDefault={setDefaultPm}
+          onDetach={detachPm}
+        />
       )}
 
       {setupClientSecret && (
