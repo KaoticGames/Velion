@@ -7,6 +7,17 @@ import { io } from "socket.io-client";
 import { useAuthStore } from "@/store/authStore";
 import { isSocketSessionAuthFailure, kickToLogin } from "@/lib/authSession";
 import DiceLog from "@/vtt/DiceLog";
+import {
+  GAME_STATES,
+  GAME_STATE_BY_NAME,
+  STATE_CAT_COLOR,
+  effectBullets,
+  classifyEffectBullet,
+} from "@/lib/gameStates";
+import SpecialAbilitiesPanel from "@/components/special-abilities/SpecialAbilitiesPanel";
+import { abilityAsWeapon, abilityAsGem } from "@/lib/specialAbilities";
+import { useWizardDiceRoll } from "@/hooks/useWizardDiceRoll";
+import LevelProgressionFlow from "@/components/character-sheet/LevelProgressionFlow";
 
 const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || "").replace(/\/$/, "");
 
@@ -24,25 +35,7 @@ const ATTR_COLOR   = { Power:'#e87050', Agility:'#50c878', Focus:'#7090e8', Pres
 const BRACER_GRADES= ['None','Initiate','Adept','Exemplar','Ascendant'];
 const BRACER_SLOTS = { None:0, Initiate:2, Adept:4, Exemplar:6, Ascendant:8 };
 const DIE_TYPES    = ['d4','d6','d8','d10','d12','d20'];
-const STATES_DATA  = [
-  {name:'Stunned',     cat:'Control',    color:'#cc5050'},
-  {name:'Restrained',  cat:'Control',    color:'#cc5050'},
-  {name:'Grappled',    cat:'Control',    color:'#cc5050'},
-  {name:'Silenced',    cat:'Control',    color:'#cc5050'},
-  {name:'Exhausted',   cat:'Capacity',   color:'#cc9020'},
-  {name:'Suppressed',  cat:'Capacity',   color:'#cc9020'},
-  {name:'Overextended',cat:'Capacity',   color:'#ff2020'},
-  {name:'Burned',      cat:'Damage',     color:'#e84020'},
-  {name:'Poisoned',    cat:'Damage',     color:'#50c040'},
-  {name:'Bleeding',    cat:'Damage',     color:'#c02020'},
-  {name:'Charmed',     cat:'Altered',    color:'#e860a8'},
-  {name:'Frightened',  cat:'Altered',    color:'#a050e8'},
-  {name:'Asleep',      cat:'Altered',    color:'#6080a0'},
-  {name:'Vulnerable',  cat:'Structural', color:'#e05030'},
-  {name:'Fortified',   cat:'Structural', color:'#50a0e0'},
-  {name:'Enraged',     cat:'Structural', color:'#e03020'},
-];
-const CAT_COLOR = { Control:'#cc5050', Capacity:'#cc9020', Damage:'#e84020', Altered:'#a050e8', Structural:'#50a0e0' };
+const STATE_CATEGORIES = ['Control', 'Capacity', 'Damage', 'Altered', 'Structural'];
 const FACTION_TIERS = [
   {min:75,  max:100, label:'Champion',   color:'#3dba6a'},
   {min:50,  max:74,  label:'Allied',     color:'#50d070'},
@@ -147,6 +140,90 @@ function Badge({ rarity }) {
     >
       {rarity}
     </span>
+  );
+}
+
+const BULLET_KIND_LABEL = { restrict: 'Restrictions', allow: 'Still allowed', effect: 'Effects' };
+const BULLET_KIND_COLOR = { restrict: '#d07060', allow: '#60a878', effect: T.textMuted };
+
+function StateEffectTooltip({ tip }) {
+  if (!tip || typeof document === 'undefined') return null;
+  const sd = GAME_STATE_BY_NAME[tip.name];
+  if (!sd) return null;
+
+  const bullets = effectBullets(sd.effect);
+  const grouped = { restrict: [], allow: [], effect: [] };
+  bullets.forEach((b) => grouped[classifyEffectBullet(b)].push(b));
+
+  const sections = (['restrict', 'allow', 'effect']).filter((k) => grouped[k].length > 0);
+  const placeAbove = tip.y > 200;
+  const maxW = 340;
+
+  return createPortal(
+    <div
+      role="tooltip"
+      style={{
+        position: 'fixed',
+        left: Math.min(Math.max(tip.x, maxW / 2 + 12), window.innerWidth - maxW / 2 - 12),
+        top: placeAbove ? tip.y - 10 : tip.y + 10,
+        transform: placeAbove ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
+        width: maxW,
+        zIndex: 1100,
+        pointerEvents: 'none',
+      }}
+    >
+      <div
+        style={{
+          background: '#0d1018',
+          border: `1px solid ${sd.color}55`,
+          borderTop: `2px solid ${sd.color}`,
+          borderRadius: '4px',
+          padding: '12px 14px',
+          boxShadow: `0 8px 28px rgba(0,0,0,0.65), 0 0 16px ${sd.color}22`,
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px', gap: '8px' }}>
+          <span style={{ fontFamily: "'Cinzel',serif", fontSize: '16px', color: sd.color, fontWeight: '600', letterSpacing: '0.06em' }}>
+            {sd.name}
+          </span>
+          <span style={{ fontFamily: "'Cinzel',serif", fontSize: '11px', letterSpacing: '0.12em', color: STATE_CAT_COLOR[sd.cat], flexShrink: 0 }}>
+            {(sd.catLabel ?? sd.cat).toUpperCase()}
+          </span>
+        </div>
+        {sections.map((kind) => (
+          <div key={kind} style={{ marginBottom: kind === sections[sections.length - 1] ? 0 : '10px' }}>
+            <div
+              style={{
+                fontFamily: "'Cinzel',serif",
+                fontSize: '11px',
+                letterSpacing: '0.14em',
+                color: BULLET_KIND_COLOR[kind],
+                marginBottom: '5px',
+                opacity: 0.9,
+              }}
+            >
+              {BULLET_KIND_LABEL[kind]}
+            </div>
+            <ul style={{ margin: 0, paddingLeft: '18px', listStyle: 'disc' }}>
+              {grouped[kind].map((line) => (
+                <li
+                  key={line}
+                  style={{
+                    fontSize: '15px',
+                    lineHeight: 1.5,
+                    color: BULLET_KIND_COLOR[kind],
+                    marginBottom: '3px',
+                  }}
+                >
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -297,6 +374,8 @@ function StableNumInput({ value, onChange, min=0, max=Infinity, style={}, placeh
 }
 
 export default function VelionSheet({ characterId = undefined, initialData = undefined, sessionId = undefined }) {
+  const subscriptionTier = useAuthStore((s) => s.user?.subscription_tier ?? 'free');
+  const canCreateCustomAbilities = subscriptionTier !== 'free';
   const armorOverrides =
     initialData?.sheet_armor_overrides &&
     typeof initialData.sheet_armor_overrides === 'object' &&
@@ -516,13 +595,6 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     socket.on('dice:result', (entry) => {
       window.dispatchEvent(new CustomEvent('velion:dice-result-pending', { detail: entry }));
     });
-    const onNetworkRollStart = (e) => {
-      const d = e?.detail;
-      if (!d || !sessionId) return;
-      const sock = rollSocketRef.current;
-      if (sock?.connected) sock.emit('dice:roll_start', d);
-    };
-    window.addEventListener('velion:dice-roll-network-start', onNetworkRollStart);
     const onAuthorityRollRequest = (event) => {
       const payload = event?.detail;
       if (!payload || !sessionId) return;
@@ -544,31 +616,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
       }
     };
     window.addEventListener('velion:dice-roll-authority-request', onAuthorityRollRequest);
-    const onGlobalRollSubmit = (event) => {
-      const payload = event?.detail;
-      if (!payload || !sessionId) return;
-      const { requestMeta: _rm, ...rest } = payload;
-      const sock = rollSocketRef.current;
-      const queueIfNeeded = () => {
-        if (pendingSessionDiceRollRef.current.length < 32) {
-          pendingSessionDiceRollRef.current.push(rest);
-        }
-      };
-      if (!sock) {
-        queueIfNeeded();
-        return;
-      }
-      if (sock.connected && sessionDiceReadyRef.current) {
-        sock.emit('dice:roll', rest);
-      } else {
-        queueIfNeeded();
-      }
-    };
-    window.addEventListener('velion:dice-roll-submit', onGlobalRollSubmit);
+    // Session rolls use server physics only — clients do not submit local results.
     return () => {
-      window.removeEventListener('velion:dice-roll-network-start', onNetworkRollStart);
       window.removeEventListener('velion:dice-roll-authority-request', onAuthorityRollRequest);
-      window.removeEventListener('velion:dice-roll-submit', onGlobalRollSubmit);
       sessionDiceReadyRef.current = false;
       pendingSessionDiceRollRef.current = [];
       socket.disconnect();
@@ -620,7 +670,12 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
   // ── Active States ──
   const [active, setActive] = useState(new Set());
-  const toggleState = s => setActive(p=>{const n=new Set(p);n.has(s)?n.delete(s):n.add(s);return n;});
+  const addState = name => { if (!name) return; setActive(p => new Set([...p, name])); };
+  const removeState = name => {
+    setStateTip(prev => (prev?.name === name ? null : prev));
+    setActive(p => { const n = new Set(p); n.delete(name); return n; });
+  };
+  const [stateTip, setStateTip] = useState(null); // { name, x, y } | null
   const S = {
     silenced:    active.has('Silenced'),
     exhausted:   active.has('Exhausted'),
@@ -738,8 +793,49 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const [luDist,  setLuDist]  = useState({Power:0,Agility:0,Focus:0,Presence:0});
   const [luTotal, setLuTotal] = useState(0);
   const [luGRoll, setLuGRoll] = useState(null);
+  const [luRollErr, setLuRollErr] = useState('');
   const [luChosen,setLuChosen]= useState(INIT_CHOSEN);
-  const openLevelUp = () => { setLuDist({Power:0,Agility:0,Focus:0,Presence:0}); setLuTotal(0); setLuGRoll(null); setLuChosen(chosenAttr); setLuOpen(true); };
+  const { requestRoll: requestLuGrowthRoll, rolling: luDiceRolling } = useWizardDiceRoll();
+  const [progFlow, setProgFlow] = useState(null);
+
+  const syncCharacterFromApi = useCallback((data) => {
+    if (!data) return;
+    setLevel(data.level || 1);
+    setAttrs({
+      Power: data.power || 10,
+      Agility: data.agility || 10,
+      Focus: data.focus || 10,
+      Presence: data.presence || 10,
+    });
+    setChosenAttr(cap(data.chosen_attribute || 'power'));
+    setGrowthPool(data.growth_pool_total || 0);
+    const maxHp = Number(data.max_hp) || 0;
+    const curHp = Number(data.current_hp);
+    setCurHP(Number.isFinite(curHp) && curHp > 0 ? curHp : maxHp);
+    setCurRP(data.current_rp ?? data.base_rp ?? 1);
+    setBankRP(data.rp_banked ?? 0);
+    setBanking(!!data.rp_banking);
+    setCanCommitBank((Number(data.rp_banked) || 0) <= 0 && !data.rp_banking);
+  }, []);
+  const openLevelUp = () => {
+    setLuDist({Power:0,Agility:0,Focus:0,Presence:0});
+    setLuTotal(0);
+    setLuGRoll(null);
+    setLuRollErr('');
+    setLuChosen(chosenAttr);
+    setLuOpen(true);
+  };
+  const rollLuGrowth = async () => {
+    if (luDiceRolling) return;
+    setLuRollErr('');
+    try {
+      const { result } = await requestLuGrowthRoll('growth1d6', 'Level Up — Growth Pool 1d6');
+      setLuGRoll(result);
+    } catch (err) {
+      setLuGRoll(null);
+      setLuRollErr(err instanceof Error ? err.message : 'Dice roll failed');
+    }
+  };
   const luAdd = a => { if(luDist[a]>=1||luTotal>=2) return; setLuDist(p=>({...p,[a]:p[a]+1})); setLuTotal(p=>p+1); };
   const luSub = a => { if(luDist[a]<=0) return; setLuDist(p=>({...p,[a]:p[a]-1})); setLuTotal(p=>p-1); };
   const luNewLvl   = level+1;
@@ -748,8 +844,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const luNewPool  = growthPool+(luGRoll||0);
   const luNewBase  = luNewLvl+luNewMod+luNewPool;
   const luNewHP    = luNewBase*Math.pow(luNewLvl+10,2);
-  const luReady    = characterId ? luTotal===2 : (luTotal===2&&luGRoll!==null);
+  const luReady    = luTotal === 2 && luGRoll !== null && !luDiceRolling;
   const confirmLU  = async () => {
+    if (!luReady || luGRoll == null) return;
     if (characterId) {
       try {
         const { data } = await api.post(`/characters/${characterId}/level-up`, {
@@ -760,6 +857,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
             presence: luDist.Presence || 0,
           },
           chosen_attribute: luChosen.toLowerCase(),
+          growth_roll: luGRoll,
         });
         setLevel(data.level);
         setAttrs({ Power: data.power, Agility: data.agility, Focus: data.focus, Presence: data.presence });
@@ -809,6 +907,7 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
   // ── Weapons ──
   const [weapons,   setWeapons]  = useState([]);
+  const [specialAbilities, setSpecialAbilities] = useState([]);
   const [wepModal,  setWepModal] = useState(null);
   const [wepDraft,  setWepDraft] = useState(null);
   const [atkWeapon, setAtkWeapon]= useState(null);
@@ -1408,6 +1507,16 @@ export default function VelionSheet({ characterId = undefined, initialData = und
   const openDmg  = () => { setDmgLines([{amount:'',type:'Physical'}]); setDmgResult(null); setDModal('damage'); };
   const openHeal = () => { setHealAmt(''); setDModal('heal'); };
 
+  const openAbilityUse = (ability, opportunity = false) => {
+    if (ability.resolution_model === 'weapon_like') {
+      openAttack(abilityAsWeapon(ability), opportunity);
+    } else if (ability.resolution_model === 'gem_like') {
+      openGemAttack(abilityAsGem(ability), opportunity);
+    } else if (ability.resolution_model === 'healing') {
+      openHeal();
+    }
+  };
+
   // ── DB Integration Effects ────────────────────────────────────────────────
 
   // 1. Initialize local state from API data (fires once when initialData arrives)
@@ -1433,6 +1542,9 @@ export default function VelionSheet({ characterId = undefined, initialData = und
     setGold(initialData.gold || 0);
     setNotes(initialData.notes || '');
     if (initialData.portrait_url) setPortrait(initialData.portrait_url);
+    if (Array.isArray(initialData.special_abilities)) {
+      setSpecialAbilities(initialData.special_abilities);
+    }
     // Allow auto-save after a tick (state setters are async)
     setTimeout(() => { skipSaves.current = false; }, 200);
   }, [initialData]);
@@ -1728,10 +1840,20 @@ export default function VelionSheet({ characterId = undefined, initialData = und
           <div style={{display:'grid',gridTemplateColumns:'auto 1fr 1fr 1fr',gap:'10px',alignItems:'end'}}>
             <div>
               <label style={LBL}>Level</label>
-              <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}}>
                 <div style={{background:T.surface,border:`1px solid ${T.gold}55`,borderRadius:'3px',padding:'5px 14px',fontSize: '25px',fontWeight:'700',color:T.gold,minWidth:'60px',textAlign:'center'}}>{level}</div>
-                <button onClick={openLevelUp} style={{...Btn(T.gold),padding:'5px 10px',fontSize: '13px',whiteSpace:'nowrap',background:`${T.gold}11`}}>▲ LEVEL UP</button>
+                {characterId && (
+                  <>
+                    <button type="button" onClick={()=>setProgFlow('set-level')} style={{...Btn(T.gold),padding:'5px 8px',fontSize: '11px',whiteSpace:'nowrap',background:`${T.gold}11`}}>SET LEVEL</button>
+                    <button type="button" onClick={openLevelUp} style={{...Btn(T.gold),padding:'5px 8px',fontSize: '11px',whiteSpace:'nowrap',background:`${T.gold}11`}}>▲ +1</button>
+                  </>
+                )}
               </div>
+              {characterId && (
+                <button type="button" onClick={()=>setProgFlow('edit-origin')} style={{...Btn(T.textMuted),padding:'4px 0',fontSize: '11px',marginTop:'6px',border:'none',letterSpacing:'0.1em'}}>
+                  EDIT ORIGIN & PROGRESSION
+                </button>
+              )}
             </div>
             {/* Chosen attribute — read-only reference, only settable in level-up */}
             <div>
@@ -1931,55 +2053,53 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         </div>
       </div>
 
-      {/* ══ WEAPONS & GEMS ═══════════════════════════════════════════════ */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'14px'}}>
-        {/* Weapons */}
-        <div style={crd('#c8503a')}>
-          <SecTitle color="#c8503a">Weapons</SecTitle>
-          {weapons.length===0&&<div style={{color:T.textDim,textAlign:'center',padding:'28px 0',fontSize: '16px',border:`1px dashed #1c2030`,borderRadius:'3px'}}>No weapons equipped</div>}
-          {weapons.map(w=>(
-            <div key={w.id} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'12px',marginBottom:'8px'}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'8px'}}>
-                <div>
-                  <div style={{fontSize: '20px',fontWeight:'500',marginBottom:'4px'}}>{w.name}</div>
-                  <div style={{display:'flex',gap:'6px',alignItems:'center',flexWrap:'wrap'}}>
-                    <Badge rarity={w.rarity}/>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.textMuted}}>{RARITY_DICE[w.rarity]}× {w.dieType}</span>
-                    {w.attrReq&&<span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.textMuted}}>REQ: {w.attrReq}</span>}
+      {/* ══ WEAPONS, SPECIAL ABILITIES, ACTIVE STATES & GEMS ═════════════ */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gridTemplateRows:'auto auto',gap:'12px',marginBottom:'14px',alignItems:'stretch'}}>
+          <div style={{...crd('#c8503a'),height:'100%',display:'flex',flexDirection:'column'}}>
+            <SecTitle color="#c8503a">Weapons</SecTitle>
+            {weapons.length===0&&<div style={{color:T.textDim,textAlign:'center',padding:'28px 0',fontSize: '16px',border:`1px dashed #1c2030`,borderRadius:'3px'}}>No weapons equipped</div>}
+            {weapons.map(w=>(
+              <div key={w.id} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'12px',marginBottom:'8px'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'8px'}}>
+                  <div>
+                    <div style={{fontSize: '20px',fontWeight:'500',marginBottom:'4px'}}>{w.name}</div>
+                    <div style={{display:'flex',gap:'6px',alignItems:'center',flexWrap:'wrap'}}>
+                      <Badge rarity={w.rarity}/>
+                      <span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.textMuted}}>{RARITY_DICE[w.rarity]}× {w.dieType}</span>
+                      {w.attrReq&&<span style={{fontFamily:"'Cinzel',serif",fontSize: '14px',color:T.textMuted}}>REQ: {w.attrReq}</span>}
+                    </div>
                   </div>
+                  <button onClick={()=>delWeapon(w.id)} style={{...Btn('#662020'),padding:'3px 8px',fontSize: '14px'}}>✕</button>
                 </div>
-                <button onClick={()=>delWeapon(w.id)} style={{...Btn('#662020'),padding:'3px 8px',fontSize: '14px'}}>✕</button>
+                <div style={{background:'#080a12',border:`1px solid ${T.border}`,borderRadius:'3px',padding:'6px 10px',marginBottom:'8px',fontSize: '17px'}}>
+                  {w.channels.map((ch,ci)=>(
+                    <span key={ci}>{ci>0&&<span style={{color:T.textDim}}> + </span>}<span style={{color:ch.element==='Physical'?T.text:ELEM_COLOR[ch.element]}}>{ch.dice}{w.dieType}</span><span style={{color:T.textMuted}}> {ch.element}</span></span>
+                  ))}<span style={{color:T.textDim}}> × RP</span>
+                </div>
+                {w.notes&&<div style={{fontSize: '15px',color:T.textMuted,marginBottom:'8px',fontStyle:'italic'}}>{w.notes}</div>}
+                <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:'6px'}}>
+                  <button
+                    type="button"
+                    onClick={() => openAttack(w, !inActiveTurn)}
+                    disabled={S.stunned || S.asleep || (!inActiveTurn && curRP < 1)}
+                    style={{
+                      ...Btn(inActiveTurn ? '#c8503a' : '#e8a020'),
+                      padding: '8px',
+                      fontSize: '14px',
+                      background: inActiveTurn ? '#1e0806' : '#1a1200',
+                      letterSpacing: '0.08em',
+                      opacity: (S.stunned || S.asleep || (!inActiveTurn && curRP < 1)) ? 0.35 : 1,
+                    }}
+                  >
+                    {inActiveTurn ? '⚔ ROLL ATTACK' : '⚔ OPPORTUNITY ATTACK'}
+                  </button>
+                  <button type="button" onClick={()=>openWepEdit(w)} style={{...Btn(T.goldDim),padding:'8px 12px',fontSize: '14px'}}>✎</button>
+                </div>
               </div>
-              <div style={{background:'#080a12',border:`1px solid ${T.border}`,borderRadius:'3px',padding:'6px 10px',marginBottom:'8px',fontSize: '17px'}}>
-                {w.channels.map((ch,ci)=>(
-                  <span key={ci}>{ci>0&&<span style={{color:T.textDim}}> + </span>}<span style={{color:ch.element==='Physical'?T.text:ELEM_COLOR[ch.element]}}>{ch.dice}{w.dieType}</span><span style={{color:T.textMuted}}> {ch.element}</span></span>
-                ))}<span style={{color:T.textDim}}> × RP</span>
-              </div>
-              {w.notes&&<div style={{fontSize: '15px',color:T.textMuted,marginBottom:'8px',fontStyle:'italic'}}>{w.notes}</div>}
-              <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:'6px'}}>
-                <button
-                  type="button"
-                  onClick={() => openAttack(w, !inActiveTurn)}
-                  disabled={S.stunned || S.asleep || (!inActiveTurn && curRP < 1)}
-                  style={{
-                    ...Btn(inActiveTurn ? '#c8503a' : '#e8a020'),
-                    padding: '8px',
-                    fontSize: '14px',
-                    background: inActiveTurn ? '#1e0806' : '#1a1200',
-                    letterSpacing: '0.08em',
-                    opacity: (S.stunned || S.asleep || (!inActiveTurn && curRP < 1)) ? 0.35 : 1,
-                  }}
-                >
-                  {inActiveTurn ? '⚔ ROLL ATTACK' : '⚔ OPPORTUNITY ATTACK'}
-                </button>
-                <button type="button" onClick={()=>openWepEdit(w)} style={{...Btn(T.goldDim),padding:'8px 12px',fontSize: '14px'}}>✎</button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {/* Spell Gems */}
-        <div style={{...crd(T.magic),position:'relative'}}>
+          <div style={{...crd(T.magic),position:'relative',height:'100%',display:'flex',flexDirection:'column'}}>
           {S.silenced&&(
             <div style={{position:'absolute',inset:0,background:'rgba(6,7,12,0.82)',borderRadius:'4px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:5}}>
               <div style={{fontFamily:"'Cinzel',serif",fontSize: '17px',letterSpacing:'0.3em',color:'#cc5050',marginBottom:'8px'}}>SILENCED</div>
@@ -2035,33 +2155,73 @@ export default function VelionSheet({ characterId = undefined, initialData = und
               );
             })}
           </div>
-        </div>
-      </div>
-
-      {/* ══ ACTIVE STATES ════════════════════════════════════════════════ */}
-      <div style={{...crd('#706858'),marginBottom:'14px'}}>
-        <SecTitle color="#706858">Active States</SecTitle>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'12px'}}>
-          {['Control','Capacity','Damage','Altered','Structural'].map(cat=>(
-            <div key={cat}>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.12em',color:CAT_COLOR[cat],marginBottom:'7px',fontWeight:'600'}}>{cat}</div>
-              <div style={{display:'flex',flexDirection:'column',gap:'5px'}}>
-                {STATES_DATA.filter(s=>s.cat===cat).map(s=>{const on=active.has(s.name);return(
-                  <button key={s.name} onClick={()=>toggleState(s.name)}
-                    style={{border:`1px solid ${on?s.color:s.color+'44'}`,background:on?`${s.color}22`:'transparent',color:on?s.color:'#504050',borderRadius:'3px',padding:'4px 7px',fontSize: '15px',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em',textAlign:'left',boxShadow:on?`0 0 8px ${s.color}33`:'none',transition:'all 0.15s'}}>
-                    {on?'● ':'○ '}{s.name}
-                  </button>
-                );})}
-              </div>
-            </div>
-          ))}
-        </div>
-        {active.size>0&&(
-          <div style={{marginTop:'12px',background:T.surface,border:`1px solid ${T.border}`,borderRadius:'3px',padding:'8px 12px',fontSize: '16px',color:T.textMuted,display:'flex',flexWrap:'wrap',gap:'8px',alignItems:'center'}}>
-            <span style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'0.1em'}}>ACTIVE: </span>
-            {[...active].map(s=>{const sd=STATES_DATA.find(x=>x.name===s);return sd?<span key={s} style={{color:sd.color}}>● {s}</span>:null;})}
           </div>
-        )}
+
+          <div style={crd('#5a8a7a')}>
+            <SecTitle color="#5a8a7a">Special Abilities</SecTitle>
+            {characterId ? (
+              <SpecialAbilitiesPanel
+                mode="sheet"
+                characterId={characterId}
+                abilities={specialAbilities}
+                onAbilitiesChange={setSpecialAbilities}
+                canCreateCustom={canCreateCustomAbilities}
+                onUse={(a) => openAbilityUse(a, !inActiveTurn)}
+              />
+            ) : (
+              <div style={{color:T.textDim,textAlign:'center',padding:'20px 0',fontSize: '16px',border:`1px dashed #1c2030`,borderRadius:'3px'}}>
+                Link a saved character to add special abilities.
+              </div>
+            )}
+          </div>
+
+          <div style={crd('#706858')}>
+            <SecTitle color="#706858" right={
+              <select
+                value=""
+                onChange={e => { addState(e.target.value); e.target.value = ''; }}
+                style={{...inp(),width:'160px',fontSize: '14px',padding:'4px 8px',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em'}}
+              >
+                <option value="">Add State…</option>
+                {STATE_CATEGORIES.map(cat => (
+                  <optgroup key={cat} label={cat}>
+                    {GAME_STATES.filter(s => s.cat === cat).map(s => (
+                      <option key={s.name} value={s.name} disabled={active.has(s.name)}>{s.name}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            }>Active States</SecTitle>
+            {active.size === 0 ? (
+              <div style={{color:T.textDim,textAlign:'center',padding:'20px 0',fontSize: '16px',border:`1px dashed #1c2030`,borderRadius:'3px'}}>
+                No active states
+              </div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
+                {[...active].map(name => {
+                  const sd = GAME_STATE_BY_NAME[name];
+                  if (!sd) return null;
+                  return (
+                    <div
+                      key={name}
+                      onMouseEnter={e => {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        setStateTip({ name, x: r.left + r.width / 2, y: r.top });
+                      }}
+                      onMouseLeave={() => setStateTip(prev => (prev?.name === name ? null : prev))}
+                      style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px',background:T.surface,border:`1px solid ${sd.color}44`,borderRadius:'3px',padding:'6px 10px',cursor:'help'}}
+                    >
+                      <div style={{display:'flex',alignItems:'center',gap:'8px',minWidth:0}}>
+                        <span style={{color:sd.color,fontSize: '16px',fontFamily:"'Cinzel',serif",letterSpacing:'0.06em',whiteSpace:'nowrap'}}>● {name}</span>
+                        <span style={{fontFamily:"'Cinzel',serif",fontSize: '12px',color:STATE_CAT_COLOR[sd.cat],letterSpacing:'0.1em',opacity:0.85}}>{sd.cat}</span>
+                      </div>
+                      <button type="button" onClick={() => removeState(name)} style={{...Btn('#662020'),padding:'2px 8px',fontSize: '13px',flexShrink:0}}>✕</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
       </div>
 
       {/* ══ FACTIONS & NOTES ═════════════════════════════════════════════ */}
@@ -2338,6 +2498,21 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
       {/* ══════════════════════ MODALS ═══════════════════════════════════ */}
 
+      {characterId && progFlow && (
+        <LevelProgressionFlow
+          open
+          mode={progFlow}
+          characterId={characterId}
+          onClose={() => setProgFlow(null)}
+          onApplied={(data) => {
+            syncCharacterFromApi(data);
+            if (characterId) {
+              queryClient.invalidateQueries({ queryKey: characterKeys.detail(characterId) });
+            }
+          }}
+        />
+      )}
+
       {/* Level Up */}
       {luOpen&&(
         <ModalWrap accentColor={T.gold} minW="480px">
@@ -2373,24 +2548,32 @@ export default function VelionSheet({ characterId = undefined, initialData = und
 
           <div style={{marginBottom:'18px',background:T.surface,border:`1px solid ${luGRoll?T.gold+'55':T.border}`,borderRadius:'3px',padding:'12px'}}>
             <label style={LBL}>Growth Pool — Roll 1d6</label>
-            {characterId ? (
-              <div style={{fontSize: '17px',color:T.textMuted,marginTop:'6px'}}>
-                {luGRoll
-                  ? <span>Server rolled <strong style={{color:T.gold,fontSize: '21px'}}>{luGRoll}</strong> → New pool: <strong style={{color:T.gold}}>{luNewPool}</strong></span>
-                  : <span style={{fontStyle:'italic'}}>The server will roll your 1d6 on confirmation.</span>
-                }
+            <div style={{display:'flex',alignItems:'center',gap:'12px',marginTop:'6px'}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize: '18px',color:T.textMuted}}>Current: <strong style={{color:T.gold}}>{growthPool}</strong></div>
+                {luGRoll != null && (
+                  <div style={{fontSize: '18px',marginTop:'3px'}}>
+                    Rolled <strong style={{color:T.gold,fontSize: '21px'}}>{luGRoll}</strong> → New: <strong style={{color:T.gold}}>{luNewPool}</strong>
+                  </div>
+                )}
+                {luDiceRolling && (
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize: '13px',letterSpacing:'.12em',color:T.gold,marginTop:'6px'}}>
+                    Dice are rolling on the table…
+                  </div>
+                )}
+                {luRollErr && (
+                  <div style={{fontSize: '16px',color:T.hp,marginTop:'6px'}}>{luRollErr}</div>
+                )}
               </div>
-            ) : (
-              <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-                <div style={{flex:1}}>
-                  <div style={{fontSize: '18px',color:T.textMuted}}>Current: <strong style={{color:T.gold}}>{growthPool}</strong></div>
-                  {luGRoll&&<div style={{fontSize: '18px',marginTop:'3px'}}>Rolled <strong style={{color:T.gold,fontSize: '21px'}}>{luGRoll}</strong> → New: <strong style={{color:T.gold}}>{luNewPool}</strong></div>}
-                </div>
-                <button onClick={()=>setLuGRoll(rollD(6))} style={{...Btn(T.gold),padding:'9px 20px',fontSize: '15px',background:`${T.gold}12`,flexShrink:0}}>
-                  ⬡ ROLL {luGRoll?'(reroll)':''}
-                </button>
-              </div>
-            )}
+              <button
+                type="button"
+                onClick={() => void rollLuGrowth()}
+                disabled={luDiceRolling}
+                style={{...Btn(T.gold),padding:'9px 20px',fontSize: '15px',background:`${T.gold}12`,flexShrink:0,opacity:luDiceRolling?.5:1}}
+              >
+                {luDiceRolling ? 'ROLLING…' : `⬡ ROLL${luGRoll != null ? ' (reroll)' : ''}`}
+              </button>
+            </div>
           </div>
 
           {(luTotal===2||luGRoll)&&(
@@ -3130,6 +3313,8 @@ export default function VelionSheet({ characterId = undefined, initialData = und
         </div>
       )
       , document.body)}
+
+      <StateEffectTooltip tip={stateTip} />
 
       {/* ── Context Menu ─────────────────────────────────────────────── */}
       {ctxMenu&&(

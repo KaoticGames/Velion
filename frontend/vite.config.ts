@@ -35,14 +35,12 @@ export default defineConfig(({ mode }) => {
       },
     } : undefined,
 
-    // ── Allow external CDN imports (e.g. dice-box from UNPKG) ──────────────
     build: {
       outDir:        'dist',
       sourcemap:     false,
       minify:        'esbuild',
       chunkSizeWarningLimit: 1200,
       rollupOptions: {
-        external: (id: string) => id.indexOf('https://') === 0,
         output: {
           manualChunks: {
             'react-vendor':  ['react', 'react-dom', 'react-router-dom'],

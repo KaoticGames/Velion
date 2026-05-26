@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import api, { extractApiError } from '@/lib/api';
 import WizardEquipmentStep from '@/components/character-wizard/WizardEquipmentStep';
 import { commitStartingEquipment, type StartingGearState } from '@/lib/startingEquipment';
+import { useAuthStore } from '@/store/authStore';
+import SpecialAbilitiesPanel from '@/components/special-abilities/SpecialAbilitiesPanel';
+import { draftToPayload, type SpecialAbilityDraft } from '@/lib/specialAbilities';
+import { useWizardDiceRoll } from '@/hooks/useWizardDiceRoll';
 
 type AttrHelpKey = 'power' | 'agility' | 'focus' | 'presence';
 
@@ -102,15 +106,6 @@ const fmtNum = (n: number) => {
   if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}k`;
   return String(Math.round(n));
 };
-const roll3d20avg = () => {
-  const rolls = [
-    Math.floor(Math.random() * 20) + 1,
-    Math.floor(Math.random() * 20) + 1,
-    Math.floor(Math.random() * 20) + 1,
-  ];
-  return { rolls, result: Math.floor((rolls[0] + rolls[1] + rolls[2]) / 3) };
-};
-
 // ── Step definitions ──────────────────────────────────────────────────────
 const STEPS = [
   { num: 1, label: 'ORIGIN',     sub: 'Name & Backstory'  },
@@ -190,6 +185,8 @@ function AttributeHelpPanel({ highlighted }: { highlighted: AttrHelpKey | null }
 
 export default function CharacterWizard() {
   const navigate = useNavigate();
+  const subscriptionTier = useAuthStore((s) => s.user?.subscription_tier ?? 'free');
+  const canCreateCustom = subscriptionTier !== 'free';
   const [step, setStep]               = useState(1);
   const [submitting, setSubmitting]   = useState(false);
   const [error, setError]             = useState('');
@@ -197,18 +194,17 @@ export default function CharacterWizard() {
   // ── Step 1 ────────────────────────────────────────────────────────────
   const [name, setName]               = useState('');
   const [backstory, setBackstory]     = useState('');
+  const [abilityDrafts, setAbilityDrafts] = useState<SpecialAbilityDraft[]>([]);
   const [portrait, setPortrait]       = useState<string | null>(null);
   const [portraitFile, setPortraitFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // ── Step 2: pool-then-assign ──────────────────────────────────────────
   const [pool, setPool]               = useState<PoolEntry[]>([]);
-  const [rolling, setRolling]         = useState(false);
-  const [animNums, setAnimNums]       = useState<number[]>([]);
   const [growthPool, setGrowthPool]       = useState<number | null>(null);
-  const [rollingGrowth, setRollingGrowth] = useState(false);
-  const [growthAnim, setGrowthAnim]       = useState<number | null>(null);
   const [mulliganUsed, setMulliganUsed]   = useState<number>(0);
+  const [rollError, setRollError]         = useState('');
+  const { requestRoll, rolling: diceAnimRolling } = useWizardDiceRoll();
   // selected pool entry id waiting to be assigned
   const [selected, setSelected]       = useState<number | null>(null);
   const [assignment, setAssignment]   = useState<Record<Attr, number | null>>({
@@ -274,7 +270,7 @@ export default function CharacterWizard() {
       ro?.disconnect();
       window.removeEventListener('resize', recalcGuideOffset);
     };
-  }, [recalcGuideOffset, pool.length, assignment, allAssigned, growthPool, chosen, rolling, rollingGrowth]);
+  }, [recalcGuideOffset, pool.length, assignment, allAssigned, growthPool, chosen, diceAnimRolling]);
 
   useEffect(() => { setHighlightedAttr(null); }, [step]);
 
@@ -287,65 +283,55 @@ export default function CharacterWizard() {
     r.readAsDataURL(file);
   };
 
-  // ── Dice pool ─────────────────────────────────────────────────────────
-  const rollOne = useCallback(() => {
-    if (rolling || pool.length >= 4) return;
-    setRolling(true);
-    let frame = 0;
-    const iv = setInterval(() => {
-      setAnimNums([
-        Math.floor(Math.random() * 20) + 1,
-        Math.floor(Math.random() * 20) + 1,
-        Math.floor(Math.random() * 20) + 1,
-      ]);
-      if (++frame >= 8) {
-        clearInterval(iv);
-        const { rolls, result } = roll3d20avg();
-        const id = nextId.current++;
-        setPool(prev => [...prev, { id, rolls, result }]);
-        setRolling(false);
-        setAnimNums([]);
-      }
-    }, 80);
-  }, [rolling, pool.length]);
+  // ── Dice pool (physics animation via GlobalDiceOverlay) ─────────────────
+  const rollOne = useCallback(async () => {
+    if (diceAnimRolling || pool.length >= 4) return;
+    setRollError('');
+    try {
+      const { rolls, result } = await requestRoll('attr3d20', 'Attribute Pool — 3d20 avg');
+      const id = nextId.current++;
+      setPool((prev) => [...prev, { id, rolls, result }]);
+    } catch (err: unknown) {
+      setRollError(err instanceof Error ? err.message : 'Dice roll failed');
+    }
+  }, [diceAnimRolling, pool.length, requestRoll]);
 
-  const rollAll = useCallback(() => {
-    if (rolling) return;
+  const rollAll = useCallback(async () => {
+    if (diceAnimRolling) return;
     const needed = 4 - pool.length;
     if (!needed) return;
-    let done = 0;
-    const next = () => {
-      if (done >= needed) return;
-      const { rolls, result } = roll3d20avg();
-      const id = nextId.current++;
-      setPool(prev => [...prev, { id, rolls, result }]);
-      done++;
-      setTimeout(next, 130);
-    };
-    next();
-  }, [rolling, pool.length]);
-
-  const rollGrowth = useCallback(() => {
-    if (rollingGrowth || growthPool !== null) return;
-    setRollingGrowth(true);
-    let frame = 0;
-    const iv = setInterval(() => {
-      setGrowthAnim(Math.floor(Math.random() * 6) + 1);
-      if (++frame >= 8) {
-        clearInterval(iv);
-        const result = Math.floor(Math.random() * 6) + 1;
-        setGrowthPool(result);
-        setRollingGrowth(false);
-        setGrowthAnim(null);
+    setRollError('');
+    try {
+      for (let i = 0; i < needed; i++) {
+        const { rolls, result } = await requestRoll(
+          'attr3d20',
+          `Attribute Pool ${pool.length + i + 1} of 4 — 3d20 avg`,
+        );
+        const id = nextId.current++;
+        setPool((prev) => [...prev, { id, rolls, result }]);
       }
-    }, 80);
-  }, [rollingGrowth, growthPool]);
+    } catch (err: unknown) {
+      setRollError(err instanceof Error ? err.message : 'Dice roll failed');
+    }
+  }, [diceAnimRolling, pool.length, requestRoll]);
+
+  const rollGrowth = useCallback(async () => {
+    if (diceAnimRolling || growthPool !== null) return;
+    setRollError('');
+    try {
+      const { result } = await requestRoll('growth1d6', 'Growth Pool — 1d6');
+      setGrowthPool(result);
+    } catch (err: unknown) {
+      setRollError(err instanceof Error ? err.message : 'Dice roll failed');
+    }
+  }, [diceAnimRolling, growthPool, requestRoll]);
 
   const doMulligan = () => {
     setPool([]);
     setAssignment({ Power: null, Agility: null, Focus: null, Presence: null });
     setSelected(null);
     setGrowthPool(null);
+    setRollError('');
     setMulliganUsed(prev => prev + 1);
   };
 
@@ -393,6 +379,11 @@ export default function CharacterWizard() {
         presence:         attrs.Presence,
         chosen_attribute: chosen.toLowerCase(),
         growth_pool:      gp,
+        special_abilities: abilityDrafts.map((d) => {
+          const p = draftToPayload(d);
+          if (d.ability_id) return { ability_id: d.ability_id };
+          return p;
+        }),
       });
       try {
         await commitStartingEquipment(data.id, startingGear);
@@ -567,6 +558,16 @@ export default function CharacterWizard() {
                 <div style={{ textAlign:'right', fontSize: '15px', color:T.textMuted, marginTop:'4px', fontFamily:"'EB Garamond',serif" }}>{backstory.length} characters</div>
               </div>
 
+              <div style={{ marginBottom:'28px' }}>
+                <label style={lbl}>SPECIAL ABILITIES <Opt /></label>
+                <SpecialAbilitiesPanel
+                  mode="wizard"
+                  drafts={abilityDrafts}
+                  onDraftsChange={setAbilityDrafts}
+                  canCreateCustom={canCreateCustom}
+                />
+              </div>
+
               <Callout>"In Velion Mythera, your character's story is not written by their class or race — it is written by what they carry, what they choose, and how far they are willing to push beyond their limits."</Callout>
             </>}
 
@@ -596,11 +597,11 @@ export default function CharacterWizard() {
               {/* Roll controls */}
               <div style={{ display:'flex', gap:'12px', marginBottom:'28px', alignItems:'center', flexWrap:'wrap' }}>
                 {pool.length < 4 && <>
-                  <button onClick={rollOne} disabled={rolling} style={{ ...mkBtn(T.gold, true), padding:'11px 28px', opacity: rolling ? .5 : 1 }}>
-                    ⬡ ROLL ONE
+                  <button type="button" onClick={() => void rollOne()} disabled={diceAnimRolling} style={{ ...mkBtn(T.gold, true), padding:'11px 28px', opacity: diceAnimRolling ? .5 : 1 }}>
+                    {diceAnimRolling ? 'ROLLING…' : '⬡ ROLL ONE'}
                   </button>
-                  <button onClick={rollAll} disabled={rolling} style={{ ...mkBtn(T.gold), padding:'11px 28px', opacity: rolling ? .5 : 1 }}>
-                    ROLL ALL {4 - pool.length} REMAINING
+                  <button type="button" onClick={() => void rollAll()} disabled={diceAnimRolling} style={{ ...mkBtn(T.gold), padding:'11px 28px', opacity: diceAnimRolling ? .5 : 1 }}>
+                    {diceAnimRolling ? 'ROLLING…' : `ROLL ALL ${4 - pool.length} REMAINING`}
                   </button>
                 </>}
                 {pool.length === 4 && !allAssigned && <div style={{ fontFamily:"'Cinzel',serif", fontSize: '14px', letterSpacing:'.14em', color:T.gold }}>✦ All results in — assign each one below</div>}
@@ -612,12 +613,15 @@ export default function CharacterWizard() {
                 )}
               </div>
 
-              {/* Dice animation */}
-              {rolling && animNums.length > 0 && (
-                <div style={{ display:'flex', gap:'10px', marginBottom:'20px' }}>
-                  {animNums.map((n, i) => (
-                    <div key={i} style={{ width:'44px', height:'44px', background:T.surface, border:`1px solid ${T.gold}44`, borderRadius:'4px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Cinzel',serif", fontSize: '21px', color:T.gold+'88' }}>{n}</div>
-                  ))}
+              {rollError && (
+                <div style={{ fontFamily:"'EB Garamond',serif", fontSize: '16px', color: T.hp, marginBottom: '16px' }}>
+                  {rollError}
+                </div>
+              )}
+
+              {diceAnimRolling && (
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing: '.14em', color: T.gold, marginBottom: '20px' }}>
+                  Dice are rolling on the table…
                 </div>
               )}
 
@@ -768,16 +772,16 @@ export default function CharacterWizard() {
                         border:`2px solid ${growthPool ? T.gold : T.border}`,
                         borderRadius:'6px', display:'flex', alignItems:'center', justifyContent:'center',
                         fontFamily:"'Cinzel',serif",
-                        fontSize: (growthPool || rollingGrowth) ? '32px' : '20px',
+                        fontSize: growthPool ? '32px' : '20px',
                         color: growthPool ? T.gold : T.textMuted,
                         transition:'all .2s',
                       }}>
-                        {rollingGrowth ? (growthAnim ?? '?') : (growthPool ?? 'd6')}
+                        {growthPool ?? 'd6'}
                       </div>
                       {!growthPool && (
-                        <button onClick={rollGrowth} disabled={rollingGrowth}
-                          style={{ ...mkBtn(T.gold, true), padding:'11px 24px', opacity: rollingGrowth ? .5 : 1 }}>
-                          ⬡ ROLL d6
+                        <button type="button" onClick={() => void rollGrowth()} disabled={diceAnimRolling}
+                          style={{ ...mkBtn(T.gold, true), padding:'11px 24px', opacity: diceAnimRolling ? .5 : 1 }}>
+                          {diceAnimRolling ? 'ROLLING…' : '⬡ ROLL d6'}
                         </button>
                       )}
                       {growthPool && (

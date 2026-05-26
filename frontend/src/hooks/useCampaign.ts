@@ -56,8 +56,11 @@ export interface CampaignSession {
 }
 
 export interface CampaignDetail extends CampaignSummary {
-  members: CampaignMember[];
-  invites: CampaignInvite[] | null; // null for non-DMs
+  summary?:  string;
+  dm_notes?: string;
+  members:   CampaignMember[];
+  invites:   CampaignInvite[] | null; // null for non-DMs
+  invite?:   CampaignInvite | null;
 }
 
 export interface InvitePreview {

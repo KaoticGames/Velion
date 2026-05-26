@@ -1,12 +1,13 @@
-import { useState, useRef, useEffect, type ReactNode, type ChangeEvent } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { api } from '@/lib/api';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuthStore, selectIsDM } from '@/store/authStore';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
-  useCampaign, useRemoveMember, useDeleteCampaign, usePatchCampaign,
+  useCampaign, useRemoveMember, useDeleteCampaign,
   type CampaignMember,
 } from '@/hooks/useCampaign';
+import CampaignManager from '@/campaign-manager/CampaignManager';
 
 const T = {
   bg:'#080b10', surface:'#0d1018', card:'#111520', border:'#1c2230',
@@ -21,12 +22,8 @@ const TIER_COLOR: Record<string,string> = {
 const ATTR_COLOR: Record<string,string> = {
   power:'#c8503a', agility:'#50a060', focus:'#9b6fe8', presence:'#c4922a',
 };
-const ASSET_TYPE_COLOR: Record<string,string> = {
-  map:'#4a9de8', token:'#9b6fe8', image:'#8a7a68',
-};
 const cap = (s: string) => s ? s[0].toUpperCase() + s.slice(1) : '';
 const fmt = (n: number) => n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n/1_000).toFixed(1)}k` : String(Math.round(n));
-const fmtBytes = (b: number) => b > 1_000_000 ? `${(b/1_000_000).toFixed(1)} MB` : b > 1_000 ? `${(b/1_000).toFixed(0)} KB` : `${b} B`;
 
 const SectionLabel = ({ children }: { children: ReactNode }) => (
   <div style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.26em', color:T.textDim, marginBottom:'12px', marginTop:'28px', borderBottom:`1px solid ${T.border}`, paddingBottom:'8px' }}>{children}</div>
@@ -86,128 +83,6 @@ function MembersPanel({ members, campaignId, isDM, currentUserId }: { members: C
           </div>
         );
       })}
-    </div>
-  );
-}
-
-// ── Management (DM only) ──────────────────────────────────────────────────
-function ManagementPanel({ campaign, onDelete }: { campaign: any; onDelete: () => void }) {
-  const patch = usePatchCampaign(campaign.id);
-
-  const [summary, setSummary]         = useState<string>(campaign.summary ?? '');
-  const [summSaved, setSummSaved]     = useState(false);
-  const [notes, setNotes]             = useState<string>(campaign.dm_notes ?? '');
-  const [notesSaved, setNotesSaved]   = useState(false);
-  const [name, setName]               = useState<string>(campaign.name);
-  const [nameSaved, setNameSaved]     = useState(false);
-  const [confirmDel, setConfirmDel]   = useState(false);
-
-  const saveSummary = async () => { await patch.mutateAsync({ summary }); setSummSaved(true); setTimeout(() => setSummSaved(false), 2000); };
-  const saveNotes   = async () => { await patch.mutateAsync({ dm_notes: notes }); setNotesSaved(true); setTimeout(() => setNotesSaved(false), 2000); };
-  const saveName    = async () => { if (!name.trim()) return; await patch.mutateAsync({ name: name.trim() }); setNameSaved(true); setTimeout(() => setNameSaved(false), 2000); };
-
-  // Assets
-  const { data: assets = [], refetch: refetchAssets } = useQuery({
-    queryKey: ['campaign-assets', campaign.id],
-    queryFn:  async () => { const { data } = await api.get(`/campaigns/${campaign.id}/assets`); return data.data as any[]; },
-  });
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading]         = useState(false);
-  const [uploadError, setUploadError]     = useState('');
-  const [deletingId, setDeletingId]       = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-
-  const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    setUploading(true); setUploadError('');
-    try {
-      const { data: urlData } = await api.post(`/campaigns/${campaign.id}/assets/upload-url`, { filename: file.name, content_type: file.type, name: file.name.replace(/\.[^.]+$/, '') });
-      await fetch(urlData.upload_url, { method:'PUT', body:file, headers:{ 'Content-Type': file.type } });
-      await api.post(`/campaigns/${campaign.id}/assets/confirm`, { name: urlData.name, url: urlData.public_url, r2_key: urlData.r2_key, size_bytes: file.size });
-      refetchAssets();
-    } catch { setUploadError('Upload failed. Please try again.'); }
-    finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
-  };
-
-  const handleDelete = async (assetId: string) => {
-    if (confirmDelete !== assetId) { setConfirmDelete(assetId); return; }
-    setDeletingId(assetId); setConfirmDelete(null);
-    try { await api.delete(`/campaigns/${campaign.id}/assets/${assetId}`); refetchAssets(); }
-    finally { setDeletingId(null); }
-  };
-
-  const SaveBtn = ({ disabled, saved, onClick, label }: { disabled: boolean; saved: boolean; onClick: () => void; label: string }) => (
-    <button onClick={onClick} disabled={disabled} style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em', background: saved ? T.green : !disabled ? T.gold : T.goldDim, border:`1px solid ${saved ? T.green : T.gold}`, borderRadius:'2px', padding:'6px 16px', cursor: !disabled ? 'pointer' : 'not-allowed', color:'#080b10', fontWeight:'700' }}>
-      {saved ? '✓ SAVED' : label}
-    </button>
-  );
-
-  const inputStyle = { width:'100%', boxSizing:'border-box' as const, background:T.surface, border:`1px solid ${T.border}`, borderRadius:'3px', padding:'10px 14px', color:T.text, fontSize: '16px', lineHeight:'1.6', outline:'none', fontFamily:'inherit' };
-  const taStyle    = { ...inputStyle, resize:'vertical' as const };
-
-  return (
-    <div>
-      <SectionLabel>CAMPAIGN SUMMARY</SectionLabel>
-      <p style={{ fontSize: '15px', color:T.textMuted, lineHeight:'1.6', margin:'0 0 8px', fontStyle:'italic' }}>Visible to all members on the campaign page.</p>
-      <textarea value={summary} onChange={e => setSummary(e.target.value)} placeholder="Campaign setting, tone, and premise…" rows={3} style={{ ...taStyle, marginBottom:'8px' }} onFocus={e => e.currentTarget.style.borderColor = T.gold+'66'} onBlur={e => e.currentTarget.style.borderColor = T.border} />
-      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'4px' }}>
-        <SaveBtn disabled={summary === (campaign.summary ?? '')} saved={summSaved} onClick={saveSummary} label="SAVE SUMMARY" />
-      </div>
-
-      <SectionLabel>DM NOTES</SectionLabel>
-      <p style={{ fontSize: '15px', color:T.textMuted, lineHeight:'1.6', margin:'0 0 8px', fontStyle:'italic' }}>Private — never visible to players.</p>
-      <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Session prep, NPC secrets, plot threads, loot tables…" rows={8} style={{ ...taStyle, marginBottom:'8px' }} onFocus={e => e.currentTarget.style.borderColor = T.gold+'66'} onBlur={e => e.currentTarget.style.borderColor = T.border} />
-      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'4px' }}>
-        <SaveBtn disabled={notes === (campaign.dm_notes ?? '')} saved={notesSaved} onClick={saveNotes} label="SAVE NOTES" />
-      </div>
-
-      <SectionLabel>ASSETS</SectionLabel>
-      <p style={{ fontSize: '15px', color:T.textMuted, lineHeight:'1.6', margin:'0 0 12px', fontStyle:'italic' }}>Maps, tokens, and reference images. Accessible here and in the VTT.</p>
-      <div style={{ marginBottom:'12px', display:'flex', alignItems:'center', gap:'10px' }}>
-        <input ref={fileRef} type="file" accept=".png,.jpg,.jpeg,.webp" onChange={handleUpload} style={{ display:'none' }} />
-        <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ fontFamily:"'Cinzel',serif", fontSize: '13px', letterSpacing:'0.14em', background:'transparent', border:`1px solid ${T.gold}`, borderRadius:'3px', padding:'8px 18px', cursor: uploading ? 'not-allowed' : 'pointer', color:T.gold }}>
-          {uploading ? '↑ UPLOADING…' : '+ UPLOAD ASSET'}
-        </button>
-        {uploadError && <span style={{ fontSize: '14px', color:T.hp }}>{uploadError}</span>}
-      </div>
-
-      {assets.length === 0
-        ? <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:'3px', padding:'16px', textAlign:'center', fontSize: '14px', color:T.textDim, fontFamily:"'Cinzel',serif", letterSpacing:'0.14em' }}>NO ASSETS YET</div>
-        : <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:'8px' }}>
-            {assets.map((asset: any) => {
-              const ac = ASSET_TYPE_COLOR[asset.asset_type] ?? T.textMuted;
-              return (
-                <div key={asset.id} style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:'3px', overflow:'hidden', position:'relative' }} onMouseLeave={() => setConfirmDelete(null)}>
-                  <div style={{ height:'100px', background:T.card, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    <img src={asset.url} alt={asset.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                  </div>
-                  <div style={{ padding:'8px 10px' }}>
-                    <div style={{ fontSize: '15px', color:T.text, fontWeight:'600', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:'3px' }}>{asset.name}</div>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                      <span style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em', color:ac, background:ac+'18', border:`1px solid ${ac}33`, borderRadius:'2px', padding:'1px 6px' }}>{asset.asset_type.toUpperCase()}</span>
-                      <span style={{ fontSize: '13px', color:T.textDim }}>{fmtBytes(asset.size_bytes)}</span>
-                    </div>
-                  </div>
-                  <button onClick={() => handleDelete(asset.id)} disabled={deletingId === asset.id} style={{ position:'absolute', top:'6px', right:'6px', fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.1em', background: confirmDelete === asset.id ? T.hp : '#000000aa', border:`1px solid ${confirmDelete === asset.id ? T.hp : T.border}`, borderRadius:'2px', padding:'3px 7px', cursor:'pointer', color: confirmDelete === asset.id ? '#080b10' : T.textMuted }}>
-                    {confirmDelete === asset.id ? 'CONFIRM' : '✕'}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-      }
-
-      <SectionLabel>CAMPAIGN SETTINGS</SectionLabel>
-      <label style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.2em', color:T.textDim, display:'block', marginBottom:'6px' }}>NAME</label>
-      <div style={{ display:'flex', gap:'8px', marginBottom:'20px' }}>
-        <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveName()} style={{ ...inputStyle, flex:1 }} onFocus={e => e.currentTarget.style.borderColor = T.gold+'66'} onBlur={e => e.currentTarget.style.borderColor = T.border} />
-        <button onClick={saveName} disabled={name.trim() === campaign.name} style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em', background: nameSaved ? T.green : name.trim() !== campaign.name ? T.gold : T.goldDim, border:`1px solid ${nameSaved ? T.green : T.gold}`, borderRadius:'3px', padding:'9px 16px', cursor:'pointer', color:'#080b10', fontWeight:'700' }}>
-          {nameSaved ? '✓' : 'SAVE'}
-        </button>
-      </div>
-      <button onClick={() => { if (!confirmDel) { setConfirmDel(true); } else { onDelete(); } }} onBlur={() => setConfirmDel(false)} style={{ fontFamily:"'Cinzel',serif", fontSize: '12px', letterSpacing:'0.14em', background: confirmDel ? T.hp : 'transparent', border:`1px solid ${T.hp}`, borderRadius:'2px', padding:'8px 16px', cursor:'pointer', color: confirmDel ? '#080b10' : T.hp }}>
-        {confirmDel ? 'CONFIRM DELETE CAMPAIGN' : 'DELETE CAMPAIGN'}
-      </button>
     </div>
   );
 }
@@ -319,7 +194,12 @@ export default function CampaignDetail() {
         </div>
       </div>
 
-      <div style={{ flex:1, overflowY:'auto', padding:'28px 32px', maxWidth:'800px', width:'100%' }}>
+      <div style={{
+        flex: 1, overflow: activeTab === 'manage' ? 'hidden' : 'auto',
+        padding: activeTab === 'manage' ? 0 : '28px 32px',
+        maxWidth: activeTab === 'manage' ? 'none' : '800px',
+        width: '100%',
+      }}>
         {activeTab === 'members' && (
           <>
             <SectionLabel>PARTY ({campaign.members.length})</SectionLabel>
@@ -327,7 +207,7 @@ export default function CampaignDetail() {
           </>
         )}
         {activeTab === 'manage' && isDM && isOwner && (
-          <ManagementPanel campaign={campaign} onDelete={handleDelete} />
+          <CampaignManager campaign={campaign} onDelete={handleDelete} />
         )}
       </div>
     </div>

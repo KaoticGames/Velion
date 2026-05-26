@@ -126,7 +126,7 @@ export interface DiceResult {
   visibility:   DiceVisibility;
   /** Ephemeral: per-die faces for VTT / OBS sync visuals (not stored in DB). */
   animation_spec?: Array<{ sides: number; value: number }>;
-  /** Ephemeral: dice-box style toss string for 3D replay (not stored in DB). */
+  /** Ephemeral: compact toss notation for network sync (e.g. `2d20 + 1d6`; not stored in DB). */
   physics_notation?: string;
   /** Ephemeral: client-generated id to correlate `dice:roll_start` with `dice:result` (not in DB). */
   roll_id?: string;
@@ -136,6 +136,12 @@ export interface DiceResult {
   server_started_at?: string;
   /** Ephemeral: backend timestamp for final roll result broadcast. */
   server_result_at?: string;
+  /** Ephemeral: server Rapier seed — all clients must replay with this. */
+  seed?: number;
+  /** Ephemeral: die types in roll order (e.g. `['d20','d6']`). */
+  die_types?: string[];
+  /** Ephemeral: arena aspect used by server sim (must match on every client). */
+  viewport_aspect?: number;
 }
 
 export interface VTTRollRequestMeta {

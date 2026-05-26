@@ -213,11 +213,52 @@ export const characterPets = pgTable('character_pets', {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SPECIAL ABILITIES (character identity — backstory-derived)
+// ─────────────────────────────────────────────────────────────────────────────
+export const specialAbilities = pgTable('special_abilities', {
+  id:                   uuid('id').primaryKey().defaultRandom(),
+  name:                 text('name').notNull(),
+  description:          text('description').notNull().default(''),
+  // narrative | weapon_like | gem_like | healing | state_only
+  resolution_model:     text('resolution_model').notNull().default('narrative'),
+  num_dice:             integer('num_dice'),
+  die_type:             integer('die_type'),
+  damage_type:          text('damage_type'),
+  suggested_rp_note:    text('suggested_rp_note'),
+  applies_states:       jsonb('applies_states').notNull().default(sql`'[]'::jsonb`),
+  secondary_effect_text: text('secondary_effect_text'),
+  is_homebrew:          boolean('is_homebrew').notNull().default(false),
+  is_public:            boolean('is_public').notNull().default(false),
+  created_by:           uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  version:              integer('version').notNull().default(1),
+  created_at:           timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updated_at:           timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Character-bound ability instance (may reference a library template or be inline-only). */
+export const characterSpecialAbilities = pgTable('character_special_abilities', {
+  id:                   uuid('id').primaryKey().defaultRandom(),
+  character_id:         uuid('character_id').notNull().references(() => characters.id, { onDelete: 'cascade' }),
+  ability_id:           uuid('ability_id').references(() => specialAbilities.id, { onDelete: 'set null' }),
+  name:                 text('name').notNull(),
+  description:          text('description').notNull().default(''),
+  resolution_model:     text('resolution_model').notNull().default('narrative'),
+  num_dice:             integer('num_dice'),
+  die_type:             integer('die_type'),
+  damage_type:          text('damage_type'),
+  suggested_rp_note:    text('suggested_rp_note'),
+  applies_states:       jsonb('applies_states').notNull().default(sql`'[]'::jsonb`),
+  secondary_effect_text: text('secondary_effect_text'),
+  sort_order:           integer('sort_order').notNull().default(0),
+  created_at:           timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // HOMEBREW VERSION HISTORY
 // ─────────────────────────────────────────────────────────────────────────────
 // When a DM saves a new version of any homebrew item, the previous state is
 // snapshotted here. The live row in its table always reflects the current version.
-// item_type: 'weapon' | 'armor' | 'spell_gem' | 'focus_bracer' | 'enemy' | 'pet'
+// item_type: 'weapon' | 'armor' | 'spell_gem' | 'focus_bracer' | 'enemy' | 'pet' | 'special_ability'
 export const homebrewVersions = pgTable('homebrew_versions', {
   id:           uuid('id').primaryKey().defaultRandom(),
   item_type:    text('item_type').notNull(),
@@ -248,3 +289,7 @@ export type NewPet            = typeof pets.$inferInsert;
 export type PetAttack         = typeof petAttacks.$inferSelect;
 export type CharacterPet      = typeof characterPets.$inferSelect;
 export type HomebrewVersion   = typeof homebrewVersions.$inferSelect;
+export type SpecialAbility    = typeof specialAbilities.$inferSelect;
+export type NewSpecialAbility = typeof specialAbilities.$inferInsert;
+export type CharacterSpecialAbility = typeof characterSpecialAbilities.$inferSelect;
+export type NewCharacterSpecialAbility = typeof characterSpecialAbilities.$inferInsert;

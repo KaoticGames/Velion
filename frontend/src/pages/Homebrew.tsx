@@ -71,6 +71,7 @@ const TABS: { type: HomebrewType; label: string; singular: string; color: string
   { type: 'weapon',    label: 'Weapons',   singular: 'Weapon',    color: '#c8503a', icon: '⚔' },
   { type: 'armor',     label: 'Armor',     singular: 'Armor',     color: '#8a7040', icon: '🛡' },
   { type: 'spell-gem', label: 'Spell Gems',singular: 'Spell Gem', color: '#9b6fe8', icon: '⬡' },
+  { type: 'special-ability', label: 'Special Abilities', singular: 'Special Ability', color: '#5a8a7a', icon: '✦' },
   { type: 'enemy',     label: 'Enemies',   singular: 'Enemy',     color: '#e05050', icon: '☠' },
   { type: 'pet',       label: 'Pets',      singular: 'Pet',       color: '#50c878', icon: '🐾' },
 ];
@@ -128,6 +129,18 @@ const PET_BLANK = {
   name: '', species: '', power: 10, agility: 10, focus: 10, presence: 10,
   movement: 30, description: '', is_public: false,
   attacks: [] as { name: string; damage_dice: string; damage_type: string; description: string }[],
+};
+
+const ABILITY_BLANK = {
+  name: '',
+  description: '',
+  resolution_model: 'narrative',
+  num_dice: 1,
+  die_type: 6,
+  damage_type: 'Physical',
+  suggested_rp_note: '',
+  secondary_effect_text: '',
+  is_public: false,
 };
 
 // ── Shared sub-components ─────────────────────────────────────────────────
@@ -308,6 +321,51 @@ function GemForm({ draft, setDraft }: { draft: typeof GEM_BLANK; setDraft: React
         <Fld label="Secondary Effect"><input value={draft.secondary_effect} onChange={e => setDraft(p => ({ ...p, secondary_effect: e.target.value }))} placeholder="e.g. Applies Burned" style={inp()} /></Fld>
       </div>
       <Fld label="Description / Lore"><textarea value={draft.description} onChange={e => setDraft(p => ({ ...p, description: e.target.value }))} style={{ ...inp(), minHeight: '72px', resize: 'vertical' }} /></Fld>
+      <PublicToggle value={draft.is_public} onChange={v => setDraft(p => ({ ...p, is_public: v }))} />
+    </div>
+  );
+}
+
+// ── Form: Special Ability ─────────────────────────────────────────────────
+
+function AbilityForm({ draft, setDraft }: { draft: typeof ABILITY_BLANK; setDraft: React.Dispatch<React.SetStateAction<typeof ABILITY_BLANK>> }) {
+  const showDice = draft.resolution_model === 'weapon_like' || draft.resolution_model === 'gem_like';
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <Fld label="Name"><input value={draft.name} onChange={e => setDraft(p => ({ ...p, name: e.target.value }))} style={inp()} /></Fld>
+      <Fld label="Description">
+        <textarea value={draft.description} onChange={e => setDraft(p => ({ ...p, description: e.target.value }))} rows={5} style={{ ...inp(), minHeight: '100px', resize: 'vertical', lineHeight: 1.6 }} />
+      </Fld>
+      <Fld label="Combat resolution (optional)">
+        <select value={draft.resolution_model} onChange={e => setDraft(p => ({ ...p, resolution_model: e.target.value }))} style={inp()}>
+          <option value="narrative">Narrative — table adjudicates</option>
+          <option value="weapon_like">Attack roll + save</option>
+          <option value="gem_like">Auto-hit (spell-like)</option>
+          <option value="healing">Healing / recovery</option>
+          <option value="state_only">Apply states</option>
+        </select>
+      </Fld>
+      {showDice && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+          <Fld label="Dice"><input type="number" min={1} max={12} value={draft.num_dice} onChange={e => setDraft(p => ({ ...p, num_dice: Number(e.target.value) }))} style={inp()} /></Fld>
+          <Fld label="Die">
+            <select value={draft.die_type} onChange={e => setDraft(p => ({ ...p, die_type: Number(e.target.value) }))} style={inp()}>
+              {[4, 6, 8, 10, 12, 20].map(d => <option key={d} value={d}>d{d}</option>)}
+            </select>
+          </Fld>
+          <Fld label="Damage type">
+            <select value={draft.damage_type} onChange={e => setDraft(p => ({ ...p, damage_type: e.target.value }))} style={inp()}>
+              {['Physical', 'Fire', 'Ice', 'Lightning', 'Poison', 'Shadow', 'Radiant', 'Arcane', 'Nature', 'Earth', 'Wind'].map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </Fld>
+        </div>
+      )}
+      <Fld label="RP note (hint only)">
+        <input value={draft.suggested_rp_note} onChange={e => setDraft(p => ({ ...p, suggested_rp_note: e.target.value }))} placeholder="e.g. Often staked lightly" style={inp()} />
+      </Fld>
+      <Fld label="Secondary effect"><input value={draft.secondary_effect_text} onChange={e => setDraft(p => ({ ...p, secondary_effect_text: e.target.value }))} style={inp()} /></Fld>
       <PublicToggle value={draft.is_public} onChange={v => setDraft(p => ({ ...p, is_public: v }))} />
     </div>
   );
@@ -576,8 +634,17 @@ function PetSummary({ item }: { item: Record<string, unknown> }) {
   return <span>{item.species as string} · P{item.power as number} A{item.agility as number} F{item.focus as number} Pr{item.presence as number} · {item.movement as number}ft</span>;
 }
 
+function AbilitySummary({ item }: { item: Record<string, unknown> }) {
+  const res = cap(String(item.resolution_model ?? 'narrative').replace(/_/g, ' '));
+  const dice = (item.resolution_model === 'weapon_like' || item.resolution_model === 'gem_like')
+    ? ` · ${item.num_dice as number}d${item.die_type as number} ${item.damage_type as string}`
+    : '';
+  return <span>{res}{dice}</span>;
+}
+
 const SUMMARY_MAP: Record<HomebrewType, React.ComponentType<{ item: Record<string, unknown> }>> = {
   'weapon': WeaponSummary, 'armor': ArmorSummary, 'spell-gem': GemSummary,
+  'special-ability': AbilitySummary,
   'enemy': EnemySummary, 'pet': PetSummary,
 };
 
@@ -628,19 +695,22 @@ function TabContent({
   const [gemDraft,     setGemDraft]     = useState({ ...GEM_BLANK });
   const [enemyDraft,   setEnemyDraft]   = useState<typeof ENEMY_BLANK>({ ...ENEMY_BLANK, traits: [...ENEMY_BLANK.traits], attacks: [...ENEMY_BLANK.attacks], attack_tiers: [...ENEMY_BLANK.attack_tiers] });
   const [petDraft,     setPetDraft]     = useState<typeof PET_BLANK>({ ...PET_BLANK, attacks: [...PET_BLANK.attacks] });
+  const [abilityDraft, setAbilityDraft] = useState({ ...ABILITY_BLANK });
 
   const getDraft = useCallback((): Record<string, unknown> => {
     if (type === 'weapon')    return { ...weaponDraft, total_dice_budget: weaponDraft.channels.reduce((s, c) => s + c.num_dice, 0) };
     if (type === 'armor')     return { ...armorDraft };
     if (type === 'spell-gem') return { ...gemDraft };
+    if (type === 'special-ability') return { ...abilityDraft };
     if (type === 'enemy')     return { ...enemyDraft };
     return { ...petDraft };
-  }, [type, weaponDraft, armorDraft, gemDraft, enemyDraft, petDraft]);
+  }, [type, weaponDraft, armorDraft, gemDraft, abilityDraft, enemyDraft, petDraft]);
 
   const resetDraft = () => {
     setWeaponDraft({ ...WEAPON_BLANK });
     setArmorDraft({ ...ARMOR_BLANK });
     setGemDraft({ ...GEM_BLANK });
+    setAbilityDraft({ ...ABILITY_BLANK });
     setEnemyDraft({ ...ENEMY_BLANK, traits: [...ENEMY_BLANK.traits], attacks: [...ENEMY_BLANK.attacks], attack_tiers: [...ENEMY_BLANK.attack_tiers] });
     setPetDraft({ ...PET_BLANK, attacks: [...PET_BLANK.attacks] });
   };
@@ -649,6 +719,7 @@ function TabContent({
     if (type === 'weapon')    setWeaponDraft({ ...WEAPON_BLANK, ...(item as any) });
     if (type === 'armor')     setArmorDraft({ ...ARMOR_BLANK, ...(item as any) });
     if (type === 'spell-gem') setGemDraft({ ...GEM_BLANK, ...(item as any) });
+    if (type === 'special-ability') setAbilityDraft({ ...ABILITY_BLANK, ...(item as any) });
     if (type === 'enemy')     setEnemyDraft({ ...ENEMY_BLANK, ...(item as any), traits: (item.traits as any) ?? [], attacks: (item.attacks as any) ?? [], attack_tiers: (item.attack_tiers as any) ?? [...ENEMY_BLANK.attack_tiers] });
     if (type === 'pet')       setPetDraft({ ...PET_BLANK, ...(item as any), attacks: (item.attacks as any) ?? [] });
   };
@@ -662,6 +733,7 @@ function TabContent({
     if (type === 'weapon')    return { item_type: 'weapon',      base_die_type: draft.base_die_type, total_dice_budget: draft.total_dice_budget, channels: draft.channels };
     if (type === 'armor')     return { item_type: 'armor',       slot: draft.slot,         mitigation_percent: draft.mitigation_percent };
     if (type === 'spell-gem') return { item_type: 'spell_gem',   element_type: draft.element_type, num_dice: draft.num_dice, die_type: draft.die_type };
+    if (type === 'special-ability') return { item_type: 'special_ability', resolution_model: draft.resolution_model, num_dice: draft.num_dice, die_type: draft.die_type, damage_type: draft.damage_type };
     if (type === 'enemy')     return { item_type: 'enemy',       classification: draft.classification, hp: draft.hp };
     if (type === 'pet')       return { item_type: 'pet',         species: draft.species,  power: draft.power, agility: draft.agility, focus: draft.focus, presence: draft.presence };
     return null;
@@ -697,6 +769,7 @@ function TabContent({
     'weapon':    <WeaponForm draft={weaponDraft} setDraft={setWeaponDraft} />,
     'armor':     <ArmorForm  draft={armorDraft}  setDraft={setArmorDraft}  />,
     'spell-gem': <GemForm    draft={gemDraft}    setDraft={setGemDraft}    />,
+    'special-ability': <AbilityForm draft={abilityDraft} setDraft={setAbilityDraft} />,
     'enemy':     <EnemyForm  draft={enemyDraft}  setDraft={setEnemyDraft}  />,
     'pet':       <PetForm    draft={petDraft}    setDraft={setPetDraft}    />,
   } as Record<HomebrewType, React.ReactElement>)[type];

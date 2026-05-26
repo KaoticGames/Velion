@@ -5,7 +5,7 @@
  * All write operations require a paid subscription (enforced server-side).
  *
  * Item types:
- *   weapon | armor | spell-gem | enemy | pet
+ *   weapon | armor | spell-gem | special-ability | enemy | pet
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,15 +17,17 @@ export type HomebrewType =
   | 'weapon'
   | 'armor'
   | 'spell-gem'
+  | 'special-ability'
   | 'enemy'
   | 'pet';
 
 const ENDPOINT: Record<HomebrewType, string> = {
-  'weapon':    'weapons',
-  'armor':     'armor',
-  'spell-gem': 'spell-gems',
-  'enemy':     'enemies',
-  'pet':       'pets',
+  'weapon':           'weapons',
+  'armor':            'armor',
+  'spell-gem':        'spell-gems',
+  'special-ability':  'special-abilities',
+  'enemy':            'enemies',
+  'pet':              'pets',
 };
 
 export interface DuplicateMatch {

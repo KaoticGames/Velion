@@ -3,7 +3,7 @@ import { eq, ilike, and, or }        from 'drizzle-orm';
 import { db }                         from '../db';
 import {
   weapons, weaponChannels, armorPieces, spellGems,
-  focusBracers, enemies, enemyAttackTiers, pets, petAttacks,
+  focusBracers, enemies, enemyAttackTiers, pets, petAttacks, specialAbilities,
 } from '../db/schema';
 import { requireAuth } from '../middleware/auth';
 
@@ -206,6 +206,31 @@ router.get('/pets/:id', async (req: Request, res: Response): Promise<void> => {
     .where(eq(petAttacks.pet_id, pet.id))
     .orderBy(petAttacks.order_index);
   res.json({ ...pet, attacks });
+});
+
+// ── GET /library/special-abilities ────────────────────────────────────────
+router.get('/special-abilities', async (req: Request, res: Response): Promise<void> => {
+  const { name } = req.query as Record<string, string>;
+  const conditions = [visible(specialAbilities)];
+  if (name) conditions.push(ilike(specialAbilities.name, `%${name}%`));
+  const list = await db.select().from(specialAbilities).where(and(...conditions));
+  res.json({ data: list });
+});
+
+// ── GET /library/special-abilities/mine ───────────────────────────────────
+router.get('/special-abilities/mine', async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.user_id;
+  const list = await db.select().from(specialAbilities)
+    .where(and(eq(specialAbilities.is_homebrew, true), eq(specialAbilities.created_by as any, userId)));
+  res.json({ data: list });
+});
+
+// ── GET /library/special-abilities/:id ────────────────────────────────────
+router.get('/special-abilities/:id', async (req: Request, res: Response): Promise<void> => {
+  const id = param(req.params.id);
+  const [ability] = await db.select().from(specialAbilities).where(eq(specialAbilities.id, id)).limit(1);
+  if (!ability) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Special ability not found.', status: 404 } }); return; }
+  res.json(ability);
 });
 
 export default router;

@@ -163,18 +163,7 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
     socketRef.current?.emit(event, data);
   }, []);
 
-  const connected = useVTTStore(s => s.connected);
-  useEffect(() => {
-    if (!sessionId || !connected) return;
-    const h = (e: Event) => {
-      const d = (e as CustomEvent<Record<string, unknown>>).detail;
-      if (d) emit('dice:roll_start', d);
-    };
-    window.addEventListener('velion:dice-roll-network-start', h as EventListener);
-    return () => window.removeEventListener('velion:dice-roll-network-start', h as EventListener);
-  }, [emit, sessionId, connected]);
-
-  /** Dice log only updates after GlobalDiceOverlay finishes the immersive reveal (or immediately when no animation). */
+  /** Dice log only updates after the Three.js dice overlay finishes the reveal (or immediately when no animation). */
   useEffect(() => {
     const onCommit = (e: Event) => {
       const entry = (e as CustomEvent<DiceResult>).detail;
@@ -264,6 +253,9 @@ export function useVTTSocket(sessionId: string | undefined, characterId?: string
     postMultiplier?: number;
     advantageKeep?: 'high' | 'low';
     request_meta?: unknown;
+    seed?: number;
+    die_types?: string[];
+    viewport_aspect?: number;
   }) => {
     emit('dice:roll', payload);
   }, [emit]);

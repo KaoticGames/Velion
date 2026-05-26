@@ -16,7 +16,7 @@ backend/dist/
 .env.example
 .env.production
 .env.development
-
+ARCHITECTURE.md
 # ── Vite ──────────────────────────────────────────────────────────────────
 frontend/.vite/
 *.vite

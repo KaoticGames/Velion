@@ -47,6 +47,7 @@ export interface CharacterDetail extends CharacterSummary {
   equipment:         EquipmentSlot[];
   bracer_gems:       BracerGem[];
   growth_pool_history: GrowthPoolEntry[];
+  special_abilities?: import('@/lib/specialAbilities').CharacterSpecialAbility[];
 }
 
 export interface EquipmentSlot {
@@ -130,8 +131,8 @@ export function usePatchCharacter(characterId: string) {
 
 /**
  * Level-up mutation — POST /characters/:id/level-up
- * Rolls 1d6 growth pool, validates attribute distribution, optionally changes
- * chosen attribute.
+ * Applies level-up with client-rolled 1d6 growth pool, validates attribute
+ * distribution, optionally changes chosen attribute.
  */
 export function useLevelUp(characterId: string) {
   const qc = useQueryClient();

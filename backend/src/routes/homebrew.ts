@@ -8,10 +8,12 @@ import {
   focusBracers,
   enemies, enemyAttackTiers,
   pets, petAttacks,
+  specialAbilities,
   homebrewVersions,
   type NewWeapon, type NewArmorPiece, type NewSpellGem,
-  type NewFocusBracer, type NewEnemy, type NewPet,
+  type NewFocusBracer, type NewEnemy, type NewPet, type NewSpecialAbility,
 } from '../db/schema';
+import { normalizeResolutionModel } from '../lib/specialAbilities';
 import { requireAuth, requirePaid } from '../middleware/auth';
 import { calcBaseRP, calcMaxHP }    from '../lib/rules';
 
@@ -160,6 +162,21 @@ router.post('/duplicate-check', requirePaid, async (req: Request, res: Response)
       break;
     }
 
+    case 'special_ability': {
+      const { resolution_model, num_dice, die_type, damage_type } = req.body as {
+        resolution_model: string; num_dice?: number; die_type?: number; damage_type?: string;
+      };
+      const conditions = [eq(specialAbilities.resolution_model, resolution_model)];
+      if (num_dice != null) conditions.push(eq(specialAbilities.num_dice, num_dice));
+      if (die_type != null) conditions.push(eq(specialAbilities.die_type, die_type));
+      if (damage_type) conditions.push(eq(specialAbilities.damage_type, damage_type));
+      const matches = await db.select({ id: specialAbilities.id, name: specialAbilities.name })
+        .from(specialAbilities)
+        .where(and(...conditions));
+      res.json({ duplicates: matches });
+      break;
+    }
+
     default:
       res.status(400).json({ error: { code: 'INVALID_ITEM_TYPE', message: `Unknown item_type: ${item_type}`, status: 400 } });
   }
@@ -190,7 +207,8 @@ router.get('/armor/:id/versions',        versionHandler('armor'));
 router.get('/spell-gems/:id/versions',   versionHandler('spell_gem'));
 router.get('/focus-bracers/:id/versions',versionHandler('focus_bracer'));
 router.get('/enemies/:id/versions',      versionHandler('enemy'));
-router.get('/pets/:id/versions',         versionHandler('pet'));
+router.get('/pets/:id/versions',                 versionHandler('pet'));
+router.get('/special-abilities/:id/versions',    versionHandler('special_ability'));
 
 // ═════════════════════════════════════════════════════════════════════════════
 // WEAPONS
@@ -669,6 +687,73 @@ router.delete('/pets/:id', requirePaid, async (req: Request, res: Response): Pro
 
   await db.delete(homebrewVersions).where(and(eq(homebrewVersions.item_type, 'pet'), eq(homebrewVersions.item_id, id)));
   await db.delete(pets).where(eq(pets.id, id));   // pet_attacks cascade
+  res.json({ success: true });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SPECIAL ABILITIES
+// ═════════════════════════════════════════════════════════════════════════════
+
+router.post('/special-abilities', requirePaid, async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.user_id;
+  const {
+    name, description = '', resolution_model = 'narrative',
+    num_dice, die_type, damage_type, suggested_rp_note,
+    applies_states = [], secondary_effect_text, is_public = false,
+  } = req.body as NewSpecialAbility;
+
+  const [ability] = await db.insert(specialAbilities).values({
+    name,
+    description,
+    resolution_model: normalizeResolutionModel(resolution_model),
+    num_dice: num_dice ?? null,
+    die_type: die_type ?? null,
+    damage_type: damage_type ?? null,
+    suggested_rp_note: suggested_rp_note ?? null,
+    applies_states: applies_states as never,
+    secondary_effect_text: secondary_effect_text ?? null,
+    is_homebrew: true,
+    is_public,
+    created_by: userId,
+    version: 1,
+  }).returning();
+
+  res.status(201).json(ability);
+});
+
+router.patch('/special-abilities/:id', requirePaid, async (req: Request, res: Response): Promise<void> => {
+  const id     = param(req.params.id);
+  const userId = req.user!.user_id;
+
+  const [existing] = await db.select().from(specialAbilities).where(eq(specialAbilities.id, id)).limit(1);
+  if (!existing) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Special ability not found.', status: 404 } }); return; }
+  if (!assertOwner(existing.created_by, userId, res)) return;
+
+  const nextVersion = await snapshotAndBump('special_ability', id, existing as unknown as Record<string, unknown>, userId);
+  const body = req.body as Partial<NewSpecialAbility>;
+  if (body.resolution_model) body.resolution_model = normalizeResolutionModel(body.resolution_model);
+
+  await db.update(specialAbilities).set({
+    ...body,
+    is_homebrew: true,
+    version: nextVersion,
+    updated_at: new Date(),
+  }).where(eq(specialAbilities.id, id));
+
+  const [updated] = await db.select().from(specialAbilities).where(eq(specialAbilities.id, id)).limit(1);
+  res.json(updated);
+});
+
+router.delete('/special-abilities/:id', requirePaid, async (req: Request, res: Response): Promise<void> => {
+  const id     = param(req.params.id);
+  const userId = req.user!.user_id;
+
+  const [existing] = await db.select().from(specialAbilities).where(eq(specialAbilities.id, id)).limit(1);
+  if (!existing) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Special ability not found.', status: 404 } }); return; }
+  if (!assertOwner(existing.created_by, userId, res)) return;
+
+  await db.delete(homebrewVersions).where(and(eq(homebrewVersions.item_type, 'special_ability'), eq(homebrewVersions.item_id, id)));
+  await db.delete(specialAbilities).where(eq(specialAbilities.id, id));
   res.json({ success: true });
 });
 

@@ -24,6 +24,7 @@ import earlyAccessRouter      from './routes/earlyAccess';
 
 // Socket
 import { registerSessionNamespace } from './socket/session';
+import { ensureServerDiceReady } from './lib/sessionDiceRoll';
 
 import { db } from './db';
 
@@ -159,6 +160,13 @@ void (async () => {
       console.error(err);
       process.exit(1);
     }
+  }
+
+  try {
+    await ensureServerDiceReady();
+    console.log('[dice] Server physics assets preloaded.');
+  } catch (err) {
+    console.error('[dice] Failed to preload GLB assets — session rolls will fail until fixed:', err);
   }
 
   server.listen(PORT, () => {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore, selectIsDM } from '@/store/authStore';
+import { GAME_STATES } from '@/lib/gameStates';
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const T = {
@@ -138,41 +139,12 @@ const SECTIONS = [
   { id: 'encounter',     label: 'Encounter Pool',          dm: true  },
 ];
 
-// ── State data — updated to match revised guide ───────────────────────────────
-const STATES = [
-  { name: 'Stunned',      cat: 'CONTROL',           color: '#d45c5c',
-    effect: 'Cannot generate Pressure Steps. Cannot commit any RP reactively. Cannot make opportunity attacks. Auto Save Target 20 for all attacks against them. Ends at end of next turn.' },
-  { name: 'Restrained',   cat: 'CONTROL',           color: '#d45c5c',
-    effect: 'Pressure Steps capped at 3. Effective reactive RP pool treated as halved for defensive bonus calculation. Cannot bank RP. Movement restricted.' },
-  { name: 'Grappled',     cat: 'CONTROL',           color: '#d45c5c',
-    effect: 'May still generate Pressure Steps and commit RP reactively. Cannot change targets without additional RP commitment. Movement limited.' },
-  { name: 'Silenced',     cat: 'CONTROL',           color: '#d45c5c',
-    effect: 'No Focus-based abilities. No Pressure Steps from spell-based attacks. Physical actions and reactive defense proceed normally.' },
-  { name: 'Exhausted',    cat: 'CAPACITY',          color: '#c4922a',
-    effect: 'Base RP −25%. Because Base RP is the reference for defensive bonus calculation, defensive tiers shift downward even if all remaining RP are held in reserve. No banking.' },
-  { name: 'Suppressed',   cat: 'CAPACITY',          color: '#c4922a',
-    effect: 'Pressure Steps capped at 2. Reactive defense proceeds normally.' },
-  { name: 'Overextended', cat: 'CAPACITY — SEVERE', color: '#e8384a',
-    effect: 'Base RP −50%. No banking. No reactions or opportunity attacks. All Pressure capped at 2. Saves at disadvantage. +Vulnerable. Until Long Rest. Cannot attempt Overextension again.' },
-  { name: 'Burned',       cat: 'DAMAGE',            color: '#e8703a',
-    effect: 'Takes fixed % of last damage multiplier at turn start. Ends with a countermeasure action.' },
-  { name: 'Poisoned',     cat: 'DAMAGE',            color: '#5ab050',
-    effect: 'Pressure capped at 3. Reduced reactive capacity. Saves at disadvantage if no RP committed reactively.' },
-  { name: 'Bleeding',     cat: 'DAMAGE',            color: '#c85050',
-    effect: 'Minor HP loss per turn. Ends when healed above severity threshold.' },
-  { name: 'Charmed',      cat: 'ALTERED',           color: '#9b6fe8',
-    effect: 'Cannot target the charm source. Defensive bonus calculation against the source is halved.' },
-  { name: 'Frightened',   cat: 'ALTERED',           color: '#9b6fe8',
-    effect: 'Pressure ≤2 vs fear source. Resistance Modifier +1 vs source — survival instinct compensates for failing courage.' },
-  { name: 'Asleep',       cat: 'ALTERED',           color: '#9b6fe8',
-    effect: 'Cannot act or commit any RP. Auto Save Target 20 against them. Wakes on damage or specific ally action.' },
-  { name: 'Vulnerable',   cat: 'STRUCTURAL',        color: '#3ab5e8',
-    effect: 'Armor mitigation −50%. Elemental resistance −50%.' },
-  { name: 'Fortified',    cat: 'STRUCTURAL',        color: '#3ab5e8',
-    effect: 'Armor mitigation +10% (temporary). Effective defensive tier treated as minimum 1, even with 0 RP remaining for reactive commitment.' },
-  { name: 'Enraged',      cat: 'STRUCTURAL',        color: '#3ab5e8',
-    effect: 'Pressure Steps ≤6 (cap +1). Cannot commit any RP reactively. Cannot bank RP. Aggressive momentum overrides all defensive instinct.' },
-];
+const STATES = GAME_STATES.map((s) => ({
+  name: s.name,
+  cat: (s.catLabel ?? s.cat).toUpperCase(),
+  color: s.color,
+  effect: s.effect,
+}));
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function Compendium() {

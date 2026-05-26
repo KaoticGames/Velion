@@ -131,26 +131,9 @@ export default function VTT() {
       event.preventDefault();
       socket.rollDice(payload);
     };
-    const onGlobalRoll = (event: Event) => {
-      const custom = event as CustomEvent<{
-        formula: string;
-        label: string;
-        visibility: 'public' | 'private' | 'dm';
-        results: number[];
-        total: number;
-        source_label?: string;
-        requestMeta?: unknown;
-      }>;
-      const payload = custom.detail;
-      if (!payload) return;
-      const { requestMeta: _rm, ...rest } = payload;
-      socket.rollDice(rest);
-    };
     window.addEventListener('velion:dice-roll-authority-request', onAuthorityRoll as EventListener);
-    window.addEventListener('velion:dice-roll-submit', onGlobalRoll as EventListener);
     return () => {
       window.removeEventListener('velion:dice-roll-authority-request', onAuthorityRoll as EventListener);
-      window.removeEventListener('velion:dice-roll-submit', onGlobalRoll as EventListener);
     };
   }, [socket]);
 

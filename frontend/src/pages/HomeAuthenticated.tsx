@@ -5,21 +5,7 @@ import { useAuthStore } from '@/store/authStore';
 const T = {
   bg: '#06070c', surface: '#0a0c14', card: '#0d1018', border: '#1c2030',
   gold: '#c4922a', goldDim: '#5a3e10', text: '#e4d8c0', textMuted: '#706858', textDim: '#504538',
-  rp: '#4a9de8',
 };
-
-/** Edit this list for dev / release notes shown on the logged-in home page. */
-const PATCH_NOTES: { date: string; items: string[] }[] = [
-  {
-    date: '2026-05-08',
-    items: [
-      'OAuth sign-in (Google, Twitch, Discord) with session handoff after popup.',
-      'Character portrait uploads via R2; signed read URLs for display.',
-      'Global typography scale and character sheet width tweak.',
-      'VTT dice flow: results commit to the dice log without extra overlays.',
-    ],
-  },
-];
 
 function capTier(t: string): string {
   return t ? t[0].toUpperCase() + t.slice(1) : '';
@@ -154,7 +140,6 @@ export default function HomeAuthenticated() {
         border: `1px solid ${T.border}`,
         borderRadius: '4px',
         padding: '28px 28px',
-        marginBottom: '40px',
       }}>
         <h2 style={{
           fontFamily: "'Cinzel', serif",
@@ -171,51 +156,6 @@ export default function HomeAuthenticated() {
           <li><strong style={{ color: T.text }}>Workshop</strong> — Draft homebrew that plugs into sheets and tables according to your subscription.</li>
           <li><strong style={{ color: T.text }}>Library & Compendium</strong> — Official content and reading; use them alongside any character.</li>
         </ul>
-      </section>
-
-      {/* Patch notes */}
-      <section>
-        <h2 style={{
-          fontFamily: "'Cinzel', serif",
-          fontSize: '15px',
-          letterSpacing: '0.2em',
-          color: T.textMuted,
-          margin: '0 0 18px',
-        }}>
-          DEV PATCH NOTES
-        </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {PATCH_NOTES.map((block) => (
-            <div
-              key={block.date}
-              style={{
-                background: T.card,
-                border: `1px solid ${T.border}`,
-                borderTop: `2px solid ${T.goldDim}`,
-                borderRadius: '4px',
-                padding: '22px 24px',
-              }}
-            >
-              <div style={{
-                fontFamily: "'Cinzel', serif",
-                fontSize: '13px',
-                letterSpacing: '0.14em',
-                color: T.rp,
-                marginBottom: '12px',
-              }}>
-                {block.date}
-              </div>
-              <ul style={{ margin: 0, paddingLeft: '20px', color: T.textMuted, fontSize: '17px', lineHeight: 1.65 }}>
-                {block.items.map((item, i) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-        <p style={{ color: T.textDim, fontSize: '15px', fontStyle: 'italic', marginTop: '16px' }}>
-          Notes are maintained in <code style={{ color: T.textMuted }}>HomeAuthenticated.tsx</code> — edit the <code style={{ color: T.textMuted }}>PATCH_NOTES</code> array to publish updates.
-        </p>
       </section>
     </div>
   );

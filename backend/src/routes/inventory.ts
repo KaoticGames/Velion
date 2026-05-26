@@ -21,6 +21,7 @@ import {
   weapons, armorPieces, spellGems, focusBracers,
 } from '../db/schema';
 import { requireAuth }               from '../middleware/auth';
+import { getCharacterAccess, canManageCharacter } from '../lib/campaignCharacterAuth';
 
 const router = Router();
 router.use(requireAuth);
@@ -29,19 +30,14 @@ const param = (p: string | string[]): string => (Array.isArray(p) ? p[0] : p);
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-/** Confirm the character belongs to the requesting user */
+/** Owner or campaign DM may manage inventory. */
 async function assertCharacterOwner(
   characterId: string,
   userId: string,
   res: Response,
 ): Promise<boolean> {
-  const [c] = await db
-    .select({ id: characters.id, user_id: characters.user_id })
-    .from(characters)
-    .where(eq(characters.id, characterId))
-    .limit(1);
-
-  if (!c || c.user_id !== userId) {
+  const { access, character } = await getCharacterAccess(characterId, userId);
+  if (!character || !canManageCharacter(access)) {
     res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Character not found.', status: 404 } });
     return false;
   }

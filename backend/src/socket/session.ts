@@ -18,6 +18,7 @@ import {
 } from '../db/schema';
 import { eq, and, isNull }       from 'drizzle-orm';
 import { rollDiceAuthoritative } from '../lib/sessionDiceRoll';
+import { CANONICAL_DICE_VIEWPORT_ASPECT } from '../dice/constants';
 
 const SERVER_DICE_RESULT_DELAY_MS = 3200;
 
@@ -42,6 +43,26 @@ const persistFogSectionImage = async (sectionId: string, imageData: string): Pro
 
 export const registerSessionNamespace = (io: Server): void => {
   const ns = io.of('/session');
+
+  /**
+   * Per-session seed registry — prevents seed reuse (replay attacks).
+   * In-memory only; intentionally not persisted (user requirement).
+   * Capped at 2000 seeds per session to prevent unbounded growth.
+   */
+  const sessionSeeds = new Map<string, Set<number>>();
+  const SEED_CACHE_MAX = 2000;
+
+  const registerSeed = (sessionId: string, seed: number): boolean => {
+    if (!sessionSeeds.has(sessionId)) sessionSeeds.set(sessionId, new Set());
+    const seeds = sessionSeeds.get(sessionId)!;
+    if (seeds.has(seed)) return false;  // duplicate — reject
+    seeds.add(seed);
+    // Evict oldest if over cap (Set preserves insertion order)
+    if (seeds.size > SEED_CACHE_MAX) {
+      seeds.delete(seeds.values().next().value!);
+    }
+    return true;
+  };
 
   ns.use((socket, next) => {
     const token = socket.handshake.auth?.token as string | undefined;
@@ -211,6 +232,7 @@ export const registerSessionNamespace = (io: Server): void => {
     // before dice:roll arrives with the authoritative faces.
     socket.on('dice:roll_start', (payload: {
       roll_id: string; physics_notation: string; label: string; visibility: 'public' | 'private' | 'dm';
+      seed?: number; die_types?: string[]; viewport_aspect?: number;
       source_label?: string;
     }) => {
       const session_id  = socket.data.session_id as string;
@@ -220,6 +242,9 @@ export const registerSessionNamespace = (io: Server): void => {
       const broadcast = {
         roller_id:    userId,
         roll_id:      payload.roll_id,
+        seed:         payload.seed,
+        die_types:    payload.die_types,
+        viewport_aspect: payload.viewport_aspect ?? CANONICAL_DICE_VIEWPORT_ASPECT,
         physics_notation: payload.physics_notation.trim(),
         label:        payload.label,
         visibility:   payload.visibility,
@@ -238,7 +263,7 @@ export const registerSessionNamespace = (io: Server): void => {
     });
 
     // ── dice:roll ──────────────────────────────────────────────────────
-    // Client 3D dice (physics) submits faces; or `authority: 'server'` rolls here with crypto RNG.
+    // Session rolls: server runs headless Rapier; clients mirror seed + viewport_aspect.
     socket.on('dice:roll', async (payload: {
       authority?: 'server';
       formula: string;
@@ -253,6 +278,10 @@ export const registerSessionNamespace = (io: Server): void => {
       modifier?: number;
       postMultiplier?: number;
       advantageKeep?: 'high' | 'low';
+      /** Physics seed — drives the deterministic simulation on all clients. */
+      seed?: number;
+      /** Die types in roll order — lets receiving clients run the seeded sim. */
+      die_types?: string[];
       /** Echoed on `dice:result` only (not persisted) — correlates client-sheet UI with the roll. */
       request_meta?: unknown;
     }) => {
@@ -271,42 +300,46 @@ export const registerSessionNamespace = (io: Server): void => {
         }
       };
 
+      if (payload.authority !== 'server') {
+        socket.emit('dice:error', { message: 'Session dice rolls require server authority.' });
+        return;
+      }
+
       let formulaOut: string;
       let resultsOut: number[];
       let totalOut: number;
-      let animation_server: Array<{ sides: number; value: number }> | undefined;
-      let physics_server: string | undefined;
+      let animation_server: Array<{ sides: number; value: number }>;
+      let physics_server: string;
+      let physics_seed: number;
+      let die_types: string[];
+      let viewport_aspect: number;
       let rollId = typeof payload.roll_id === 'string' && payload.roll_id.trim() ? payload.roll_id.trim() : undefined;
 
-      if (payload.authority === 'server') {
-        try {
-          const rolled = rollDiceAuthoritative({
-            diceExpr: typeof payload.formula === 'string' ? payload.formula : '',
-            modifier: payload.modifier,
-            postMultiplier: payload.postMultiplier,
-            advantageKeep: payload.advantageKeep,
-          });
-          formulaOut = rolled.formula;
-          resultsOut = rolled.results;
-          totalOut = rolled.total;
-          animation_server = rolled.animation_spec;
-          physics_server = rolled.physics_notation;
-          rollId = rollId ?? randomUUID();
-        } catch (err) {
-          console.error('[socket] dice:roll server authority error:', err);
-          socket.emit('dice:error', { message: 'Invalid dice roll request.' });
+      try {
+        const rolled = await rollDiceAuthoritative({
+          diceExpr: typeof payload.formula === 'string' ? payload.formula : '',
+          modifier: payload.modifier,
+          postMultiplier: payload.postMultiplier,
+          advantageKeep: payload.advantageKeep,
+        });
+        formulaOut = rolled.formula;
+        resultsOut = rolled.results;
+        totalOut = rolled.total;
+        animation_server = rolled.animation_spec;
+        physics_server = rolled.physics_notation;
+        physics_seed = rolled.seed;
+        die_types = rolled.die_types;
+        viewport_aspect = rolled.viewport_aspect;
+        rollId = rollId ?? randomUUID();
+
+        if (!registerSeed(session_id, physics_seed)) {
+          socket.emit('dice:error', { message: 'Duplicate seed — roll rejected.' });
           return;
         }
-      } else {
-        if (!Array.isArray(payload.results) || typeof payload.total !== 'number') return;
-        formulaOut = payload.formula;
-        resultsOut = payload.results;
-        totalOut = payload.total;
-        animation_server = Array.isArray(payload.animation_spec) ? payload.animation_spec : undefined;
-        physics_server =
-          typeof payload.physics_notation === 'string' && payload.physics_notation.trim()
-            ? payload.physics_notation.trim()
-            : undefined;
+      } catch (err) {
+        console.error('[socket] dice:roll server authority error:', err);
+        socket.emit('dice:error', { message: 'Invalid dice roll request.' });
+        return;
       }
 
       const row = {
@@ -319,50 +352,32 @@ export const registerSessionNamespace = (io: Server): void => {
         source_label: payload.source_label ?? null,
       };
 
-      if (payload.authority === 'server') {
-        const server_started_at = new Date().toISOString();
-        const startPayload = {
-          ...row,
-          roll_id: rollId,
-          animation_spec: animation_server ?? [],
-          physics_notation: physics_server,
-          request_meta: payload.request_meta,
-          server_started_at,
-        };
-        emitDiceEvent('dice:roll_start', startPayload);
+      const server_started_at = new Date().toISOString();
+      const syncExtras = {
+        roll_id: rollId,
+        animation_spec: animation_server,
+        physics_notation: physics_server,
+        seed: physics_seed,
+        die_types,
+        viewport_aspect: viewport_aspect ?? CANONICAL_DICE_VIEWPORT_ASPECT,
+        request_meta: payload.request_meta,
+        server_started_at,
+      };
 
-        setTimeout(() => {
-          void (async () => {
-            try { await db.insert(diceLogEntries).values({ session_id, ...row }); }
-            catch (err) { console.error('[socket] dice:roll persist error:', err); }
+      emitDiceEvent('dice:roll_start', { ...row, ...syncExtras });
 
-            const resultPayload = {
-              ...row,
-              roll_id: rollId,
-              animation_spec: animation_server ?? [],
-              physics_notation: physics_server,
-              request_meta: payload.request_meta,
-              server_started_at,
-              server_result_at: new Date().toISOString(),
-            };
-            emitDiceEvent('dice:result', resultPayload);
-          })();
-        }, SERVER_DICE_RESULT_DELAY_MS);
-        return;
-      }
+      setTimeout(() => {
+        void (async () => {
+          try { await db.insert(diceLogEntries).values({ session_id, ...row }); }
+          catch (err) { console.error('[socket] dice:roll persist error:', err); }
 
-      try { await db.insert(diceLogEntries).values({ session_id, ...row }); }
-      catch (err) { console.error('[socket] dice:roll persist error:', err); }
-
-      const extras: Record<string, unknown> = {};
-      if (animation_server?.length) extras.animation_spec = animation_server;
-      if (physics_server) extras.physics_notation = physics_server;
-      if (rollId) extras.roll_id = rollId;
-      if (payload.request_meta !== undefined) extras.request_meta = payload.request_meta;
-      extras.server_result_at = new Date().toISOString();
-      const broadcastEntry = Object.keys(extras).length ? { ...row, ...extras } : row;
-
-      emitDiceEvent('dice:result', broadcastEntry);
+          emitDiceEvent('dice:result', {
+            ...row,
+            ...syncExtras,
+            server_result_at: new Date().toISOString(),
+          });
+        })();
+      }, SERVER_DICE_RESULT_DELAY_MS);
     });
 
     // ── attack:rolled ──────────────────────────────────────────────────

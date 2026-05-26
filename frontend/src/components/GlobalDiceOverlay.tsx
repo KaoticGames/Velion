@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthStore } from '@/store/authStore';
 import { buildDiceBreakdown, type AdvantageKeep } from '@/lib/diceBreakdown';
-import {
-  buildAnimationSpecFromPhysicsResults,
-  buildDeterministicDiceBoxNotationFromAnimationSpec,
-  physicsNotationToDiceBoxRoll,
-} from '@/lib/diceAnimationSpec';
-import type { DiceResult } from '@/vtt/types';
+import { rollDiceLocal } from '@/lib/localDiceRoll';
 import { parseDiceFromFormula, summariseDiceNotation } from '@/lib/diceFormula';
+import { useDiceOverlayController } from '@/dice/DiceOverlay';
+import { commitDiceLogFromPayload, diceResultToLogKey } from '@/dice/diceLog';
+import { sidesToDieType, type DiceAnimationFace, type DieType as AnimDieType } from '@/dice/types';
+import { getDiceViewportAspect } from '@/dice/diceSpawn';
+import { CANONICAL_DICE_VIEWPORT_ASPECT } from '@/lib/diceConstants';
+import type { DiceResult } from '@/vtt/types';
 
-/** After local physics finishes (`onRollComplete`), keep the dice canvas visible before clearing. */
+/** After animation completes, keep the dice canvas visible before clearing. */
 const LOCAL_ROLL_SCENE_HOLD_MS = 2000;
 
 type DiceVisibility = 'public' | 'private' | 'dm';
@@ -24,16 +25,20 @@ type RollContext = {
   source_label?: string;
   formula?: string;
   visibility?: DiceVisibility;
-  /** e.g. `2d20 + 1d6` — same toss the roller used (for network 3D replay). */
   physics_notation?: string;
-  /** Correlates `dice:roll_start` with the final `dice:roll` on the server. */
   roll_id?: string;
-  /** Passed through to velion:dice-roll-complete for sheet UI */
+  animation_spec?: DiceAnimationFace[];
   requestMeta?: Record<string, unknown>;
-  /** Remote socket replay: animate only; source tab submits the authoritative result. */
   remoteReplay?: boolean;
-  /** This tab requested server authority; wait for physics before `velion:dice-roll-complete`. */
   authorityAwaitDiceComplete?: boolean;
+  /** Server Rapier seed — clients mirror physics; never re-roll locally. */
+  seed?: number;
+  /** Die types in roll order — needed by playRollSeeded. */
+  dieTypes?: AnimDieType[];
+  /** Arena aspect from server sim — must match exactly on every client. */
+  physicsViewportAspect?: number;
+  /** When true, animation is cosmetic replay only; log/UI use server `dice:result`. */
+  serverMirror?: boolean;
 };
 
 export type ExternalRollRequest = {
@@ -47,8 +52,6 @@ export type ExternalRollRequest = {
   autoOpen?: boolean;
   requestMeta?: Record<string, unknown>;
 };
-
-const CDN = 'https://unpkg.com/@3d-dice/dice-box@1.0.8/dist/';
 
 const T = {
   surface: '#0d1018',
@@ -78,37 +81,18 @@ const VIS_CFG: Record<DiceVisibility, { label: string; color: string }> = {
   dm: { label: 'DM', color: T.gold },
 };
 
-let sharedBox: any = null;
-let boxInitPending = false;
-
-function teardownSharedDiceBox(): void {
-  if (!sharedBox) return;
-  try {
-    sharedBox.clear?.();
-    const end = sharedBox.dispose ?? sharedBox.destroy;
-    if (typeof end === 'function') end.call(sharedBox);
-  } catch {
-    /* best-effort teardown */
-  }
-  sharedBox = null;
-  boxInitPending = false;
-}
-
 function summarise(dice: DiceType[]): string {
   return summariseDiceNotation(dice);
 }
 
-/** Character sheet view: `/characters/:id` (not `/characters/new`). */
 function isCharacterSheetPagePath(pathname: string): boolean {
   return /^\/characters\/(?!new$)[^/]+$/.test(pathname);
 }
 
-/** Routes that use dice-box + full-screen / reveal UI (VTT + character wizard). */
 function isImmersiveDiceRoute(pathname: string): boolean {
   return pathname.startsWith('/vtt/') || pathname === '/characters/new';
 }
 
-/** Any route that participates in the global dice pipeline (sheet, VTT, wizard). */
 function isDiceRollRoute(pathname: string): boolean {
   return pathname.startsWith('/vtt/')
     || pathname === '/characters/new'
@@ -117,6 +101,10 @@ function isDiceRollRoute(pathname: string): boolean {
 
 export default function GlobalDiceOverlay() {
   const user = useAuthStore((s) => s.user);
+  const diceController = useDiceOverlayController();
+  const diceControllerRef = useRef(diceController);
+  diceControllerRef.current = diceController;
+
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<DiceType[]>([]);
   const [rolling, setRolling] = useState(false);
@@ -132,29 +120,29 @@ export default function GlobalDiceOverlay() {
   const [characterSheetLogOnly, setCharacterSheetLogOnly] = useState(() =>
     isCharacterSheetPagePath(window.location.pathname),
   );
-  /** Babylon dice-box loads for VTT / wizard routes and saved character sheets (`/characters/:id`). */
   const physicsDiceActive = immersiveDiceActive || characterSheetLogOnly;
-  /** Dice canvas visible while rolling or shortly after (independent of control panel) */
   const [diceSceneActive, setDiceSceneActive] = useState(false);
-  /** Bumped when dice-box (re)initialises so queued sheet rolls retry after StrictMode teardown. */
-  const [boxVersion, setBoxVersion] = useState(0);
+  const diceSceneActiveRef = useRef(false);
+  const diceReadyOnceRef = useRef(false);
+
   const diceSceneTimerRef = useRef<number | null>(null);
-  /** This tab’s current physical roll (skip duplicate `dice:roll_start` from the server). */
   const activePhysicsRollIdRef = useRef<string | null>(null);
-  /** Rolls completed locally in 3D; skip network duplicate handling for the same `roll_id`. */
   const physicsSourceRollIdsRef = useRef<Set<string>>(new Set());
-  /** Server-authoritative rolls this tab requested; final result drives local sheet UI. */
   const pendingAuthorityRollsRef = useRef<Map<string, { requestMeta?: Record<string, unknown> }>>(new Map());
-  /** Remote rolls currently being animated from socket `dice:roll_start`. */
   const remoteReplayRollIdsRef = useRef<Set<string>>(new Set());
-  /** Dedupe `velion:dice-log-commit` if the same roll is processed twice. */
   const committedDiceLogIdsRef = useRef<Set<string>>(new Set());
-  /** Server-authority rolls: need both `dice:result` and dice-box settle before sheet completion. */
   const authoritySyncRef = useRef(new Map<string, {
     resultEntry?: DiceResult;
     requestMeta?: Record<string, unknown>;
     animationComplete: boolean;
   }>());
+  const pendingRemoteSpecRef = useRef(new Map<string, {
+    physics_notation?: string;
+    label?: string;
+    source_label?: string;
+  }>());
+  /** Rolls currently playing or awaiting animation — blocks socket handlers from killing the scene early. */
+  const animatingRollIdsRef = useRef<Set<string>>(new Set());
 
   const pendingRef = useRef<DiceType[]>([]);
   const labelRef = useRef('');
@@ -173,6 +161,7 @@ export default function GlobalDiceOverlay() {
   statusRef.current = status;
   diceRollActiveRef.current = diceRollActive;
   physicsDiceActiveRef.current = physicsDiceActive;
+  diceSceneActiveRef.current = diceSceneActive;
 
   const clearDiceSceneTimer = () => {
     if (diceSceneTimerRef.current != null) {
@@ -181,26 +170,27 @@ export default function GlobalDiceOverlay() {
     }
   };
 
-  /** Fade scrim + remove mesh from the shared WebGL context (last frame otherwise stays forever). */
   const hideFullScreenDiceScene = () => {
-    try {
-      sharedBox?.clear?.();
-    } catch {
-      /* ignore */
-    }
+    diceControllerRef.current.clear();
     setDiceSceneActive(false);
   };
 
+  const scheduleHideScene = (ms = LOCAL_ROLL_SCENE_HOLD_MS) => {
+    clearDiceSceneTimer();
+    diceSceneTimerRef.current = window.setTimeout(() => {
+      diceSceneTimerRef.current = null;
+      hideFullScreenDiceScene();
+    }, ms);
+  };
+
   const commitDiceLogEntry = (entry: DiceResult) => {
-    const key =
-      entry.roll_id?.trim() ||
-      `${entry.roller_id}\0${entry.formula}\0${entry.total}\0${JSON.stringify(entry.results)}`;
+    const key = diceResultToLogKey(entry);
     if (committedDiceLogIdsRef.current.has(key)) return;
     committedDiceLogIdsRef.current.add(key);
     if (committedDiceLogIdsRef.current.size > 200) {
       committedDiceLogIdsRef.current.clear();
     }
-    window.dispatchEvent(new CustomEvent('velion:dice-log-commit', { detail: entry }));
+    commitDiceLogFromPayload(entry);
   };
 
   const tryDispatchAuthorityComplete = (rollId: string) => {
@@ -213,40 +203,188 @@ export default function GlobalDiceOverlay() {
         requestMeta: sync.resultEntry.request_meta ?? sync.requestMeta,
       },
     }));
-    clearDiceSceneTimer();
-    diceSceneTimerRef.current = window.setTimeout(() => {
-      diceSceneTimerRef.current = null;
-      hideFullScreenDiceScene();
-    }, LOCAL_ROLL_SCENE_HOLD_MS);
+    scheduleHideScene();
   };
 
-  useEffect(() => {
-    const syncSession = () => {
-      const path = window.location.pathname;
-      setDiceRollActive(isDiceRollRoute(path));
-      setImmersiveDiceActive(isImmersiveDiceRoute(path));
-      setCharacterSheetLogOnly(isCharacterSheetPagePath(path));
+  const releaseAnimatingRoll = (rollId?: string) => {
+    if (rollId) animatingRollIdsRef.current.delete(rollId);
+  };
+
+  const dispatchLocalRollPayload = useCallback((context: RollContext) => {
+    if (!context.animation_spec?.length || !context.roll_id) return;
+
+    const faces = context.animation_spec.map((f) => f.value);
+    const breakdown = buildDiceBreakdown({
+      faces,
+      modifier: context.modifier,
+      postMultiplier: context.postMultiplier,
+      advantageKeep: context.advantageKeep,
+    });
+
+    physicsSourceRollIdsRef.current.add(context.roll_id);
+    activePhysicsRollIdRef.current = null;
+
+    const payload = {
+      formula: context.formula || breakdown.formula,
+      label: context.forcedLabel || labelRef.current || 'Dice Roll',
+      visibility: visibilityRef.current,
+      results: breakdown.results,
+      total: breakdown.total,
+      source_label: context.source_label ?? user?.email ?? 'Player',
+      requestMeta: context.requestMeta,
+      animation_spec: context.animation_spec,
+      physics_notation: context.physics_notation,
+      roll_id: context.roll_id,
+      // Seed + die_types let receiving clients replay the identical visual simulation
+      seed: context.seed,
+      die_types: context.dieTypes?.map(String),
     };
 
-    syncSession();
-    const intervalId = window.setInterval(syncSession, 500);
-    window.addEventListener('focus', syncSession);
-    window.addEventListener('storage', syncSession);
-    window.addEventListener('popstate', syncSession);
-    document.addEventListener('visibilitychange', syncSession);
+    window.dispatchEvent(new CustomEvent('velion:dice-roll-submit', { detail: payload }));
+    window.dispatchEvent(new CustomEvent('velion:dice-roll-complete', { detail: payload }));
+
+    if (isCharacterSheetPagePath(window.location.pathname)) {
+      commitDiceLogEntry({
+        roller_id: user?.id ?? '',
+        source_label: payload.source_label ?? null,
+        formula: payload.formula,
+        results: payload.results,
+        total: payload.total,
+        label: payload.label,
+        visibility: payload.visibility as DiceVisibility,
+        animation_spec: payload.animation_spec,
+        physics_notation: payload.physics_notation,
+        roll_id: payload.roll_id,
+      });
+    }
+  }, [user?.email, user?.id]);
+
+  const finishAnimationContextFor = useCallback((context: RollContext) => {
+    setRolling(false);
+    setPending([]);
+
+    rollContextRef.current = {};
+    releaseAnimatingRoll(context.roll_id);
+
+    if (context.authorityAwaitDiceComplete && context.roll_id) {
+      const rollId = context.roll_id;
+      const prev = authoritySyncRef.current.get(rollId);
+      authoritySyncRef.current.set(rollId, {
+        resultEntry: prev?.resultEntry,
+        requestMeta: prev?.requestMeta,
+        animationComplete: true,
+      });
+      tryDispatchAuthorityComplete(rollId);
+      activePhysicsRollIdRef.current = null;
+      return;
+    }
+
+    if (context.remoteReplay || context.serverMirror) {
+      activePhysicsRollIdRef.current = null;
+      scheduleHideScene(context.remoteReplay ? LOCAL_ROLL_SCENE_HOLD_MS * 2 : LOCAL_ROLL_SCENE_HOLD_MS);
+      return;
+    }
+
+    if (!context.animation_spec?.length || !context.roll_id) {
+      activePhysicsRollIdRef.current = null;
+      scheduleHideScene();
+      return;
+    }
+
+    dispatchLocalRollPayload(context);
+    scheduleHideScene();
+  }, [dispatchLocalRollPayload]);
+
+  const playAnimationSpec = useCallback(async (
+    spec: DiceAnimationFace[],
+    context: RollContext,
+  ): Promise<boolean> => {
+    if (!spec.length) return false;
+    if (context.roll_id) animatingRollIdsRef.current.add(context.roll_id);
+    rollContextRef.current = context;
+    setRolling(true);
+    setDiceSceneActive(true);
+    clearDiceSceneTimer();
+
+    try {
+      const host = document.getElementById('global-dice-canvas-host');
+      if (host) diceControllerRef.current.bindHost(host);
+      await diceControllerRef.current.ensureReady();
+      setStatus('ready');
+
+      const contextSnapshot = context;
+      let started: boolean;
+      if (context.seed !== undefined && context.dieTypes?.length) {
+        started = await diceControllerRef.current.playRollSeeded(
+          context.seed,
+          context.dieTypes,
+          () => {
+            finishAnimationContextFor(contextSnapshot);
+          },
+          context.physicsViewportAspect ?? CANONICAL_DICE_VIEWPORT_ASPECT,
+        );
+      } else {
+        started = await diceControllerRef.current.playRoll(spec, () => {
+          finishAnimationContextFor(contextSnapshot);
+        });
+      }
+      if (!started) {
+        const failedContext = { ...contextSnapshot };
+        rollContextRef.current = {};
+        releaseAnimatingRoll(context.roll_id);
+        setRolling(false);
+        setDiceSceneActive(false);
+        if (!failedContext.authorityAwaitDiceComplete && !failedContext.remoteReplay) {
+          dispatchLocalRollPayload(failedContext);
+        }
+      }
+      return started;
+    } catch (err: unknown) {
+      releaseAnimatingRoll(context.roll_id);
+      rollContextRef.current = {};
+      setRolling(false);
+      setDiceSceneActive(false);
+      setStatus('error');
+      setErrorMsg(err instanceof Error ? err.message : String(err));
+      return false;
+    }
+  }, [finishAnimationContextFor, dispatchLocalRollPayload]);
+
+  useEffect(() => {
+    const syncPath = () => {
+      const path = window.location.pathname;
+      const nextRoll = isDiceRollRoute(path);
+      const nextImmersive = isImmersiveDiceRoute(path);
+      const nextSheet = isCharacterSheetPagePath(path);
+      setDiceRollActive((prev) => (prev === nextRoll ? prev : nextRoll));
+      setImmersiveDiceActive((prev) => (prev === nextImmersive ? prev : nextImmersive));
+      setCharacterSheetLogOnly((prev) => (prev === nextSheet ? prev : nextSheet));
+    };
+
+    syncPath();
+    window.addEventListener('popstate', syncPath);
+    window.addEventListener('velion:route-change', syncPath as EventListener);
+
+    const { pushState } = history;
+    const { replaceState } = history;
+    const wrap =
+      (original: typeof history.pushState) =>
+      (...args: Parameters<typeof history.pushState>) => {
+        const result = original.apply(history, args);
+        syncPath();
+        return result;
+      };
+    history.pushState = wrap(pushState);
+    history.replaceState = wrap(replaceState);
+
     return () => {
-      window.clearInterval(intervalId);
-      window.removeEventListener('focus', syncSession);
-      window.removeEventListener('storage', syncSession);
-      window.removeEventListener('popstate', syncSession);
-      document.removeEventListener('visibilitychange', syncSession);
-      clearDiceSceneTimer();
+      window.removeEventListener('popstate', syncPath);
+      window.removeEventListener('velion:route-change', syncPath as EventListener);
+      history.pushState = pushState;
+      history.replaceState = replaceState;
     };
   }, []);
 
-  /**
-   * Socket `dice:result` → `velion:dice-result-pending`: commit to dice log only (no summary overlay).
-   */
   useEffect(() => {
     const onDiceResultPending = (event: Event) => {
       const entry = (event as CustomEvent<DiceResult>).detail;
@@ -255,6 +393,45 @@ export default function GlobalDiceOverlay() {
       commitDiceLogEntry(entry);
 
       if (!diceRollActiveRef.current) return;
+
+      if (entry.roll_id && animatingRollIdsRef.current.has(entry.roll_id)) {
+        const pendingAuthorityRoll = pendingAuthorityRollsRef.current.get(entry.roll_id);
+        const isAuthority = Boolean(pendingAuthorityRoll);
+
+        if (
+          entry.animation_spec?.length &&
+          typeof entry.seed === 'number' &&
+          entry.die_types?.length &&
+          !rollingRef.current &&
+          statusRef.current === 'ready' &&
+          physicsDiceActiveRef.current
+        ) {
+          void playAnimationSpec(entry.animation_spec, {
+            roll_id: entry.roll_id,
+            physics_notation: entry.physics_notation,
+            forcedLabel: entry.label,
+            source_label: entry.source_label ?? undefined,
+            remoteReplay: !isAuthority,
+            authorityAwaitDiceComplete: isAuthority,
+            serverMirror: true,
+            seed: entry.seed,
+            dieTypes: entry.die_types as AnimDieType[],
+            physicsViewportAspect: entry.viewport_aspect ?? CANONICAL_DICE_VIEWPORT_ASPECT,
+          });
+        }
+
+        if (pendingAuthorityRoll) {
+          pendingAuthorityRollsRef.current.delete(entry.roll_id);
+          const prev = authoritySyncRef.current.get(entry.roll_id);
+          authoritySyncRef.current.set(entry.roll_id, {
+            resultEntry: entry,
+            requestMeta: pendingAuthorityRoll.requestMeta,
+            animationComplete: prev?.animationComplete ?? false,
+          });
+          tryDispatchAuthorityComplete(entry.roll_id);
+        }
+        return;
+      }
 
       const pendingAuthorityRoll = entry.roll_id ? pendingAuthorityRollsRef.current.get(entry.roll_id) : undefined;
       if (entry.roll_id && pendingAuthorityRoll) {
@@ -278,240 +455,99 @@ export default function GlobalDiceOverlay() {
       const isOwnPhysics = entry.roll_id && physicsSourceRollIdsRef.current.has(entry.roll_id);
       if (isOwnPhysics) return;
 
-      const isRemoteReplay = entry.roll_id && remoteReplayRollIdsRef.current.has(entry.roll_id);
-      if (isRemoteReplay) {
-        remoteReplayRollIdsRef.current.delete(entry.roll_id!);
-        setRolling(false);
-        clearDiceSceneTimer();
-        diceSceneTimerRef.current = window.setTimeout(() => {
-          diceSceneTimerRef.current = null;
-          hideFullScreenDiceScene();
-        }, LOCAL_ROLL_SCENE_HOLD_MS);
+      if (entry.roll_id && remoteReplayRollIdsRef.current.has(entry.roll_id)) {
+        remoteReplayRollIdsRef.current.delete(entry.roll_id);
         return;
       }
 
-      try {
-        sharedBox?.clear?.();
-      } catch {
-        /* ignore */
+      if (
+        entry.roll_id &&
+        entry.animation_spec?.length &&
+        typeof entry.seed === 'number' &&
+        entry.die_types?.length &&
+        physicsDiceActiveRef.current &&
+        statusRef.current === 'ready' &&
+        !rollingRef.current
+      ) {
+        const queued = pendingRemoteSpecRef.current.get(entry.roll_id);
+        if (queued) pendingRemoteSpecRef.current.delete(entry.roll_id);
+        remoteReplayRollIdsRef.current.add(entry.roll_id);
+        void playAnimationSpec(entry.animation_spec, {
+          roll_id: entry.roll_id,
+          physics_notation: entry.physics_notation ?? queued?.physics_notation,
+          forcedLabel: entry.label ?? queued?.label,
+          source_label: entry.source_label ?? queued?.source_label ?? undefined,
+          remoteReplay: true,
+          serverMirror: true,
+          seed: entry.seed,
+          dieTypes: entry.die_types as AnimDieType[],
+          physicsViewportAspect: entry.viewport_aspect ?? CANONICAL_DICE_VIEWPORT_ASPECT,
+        });
+        return;
       }
-      setDiceSceneActive(false);
     };
     window.addEventListener('velion:dice-result-pending', onDiceResultPending as EventListener);
     return () => {
       window.removeEventListener('velion:dice-result-pending', onDiceResultPending as EventListener);
     };
-  }, []);
-
-  const onRollComplete = (rawResults: any[]) => {
-    const d100Count = (sharedBox?._d100Count ?? 0) as number;
-    if (sharedBox) sharedBox._d100Count = 0;
-
-    const valid = rawResults.filter((r: any) => r.value > 0);
-    const animation_spec = buildAnimationSpecFromPhysicsResults(valid, d100Count);
-    const d10 = valid.filter((r: any) => r.sides === 10);
-    const d100 = valid.filter((r: any) => r.sides === 100);
-    const others = valid.filter((r: any) => r.sides !== 10 && r.sides !== 100);
-
-    const mapped: number[] = [];
-    for (let i = 0; i < d100Count; i += 1) {
-      const pct = d100.shift();
-      const units = d10.shift();
-      if (!pct || !units) continue;
-      const tens = pct.value;
-      const unit = units.value;
-      mapped.push(tens === 0 && unit === 10 ? 100 : tens + (unit === 10 ? 0 : unit));
-    }
-    d10.forEach((die: any) => mapped.push(die.value));
-    others.forEach((die: any) => mapped.push(die.value));
-
-    setRolling(false);
-    setPending([]);
-
-    const context = { ...rollContextRef.current };
-    rollContextRef.current = {};
-
-    if (context.authorityAwaitDiceComplete && context.roll_id) {
-      const rollId = context.roll_id;
-      const prev = authoritySyncRef.current.get(rollId);
-      authoritySyncRef.current.set(rollId, {
-        resultEntry: prev?.resultEntry,
-        requestMeta: prev?.requestMeta,
-        animationComplete: true,
-      });
-      tryDispatchAuthorityComplete(rollId);
-      activePhysicsRollIdRef.current = null;
-      return;
-    }
-
-    if (context.remoteReplay) {
-      setRolling(false);
-      setPending([]);
-      activePhysicsRollIdRef.current = null;
-      clearDiceSceneTimer();
-      diceSceneTimerRef.current = window.setTimeout(() => {
-        diceSceneTimerRef.current = null;
-        hideFullScreenDiceScene();
-      }, LOCAL_ROLL_SCENE_HOLD_MS * 2);
-      return;
-    }
-
-    const breakdown = buildDiceBreakdown({
-      faces: mapped,
-      modifier: context.modifier,
-      postMultiplier: context.postMultiplier,
-      advantageKeep: context.advantageKeep,
-    });
-
-    if (context.roll_id) {
-      physicsSourceRollIdsRef.current.add(context.roll_id);
-    }
-    activePhysicsRollIdRef.current = null;
-
-    const payload = {
-      formula: breakdown.formula,
-      label: context.forcedLabel || labelRef.current || 'Dice Roll',
-      visibility: visibilityRef.current,
-      results: breakdown.results,
-      total: breakdown.total,
-      source_label: context.source_label ?? user?.email ?? 'Player',
-      requestMeta: context.requestMeta,
-      animation_spec,
-      physics_notation: context.physics_notation,
-      roll_id: context.roll_id,
-    };
-
-    window.dispatchEvent(new CustomEvent('velion:dice-roll-submit', { detail: payload }));
-    window.dispatchEvent(new CustomEvent('velion:dice-roll-complete', { detail: payload }));
-
-    if (isCharacterSheetPagePath(window.location.pathname)) {
-      commitDiceLogEntry({
-        roller_id: user?.id ?? '',
-        source_label: payload.source_label ?? null,
-        formula: payload.formula,
-        results: payload.results,
-        total: payload.total,
-        label: payload.label,
-        visibility: payload.visibility as DiceVisibility,
-        animation_spec: payload.animation_spec,
-        physics_notation: payload.physics_notation,
-        roll_id: payload.roll_id,
-      });
-    }
-
-    clearDiceSceneTimer();
-    diceSceneTimerRef.current = window.setTimeout(() => {
-      diceSceneTimerRef.current = null;
-      hideFullScreenDiceScene();
-    }, LOCAL_ROLL_SCENE_HOLD_MS);
-  };
+  }, [playAnimationSpec, dispatchLocalRollPayload]);
 
   useEffect(() => {
-    if (sharedBox) sharedBox.onRollComplete = onRollComplete;
-  }, [onRollComplete]);
+    const ctrl = diceControllerRef.current;
 
-  const ensureBox = async (): Promise<void> => {
-    if (sharedBox) {
-      sharedBox.onRollComplete = onRollComplete;
-      setStatus('ready');
-      setBoxVersion((v) => v + 1);
-      return;
-    }
-    if (boxInitPending) return;
-    boxInitPending = true;
-
-    try {
-      const { default: DiceBox } = await import(/* @vite-ignore */ `${CDN}dice-box.es.min.js`);
-      const host = document.getElementById('global-dice-canvas-host');
-      if (!host) throw new Error('global dice host unavailable');
-
-      const width = host.offsetWidth || window.innerWidth;
-      const height = host.offsetHeight || window.innerHeight;
-      const box = new DiceBox('#global-dice-canvas-host', {
-        assetPath: 'assets/',
-        origin: CDN,
-        theme: 'default',
-        offscreen: false,
-        width,
-        height,
-        scale: 7,
-        gravity: 1,
-        mass: 1,
-        friction: 0.8,
-        restitution: 0.5,
-        angularDamping: 0.4,
-        linearDamping: 0.4,
-        spinForce: 6,
-        throwForce: 4,
-        settleTimeout: 5000,
-        themeColor: T.gold,
-      });
-      box.onRollComplete = onRollComplete;
-      await box.init();
-
-      const canvas = host.querySelector('canvas') as HTMLCanvasElement | null;
-      if (canvas) {
-        canvas.width = width;
-        canvas.height = height;
-        canvas.style.position = 'absolute';
-        canvas.style.inset = '0';
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-        canvas.style.zIndex = '0';
-        canvas.style.pointerEvents = 'none';
-      }
-
-      sharedBox = box;
-      boxInitPending = false;
-      setStatus('ready');
-      setBoxVersion((v) => v + 1);
-    } catch (err: unknown) {
-      boxInitPending = false;
-      setStatus('error');
-      setErrorMsg(err instanceof Error ? err.message : String(err));
-    }
-  };
-
-  useEffect(() => {
     if (!diceRollActive) {
       setRolling(false);
       setDiceSceneActive(false);
       clearDiceSceneTimer();
       setStatus('loading');
-      teardownSharedDiceBox();
+      diceReadyOnceRef.current = false;
+      ctrl.dispose();
       return;
     }
     if (!physicsDiceActive) {
       setRolling(false);
       setDiceSceneActive(false);
       clearDiceSceneTimer();
-      teardownSharedDiceBox();
+      diceReadyOnceRef.current = false;
+      ctrl.dispose();
       setStatus('ready');
       return;
     }
-    void ensureBox();
+
+    let cancelled = false;
+    const host = document.getElementById('global-dice-canvas-host');
+    if (host) ctrl.bindHost(host);
+
+    void ctrl
+      .ensureReady()
+      .then(() => {
+        if (!cancelled) {
+          setStatus('ready');
+          diceReadyOnceRef.current = true;
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setStatus('error');
+          setErrorMsg(err instanceof Error ? err.message : String(err));
+        }
+      });
+
     const onResize = () => {
-      if (!sharedBox) return;
-      const host = document.getElementById('global-dice-canvas-host');
-      if (!host) return;
-      const canvas = host.querySelector('canvas') as HTMLCanvasElement | null;
-      const width = host.offsetWidth || window.innerWidth;
-      const height = host.offsetHeight || window.innerHeight;
-      if (canvas) {
-        canvas.width = width;
-        canvas.height = height;
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-      }
+      const resizeHost = document.getElementById('global-dice-canvas-host');
+      if (resizeHost) diceControllerRef.current.bindHost(resizeHost);
     };
     window.addEventListener('resize', onResize);
+
     return () => {
+      cancelled = true;
       window.removeEventListener('resize', onResize);
       setRolling(false);
       setDiceSceneActive(false);
       clearDiceSceneTimer();
       setStatus('loading');
-      teardownSharedDiceBox();
+      diceReadyOnceRef.current = false;
+      ctrl.dispose();
     };
   }, [diceRollActive, physicsDiceActive]);
 
@@ -544,138 +580,109 @@ export default function GlobalDiceOverlay() {
     if (!event.defaultPrevented) return false;
 
     pendingAuthorityRollsRef.current.set(rollId, { requestMeta: context.requestMeta });
+    animatingRollIdsRef.current.add(rollId);
     activePhysicsRollIdRef.current = null;
     rollContextRef.current = {};
-    setRolling(true);
-    setDiceSceneActive(false);
     clearDiceSceneTimer();
     setPending(dice);
     return true;
   };
 
-  const startPhysicalRoll = (dice: DiceType[], context: RollContext = {}) => {
-    if (!sharedBox || !dice.length || rolling || status !== 'ready') return false;
+  const startPhysicalRoll = async (dice: DiceType[], context: RollContext = {}): Promise<boolean> => {
+    if (!dice.length || rolling || status !== 'ready') return false;
+
     const rollId =
-      typeof globalThis !== 'undefined' && globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function'
+      typeof globalThis.crypto?.randomUUID === 'function'
         ? globalThis.crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     const physicsNot = summarise(dice);
+
     if (requestServerAuthoritativeRoll(dice, context, rollId, physicsNot)) return true;
 
-    activePhysicsRollIdRef.current = rollId;
-    rollContextRef.current = { ...context, physics_notation: physicsNot, roll_id: rollId };
-    window.dispatchEvent(
-      new CustomEvent('velion:dice-roll-network-start', {
-        detail: {
-          roll_id: rollId,
-          physics_notation: physicsNot,
-          label: context.forcedLabel || labelRef.current || 'Dice Roll',
-          visibility: visibilityRef.current,
-          source_label: context.source_label ?? user?.email ?? 'Player',
-        },
-      }),
-    );
-    setRolling(true);
-    setDiceSceneActive(true);
-    clearDiceSceneTimer();
-    setPending(dice);
     try {
-      sharedBox.clear?.();
-    } catch {
-      /* ignore */
+      const physicsViewportAspect = getDiceViewportAspect();
+      const rolled = await rollDiceLocal({
+        diceExpr: context.formula || physicsNot,
+        modifier: context.modifier,
+        postMultiplier: context.postMultiplier,
+        advantageKeep: context.advantageKeep,
+        viewportAspect: physicsViewportAspect,
+      });
+
+      activePhysicsRollIdRef.current = rollId;
+      animatingRollIdsRef.current.add(rollId);
+      const breakdown = buildDiceBreakdown({
+        faces: rolled.results,
+        modifier: context.modifier,
+        postMultiplier: context.postMultiplier,
+        advantageKeep: context.advantageKeep,
+      });
+
+      const dieTypes = rolled.animation_spec.map(
+        (f) => (sidesToDieType(f.sides) ?? 'd20') as AnimDieType,
+      );
+
+      const animContext: RollContext = {
+        ...context,
+        roll_id: rollId,
+        physics_notation: physicsNot,
+        animation_spec: rolled.animation_spec,
+        formula: rolled.formula || breakdown.formula,
+        forcedLabel: context.forcedLabel || labelRef.current || 'Dice Roll',
+        seed: rolled.seed,
+        dieTypes,
+        physicsViewportAspect,
+      };
+
+      void playAnimationSpec(rolled.animation_spec, animContext);
+
+      setPending(dice);
+      return true;
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : String(err));
+      return false;
     }
-    const d100Count = dice.filter((die) => die === 'd100').length;
-    const counts = new Map<number, number>();
-    dice.forEach((die) => {
-      if (die === 'd100') return;
-      const sides = Number.parseInt(die.slice(1), 10);
-      counts.set(sides, (counts.get(sides) ?? 0) + 1);
-    });
-    sharedBox._d100Count = d100Count;
-    if (d100Count > 0) {
-      counts.set(100, (counts.get(100) ?? 0) + d100Count);
-      counts.set(10, (counts.get(10) ?? 0) + d100Count);
-    }
-    const rollArg = [...counts.entries()].map(([sides, qty]) => ({ qty, sides }));
-    const throwDice = () => {
-      const b = sharedBox;
-      if (!b) {
-        setRolling(false);
-        setDiceSceneActive(false);
-        rollContextRef.current = {};
-        return;
-      }
-      try {
-        b.roll(rollArg);
-      } catch {
-        setRolling(false);
-        setDiceSceneActive(false);
-        rollContextRef.current = {};
-      }
-    };
-    requestAnimationFrame(() => {
-      requestAnimationFrame(throwDice);
-    });
-    return true;
   };
 
   const startDeterministicPhysicalRoll = (payload: {
     roll_id?: string;
     physics_notation?: string;
-    animation_spec?: Array<{ sides: number; value: number }>;
+    animation_spec?: DiceAnimationFace[];
     label?: string;
     source_label?: string;
+    seed?: number;
+    die_types?: string[];
+    viewport_aspect?: number;
   }): boolean => {
-    if (!sharedBox || rollingRef.current || statusRef.current !== 'ready') return false;
-    if (!payload.roll_id || !payload.physics_notation || !payload.animation_spec?.length) return false;
+    if (!payload.roll_id || !payload.animation_spec?.length) return false;
+    if (typeof payload.seed !== 'number' || !payload.die_types?.length) return false;
+    if (statusRef.current !== 'ready') return false;
     if (activePhysicsRollIdRef.current === payload.roll_id) return false;
     if (physicsSourceRollIdsRef.current.has(payload.roll_id)) return false;
-    if (remoteReplayRollIdsRef.current.has(payload.roll_id)) return false;
 
-    const notation = buildDeterministicDiceBoxNotationFromAnimationSpec(payload.animation_spec);
-    if (!notation) return false;
-
-    const d100Logical = payload.animation_spec.filter((f) => f.sides === 100).length;
     const isAuthorityRoller = pendingAuthorityRollsRef.current.has(payload.roll_id);
+    if (rollingRef.current && !isAuthorityRoller) return false;
+    if (remoteReplayRollIdsRef.current.has(payload.roll_id) && !isAuthorityRoller) return false;
 
     if (!isAuthorityRoller) {
       remoteReplayRollIdsRef.current.add(payload.roll_id);
     }
-    rollContextRef.current = {
+
+    const seedDieTypes = payload.die_types as AnimDieType[];
+    void playAnimationSpec(payload.animation_spec, {
       roll_id: payload.roll_id,
       physics_notation: payload.physics_notation,
       forcedLabel: payload.label,
       source_label: payload.source_label,
       remoteReplay: !isAuthorityRoller,
       authorityAwaitDiceComplete: isAuthorityRoller,
-    };
-    setRolling(true);
-    setDiceSceneActive(true);
-    clearDiceSceneTimer();
-    setPending([]);
-    try {
-      sharedBox.clear?.();
-      sharedBox._d100Count = d100Logical;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          try {
-            sharedBox?.roll(notation);
-          } catch {
-            if (!isAuthorityRoller) remoteReplayRollIdsRef.current.delete(payload.roll_id!);
-            rollContextRef.current = {};
-            setRolling(false);
-            setDiceSceneActive(false);
-          }
-        });
-      });
-      return true;
-    } catch {
-      if (!isAuthorityRoller) remoteReplayRollIdsRef.current.delete(payload.roll_id!);
-      rollContextRef.current = {};
-      setRolling(false);
-      setDiceSceneActive(false);
-      return false;
-    }
+      serverMirror: true,
+      seed: payload.seed,
+      dieTypes: seedDieTypes,
+      physicsViewportAspect: payload.viewport_aspect ?? CANONICAL_DICE_VIEWPORT_ASPECT,
+    });
+
+    return true;
   };
 
   const startRemotePhysicalRoll = (payload: {
@@ -684,41 +691,20 @@ export default function GlobalDiceOverlay() {
     label?: string;
     source_label?: string;
   }) => {
-    if (!sharedBox || rollingRef.current || statusRef.current !== 'ready') return false;
+    if (statusRef.current !== 'ready') return false;
     if (!payload.roll_id || !payload.physics_notation) return false;
     if (activePhysicsRollIdRef.current === payload.roll_id) return false;
     if (physicsSourceRollIdsRef.current.has(payload.roll_id)) return false;
     if (remoteReplayRollIdsRef.current.has(payload.roll_id)) return false;
-
-    const { rollArg, d100Count } = physicsNotationToDiceBoxRoll(payload.physics_notation);
-    if (!rollArg.length) return false;
+    if (rollingRef.current) return false;
 
     remoteReplayRollIdsRef.current.add(payload.roll_id);
-    rollContextRef.current = {
-      roll_id: payload.roll_id,
+    pendingRemoteSpecRef.current.set(payload.roll_id, {
       physics_notation: payload.physics_notation,
-      forcedLabel: payload.label,
+      label: payload.label,
       source_label: payload.source_label,
-      remoteReplay: true,
-    };
-    setRolling(true);
-    setDiceSceneActive(true);
-    clearDiceSceneTimer();
-    setPending([]);
-    try {
-      sharedBox.clear?.();
-      sharedBox._d100Count = d100Count;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => sharedBox?.roll(rollArg));
-      });
-      return true;
-    } catch {
-      remoteReplayRollIdsRef.current.delete(payload.roll_id);
-      rollContextRef.current = {};
-      setRolling(false);
-      setDiceSceneActive(false);
-      return false;
-    }
+    });
+    return true;
   };
 
   useEffect(() => {
@@ -726,17 +712,20 @@ export default function GlobalDiceOverlay() {
       const payload = (event as CustomEvent<{
         roll_id?: string;
         physics_notation?: string;
-        animation_spec?: Array<{ sides: number; value: number }>;
+        animation_spec?: DiceAnimationFace[];
         label?: string;
         source_label?: string;
+        seed?: number;
+        die_types?: string[];
+        viewport_aspect?: number;
       }>).detail;
       if (!payload || !diceRollActiveRef.current || !physicsDiceActiveRef.current) return;
       if (payload.roll_id && activePhysicsRollIdRef.current === payload.roll_id) return;
 
       const run = () => {
         if (statusRef.current !== 'ready') return;
-        if (payload.animation_spec?.length && payload.physics_notation) {
-          if (startDeterministicPhysicalRoll(payload)) return;
+        if (payload.animation_spec?.length) {
+          startDeterministicPhysicalRoll(payload);
           return;
         }
         startRemotePhysicalRoll(payload);
@@ -746,7 +735,9 @@ export default function GlobalDiceOverlay() {
         run();
         return;
       }
-      void ensureBox().then(() => {
+      const host = document.getElementById('global-dice-canvas-host');
+      if (host) diceControllerRef.current.bindHost(host);
+      void diceControllerRef.current.ensureReady().then(() => {
         if (statusRef.current === 'ready') run();
       });
     };
@@ -756,11 +747,12 @@ export default function GlobalDiceOverlay() {
 
   const roll = () => {
     if (!canRoll) return;
-    const started = startPhysicalRoll(pending, {
+    void startPhysicalRoll(pending, {
       forcedLabel: labelRef.current || undefined,
       source_label: user?.email ?? 'Player',
+    }).then((started) => {
+      if (started) setOpen(false);
     });
-    if (started) setOpen(false);
   };
 
   useEffect(() => {
@@ -777,10 +769,9 @@ export default function GlobalDiceOverlay() {
   useEffect(() => {
     if (!queuedExternalRoll || status !== 'ready' || rolling || !diceRollActive) return;
     const parsed = parseDiceFromFormula(queuedExternalRoll.formula);
-    const fallbackCount = 1;
-    const diceToRoll = parsed.length ? parsed : Array.from({ length: fallbackCount }, () => 'd20' as DiceType);
+    const diceToRoll = parsed.length ? parsed : (['d20'] as DiceType[]);
 
-    const started = startPhysicalRoll(diceToRoll, {
+    void startPhysicalRoll(diceToRoll, {
       formula: queuedExternalRoll.formula,
       modifier: queuedExternalRoll.modifier,
       postMultiplier: queuedExternalRoll.postMultiplier,
@@ -789,34 +780,20 @@ export default function GlobalDiceOverlay() {
       visibility: queuedExternalRoll.visibility,
       source_label: queuedExternalRoll.source_label,
       requestMeta: queuedExternalRoll.requestMeta,
+    }).then((started) => {
+      if (started) {
+        setLabel(queuedExternalRoll.label ?? '');
+        if (queuedExternalRoll.visibility) setVisibility(queuedExternalRoll.visibility);
+        setQueuedExternalRoll(null);
+      }
     });
-    if (started) {
-      setLabel(queuedExternalRoll.label ?? '');
-      if (queuedExternalRoll.visibility) setVisibility(queuedExternalRoll.visibility);
-      setQueuedExternalRoll(null);
-    }
-  }, [queuedExternalRoll, status, rolling, diceRollActive, boxVersion]);
+  }, [queuedExternalRoll, status, rolling, diceRollActive]);
 
   if (!diceRollActive) return null;
 
   return createPortal(
     <>
-      {/* Full-screen dice: keep WebGL host at opacity 1 — hiding the parent breaks many drivers; fade only the scrim. */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 24000, pointerEvents: 'none' }}>
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            opacity: diceSceneActive ? 1 : 0,
-            transition: 'opacity 0.18s ease',
-            pointerEvents: 'none',
-            background: diceSceneActive
-              ? 'radial-gradient(circle at 50% 45%, rgba(0,0,0,0.12), rgba(0,0,0,0.55) 70%)'
-              : 'transparent',
-          }}
-        />
-        <div id="global-dice-canvas-host" style={{ position: 'absolute', inset: 0, opacity: 1, pointerEvents: 'none' }} />
-      </div>
+      <DiceCanvasHost diceSceneActive={diceSceneActive} />
 
       {immersiveDiceActive && (
       <>
@@ -840,7 +817,7 @@ export default function GlobalDiceOverlay() {
           boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
         }}
       >
-        🎲
+        ðŸŽ²
       </button>
 
       {open && (
@@ -950,7 +927,7 @@ export default function GlobalDiceOverlay() {
               type="button"
               onClick={() => {
                 setPending([]);
-                sharedBox?.clear();
+                diceControllerRef.current.clear();
               }}
               style={{
                 flex: 1,
@@ -993,5 +970,21 @@ export default function GlobalDiceOverlay() {
       )}
     </>,
     document.body,
+  );
+}
+
+function DiceCanvasHost({ diceSceneActive }: { diceSceneActive: boolean }) {
+  return (
+    <div
+      id="global-dice-canvas-host"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 24000,
+        opacity: diceSceneActive ? 1 : 0,
+        transition: 'opacity 0.18s ease',
+        pointerEvents: 'none',
+      }}
+    />
   );
 }
